@@ -575,6 +575,17 @@ html[data-theme="sakura"] .join[aria-pressed="true"]{background:var(--lantern);b
 html[data-theme="sakura"] .upring{background:conic-gradient(#EE7FA2 calc(var(--p)*1%),rgba(255,255,255,.18) 0)}
 html[data-theme="sakura"] .check input:checked{background:var(--lantern);border-color:var(--lantern)}
 html[data-theme="sakura"] .check input:checked::after{border-color:#fff}
+.cheer{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 16px;align-items:center;padding:14px 18px;border-radius:14px;border:1px solid var(--line);background:color-mix(in srgb,var(--ink-2) 88%,transparent)}
+.cheer .ck{display:grid;justify-items:center;min-width:64px}
+.cheer .ck b{font-family:var(--display);font-size:22px;color:var(--lantern);line-height:1.1;white-space:nowrap}
+.cheer .ck small{font-size:10px;letter-spacing:.12em;color:var(--mute)}
+.cheer .ct{font-family:var(--display);font-size:18px;display:block}
+.cheer p{margin:2px 0 0;font-size:14px;color:var(--mute)}
+.cheer .btn{grid-column:1/-1;justify-self:start;margin-top:6px}
+.cheer.done{border-color:var(--lantern);background:color-mix(in srgb,var(--lantern) 14%,var(--ink-2))}
+.cheer.done .ct{font-size:20px}
+canvas.confetti{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:90}
+@media (max-width:760px){.cheer{padding:12px 14px;gap:2px 12px}.cheer .ck{min-width:54px}.cheer .ck b{font-size:19px}.cheer .ct{font-size:16px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -779,6 +790,7 @@ function render(){
   if(tab==="plan") mountMap();
   renderSettings();
   window.__tab=tab;
+  maybeCelebrate();
   updateBadges();
   if(tab==="photos"&&uploads.length)uploads.forEach((_,i)=>paintUpload(i));
   if(tab==="split")updateShare();
@@ -817,7 +829,7 @@ function renderPrep(){
   const catOpts=[...new Set(["Dates & congés","Vol","Budget","Documents","Hébergement","Sur place"].concat(cats))].map(c=>`<option>${esc(c)}</option>`).join("");
   return hero("img/pont.jpg","準備 · junbi","Préparation du voyage", (me?`${esc(me.name)}, tu es prêt·e à ${mine} %.`:"") + (S.trip.start?` · ${tripDatesLabel()}`:` · <button class="link-btn" data-tab="plan">Choisir les dates du voyage</button>`),
     `<div class="ring" style="--p:${global}" aria-label="Préparation globale ${global} %"><div><span><b class="num">${global}%</b><br><small class="muted">du groupe</small></span></div></div>`)
-  + `<div class="wrap">${notice()}<div class="grid2">
+  + `<div class="wrap">${notice()}${renderCheer(groupPct())}<div class="grid2">
     <div class="panel"><h3>Ma liste<small>${me?esc(me.name):""} · ${S.tasks.filter(t=>me&&t.done&&t.done[me.id]).length}/${S.tasks.length} étapes</small></h3>
       ${list}
       <div style="margin-top:14px">${open.task?`<form class="form" data-form="task">
@@ -1127,6 +1139,41 @@ async function refreshAll(){
     if("serviceWorker" in navigator){const reg=await navigator.serviceWorker.getRegistration();if(reg){window.__pullReload=true;reg.update().catch(()=>{});setTimeout(()=>{window.__pullReload=false},6000)}}
   }catch(e){fail(e)}
   PTR.busy=false;
+}
+
+/* ----- Encouragements & confettis (préparation du groupe) ----- */
+function groupPct(){const trav=S.travelers;return trav.length&&S.tasks.length?Math.round(trav.reduce((s,t)=>s+pct(t),0)/trav.length):0}
+function cheerFor(g){
+  if(g>=100)return {k:"おめでとう",r:"omedetō",t:"Félicitations, vous êtes parés pour le Japon !",s:"Toutes les étapes sont cochées par tout le monde. Il ne reste plus qu'à faire les valises.",c:"done"};
+  if(g>=80)return {k:"もう少し",r:"mō sukoshi",t:"Vous y êtes presque !",s:`Plus que ${100-g} % avant d'être prêts. La dernière ligne droite.`,c:"hi"};
+  if(g>=50)return {k:"頑張って",r:"ganbatte",t:"Encore un petit effort !",s:"Plus de la moitié du chemin est faite, on continue sur cette lancée.",c:"mid"};
+  if(g>=25)return {k:"いいね",r:"ii ne",t:"Beau début, continuez comme ça.",s:"Les premières étapes avancent bien.",c:"low"};
+  if(g>0)return {k:"出発",r:"shuppatsu",t:"C'est parti !",s:"Les premières cases sont cochées, le voyage prend forme.",c:"low"};
+  return {k:"はじめ",r:"hajime",t:"Tout est à faire.",s:"Coche tes premières étapes : chaque case fait avancer le groupe.",c:"zero"};
+}
+function renderCheer(g){const c=cheerFor(g);
+  return `<div class="cheer ${c.c}"><div class="ck"><b>${c.k}</b><small>${c.r}</small></div><div><b class="ct">${c.t}</b><p>${c.s}</p></div>${c.c==="done"?`<button class="btn sm" data-act="confetti">Encore des confettis</button>`:""}</div>`;
+}
+let lastPrepPct=null,lastTabSeen=null;
+function confetti(){
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+  const th=document.documentElement.getAttribute("data-theme");
+  const cols=th==="sakura"?["#F7A8C0","#E0779C","#D44C7A","#FFFFFF","#FFD6E3","#9B6BD0"]:["#E9A93F","#F5CE7A","#FFFFFF","#E58AA8","#C98A1E","#FFE7B0"];
+  const c=document.createElement("canvas");c.className="confetti";document.body.appendChild(c);
+  const d=Math.min(2,devicePixelRatio||1),W=innerWidth,H=innerHeight;c.width=W*d;c.height=H*d;const x=c.getContext("2d");x.scale(d,d);
+  const P=[];const burst=(ox,dir)=>{for(let i=0;i<70;i++){const a=(-Math.PI/2)+dir*(.25+Math.random()*.55),v=7+Math.random()*9;P.push({x:ox,y:H*.75,vx:Math.cos(a)*v,vy:Math.sin(a)*v,w:5+Math.random()*6,h:8+Math.random()*8,r:Math.random()*6.28,vr:(-.3+Math.random()*.6),c:cols[i%cols.length],shape:Math.random()<.3?"petal":"rect"})}};
+  burst(W*.08,1);burst(W*.92,-1);setTimeout(()=>{burst(W*.5,.4);burst(W*.5,-.4)},250);
+  let t0=performance.now();
+  (function f(t){const el=(t-t0)/1000;x.clearRect(0,0,W,H);
+    P.forEach(p=>{p.vy+=.28;p.vx*=.99;p.vy*=.99;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;x.save();x.translate(p.x,p.y);x.rotate(p.r);x.globalAlpha=Math.max(0,Math.min(1,3.6-el));x.fillStyle=p.c;
+      if(p.shape==="petal"){x.beginPath();x.ellipse(0,0,p.w*.6,p.h*.6,0,0,6.28);x.fill()}else{x.fillRect(-p.w/2,-p.h/2,p.w,p.h*Math.abs(Math.cos(p.r*2)))}x.restore()});
+    if(el<4)requestAnimationFrame(f);else c.remove()})(t0);
+  haptic(20);
+}
+function maybeCelebrate(){
+  if(!ready||!me)return;const g=groupPct();
+  if(tab==="prep"&&g>=100&&(lastTabSeen!=="prep"||(lastPrepPct!==null&&lastPrepPct<100)))setTimeout(confetti,250);
+  lastPrepPct=g;lastTabSeen=tab;
 }
 
 /* ----- Itinéraire & activités ----- */
@@ -1697,6 +1744,7 @@ document.addEventListener("click",e=>{
   const id=b.dataset.id, a=b.dataset.act;
   if(a==="login"){me=T(id);ls.set("japon-me",id);initSeen();syncPush();render();toast("Bienvenue "+me.name);return}
   if(a==="openSettings"){openSettings();return}
+  if(a==="confetti"){confetti();return}
   if(a==="pushOn"){enablePush();return}
   if(a==="pushOff"){disablePush();return}
   if(a==="closeSettings"||(a==="closeSettingsBg"&&e.target===b)){closeSettings();return}
