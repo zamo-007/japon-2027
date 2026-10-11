@@ -1,0 +1,1189 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Japon 2027</title>
+<meta name="description" content="Organisation collaborative de notre voyage au Japon : préparation, itinéraire, budget et dépenses.">
+<meta name="theme-color" content="#0E1220">
+<meta name="robots" content="noindex,nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Japon 2027">
+<link rel="manifest" id="manifestLink" href="manifest-torii.webmanifest">
+<link rel="apple-touch-icon" id="appleIcon" href="icons/torii-180.png">
+<link rel="icon" id="favIcon" type="image/png" href="icons/torii-96.png">
+<script src="vendor-supabase.js"></script>
+</head>
+<body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* Layout: one immersive photo band per section, calm ink panels below; bottom tab bar on phone, top tabs on desktop. Deliberately dark: night photos of Japan. */
+:root{
+  --ink:#0E1220; --ink-2:#151a2c; --ink-3:#1d2339; --line:rgba(236,229,214,.11);
+  --paper:#ECE5D6; --mute:#a59f93; --lantern:#E9A93F; --lantern-ink:#2a1c05;
+  --sakura:#E58AA8; --good:#7FC8A0; --bad:#E8806F; --seg1:#8FB3E8; --seg2:#7FC8A0; --seg3:#E9A93F;
+  --display:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",Georgia,serif;
+  --body:"Zen Kaku Gothic New","Hiragino Sans","Segoe UI",system-ui,sans-serif;
+  --r:14px; color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--ink);color:var(--paper)}
+body{font-family:var(--body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3{font-family:var(--display);font-weight:700;margin:0;text-wrap:balance;letter-spacing:.01em}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--mute)}
+:focus-visible{outline:2px solid var(--lantern);outline-offset:2px;border-radius:6px}
+
+/* ---------- Login ---------- */
+#gate,#login{position:fixed;inset:0;z-index:50;display:grid;place-items:end center;overflow:auto;
+  background:linear-gradient(180deg,rgba(14,18,32,.15) 0%,rgba(14,18,32,.55) 45%,var(--ink) 100%),url("img/chureito.jpg") center 35%/cover no-repeat var(--ink)}
+.login-card{width:min(560px,100%);padding:32px 20px calc(36px + env(safe-area-inset-bottom,0px));display:grid;gap:22px}
+.login-card .eyebrow{font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:var(--lantern)}
+.login-card h1{font-size:clamp(40px,9vw,64px);line-height:1.02;font-weight:800}
+.login-card h1 span{display:block;font-size:.42em;color:var(--mute);font-weight:500;margin-top:8px;letter-spacing:.04em}
+.who{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.who button{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:rgba(21,26,44,.72);backdrop-filter:blur(8px);cursor:pointer;text-align:left;transition:border-color .15s,transform .15s}
+.who button:hover{border-color:var(--lantern);transform:translateY(-1px)}
+.add-me{display:flex;gap:8px;flex-wrap:wrap}
+.add-me input{flex:1 1 180px;min-width:0}
+
+/* ---------- Shell ---------- */
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:rgba(14,18,32,.86);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.topbar-in{max-width:1080px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:14px}
+.brand{font-family:var(--display);font-weight:800;font-size:19px;white-space:nowrap}
+.brand small{font-family:var(--body);font-weight:400;color:var(--mute);font-size:12px;margin-left:6px}
+.tabs{display:flex;gap:4px;margin-left:auto}
+.tab{border:0;background:none;padding:8px 12px;border-radius:10px;color:var(--mute);cursor:pointer;display:flex;align-items:center;gap:7px;white-space:nowrap}
+.tab .k{font-family:var(--display);font-size:13px;opacity:.8}
+.tab[aria-selected="true"]{color:var(--paper);background:var(--ink-3)}
+.tab[aria-selected="true"] .k{color:var(--lantern);opacity:1}
+.mebtn{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:none;border-radius:999px;padding:3px 10px 3px 3px;cursor:pointer;white-space:nowrap}
+@media (max-width:760px){
+  .tabs{position:fixed;left:0;right:0;bottom:0;margin:0;justify-content:space-around;background:rgba(14,18,32,.95);backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:30}
+  .tab{flex-direction:column;gap:0;font-size:12px;padding:6px 8px}
+  .tab .k{font-size:16px}
+  .mebtn{margin-left:auto}
+  main{padding-bottom:84px}
+}
+
+.hero{position:relative;height:clamp(190px,30vw,300px);overflow:hidden}
+.hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(14,18,32,.05) 20%,rgba(14,18,32,.6) 70%,var(--ink) 100%)}
+.hero-in{position:absolute;left:0;right:0;bottom:0;z-index:1;max-width:1080px;margin:0 auto;padding:0 16px 18px;display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.hero h2{font-size:clamp(30px,5.4vw,46px);line-height:1.05}
+.hero h2 .k{display:block;font-size:14px;letter-spacing:.3em;color:var(--lantern);margin-bottom:6px;font-weight:500}
+.hero p{margin:6px 0 0;color:var(--paper);opacity:.85;max-width:52ch}
+
+.wrap{max-width:1080px;margin:0 auto;padding:8px 16px 48px;display:grid;gap:22px}
+.panel{background:var(--ink-2);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.panel h3{font-size:19px;margin-bottom:12px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.panel h3 small{font-family:var(--body);font-size:13px;color:var(--mute);font-weight:400}
+.grid2{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:860px){.grid2{grid-template-columns:minmax(0,1fr)}}
+
+/* Controls */
+.btn{border:1px solid var(--line);background:var(--ink-3);padding:9px 14px;border-radius:10px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:rgba(236,229,214,.3)}
+.btn.primary{background:var(--lantern);color:var(--lantern-ink);border-color:var(--lantern);font-weight:700}
+.btn.ghost{background:none}
+.btn.sm{padding:5px 10px;font-size:13px;border-radius:8px}
+.icon-btn{border:0;background:none;color:var(--mute);cursor:pointer;padding:4px 6px;border-radius:6px;font-size:16px;line-height:1}
+.icon-btn:hover{color:var(--bad)}
+input[type=text],input[type=number],input[type=date],select,textarea{background:var(--ink);border:1px solid var(--line);border-radius:10px;padding:9px 11px;min-width:0;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--lantern);outline:none}
+label.f{display:grid;gap:5px;font-size:13px;color:var(--mute)}
+.form{display:grid;gap:12px;padding:14px;border:1px dashed rgba(233,169,63,.4);border-radius:12px;background:rgba(233,169,63,.04)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end}
+.row > *{flex:1 1 140px;min-width:0}
+.row > .btn{flex:0 0 auto}
+
+.avatar{--c:var(--lantern);width:30px;height:30px;border-radius:50%;display:inline-grid;place-items:center;background:var(--c);color:#14110b;font-weight:700;font-size:13px;flex:0 0 auto}
+.avatar.lg{width:38px;height:38px;font-size:15px}
+.avatar.xs{width:22px;height:22px;font-size:11px;border:2px solid var(--ink-2)}
+.stack{display:inline-flex}
+.stack .avatar.xs+.avatar.xs{margin-left:-6px}
+
+/* Progress */
+.ring{--p:0;width:120px;height:120px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;
+  background:conic-gradient(var(--lantern) calc(var(--p)*1%),rgba(236,229,214,.1) 0)}
+.ring>div{width:96px;height:96px;border-radius:50%;background:var(--ink-2);display:grid;place-items:center;text-align:center;line-height:1.1}
+.ring b{font-family:var(--display);font-size:30px}
+.bar{height:6px;border-radius:99px;background:rgba(236,229,214,.1);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--lantern);border-radius:99px;transition:width .4s}
+.people{display:grid;gap:12px}
+.person{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center}
+.person .bar{grid-column:2/3}
+
+/* Checklist */
+.cat{margin-top:6px}
+.cat-title{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute);margin:16px 0 6px}
+.cat:first-child .cat-title{margin-top:0}
+.check{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:10px 4px;border-top:1px solid var(--line)}
+.check input{appearance:none;width:22px;height:22px;border-radius:7px;border:1.5px solid rgba(236,229,214,.35);display:grid;place-items:center;cursor:pointer;margin:0}
+.check input:checked{background:var(--lantern);border-color:var(--lantern)}
+.check input:checked::after{content:"";width:10px;height:6px;border:2px solid var(--lantern-ink);border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
+.check.done .t{color:var(--mute);text-decoration:line-through;text-decoration-color:rgba(236,229,214,.3)}
+.check .t{overflow-wrap:anywhere}
+
+/* Stages */
+.stages{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.stage{flex:0 0 150px;position:relative;height:96px;border-radius:12px;overflow:hidden;border:2px solid transparent;cursor:pointer;padding:0;background:var(--ink-3);text-align:left}
+.stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.75;transition:opacity .2s}
+.stage::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 30%,rgba(14,18,32,.85))}
+.stage span{position:absolute;left:10px;bottom:8px;right:8px;z-index:1;line-height:1.2}
+.stage b{font-family:var(--display);font-size:16px;display:block}
+.stage small{color:var(--mute);font-size:12px}
+.stage[aria-pressed="true"]{border-color:var(--lantern)}
+.stage[aria-pressed="true"] img{opacity:1}
+.acts{display:grid;gap:10px}
+.act{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--ink)}
+.act h4{margin:0;font-size:16px;font-weight:700;overflow-wrap:anywhere}
+.act .meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--mute)}
+.act .side{display:grid;justify-items:end;gap:8px;align-content:start}
+.price{font-family:var(--display);font-size:18px;white-space:nowrap}
+.join{border:1px solid var(--line);background:none;border-radius:99px;padding:6px 12px;cursor:pointer;font-size:13px;white-space:nowrap}
+.join[aria-pressed="true"]{background:var(--sakura);border-color:var(--sakura);color:#2b0f19;font-weight:700}
+.pill{font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:99px;border:1px solid var(--line);white-space:nowrap}
+.pill.ok{color:var(--good);border-color:rgba(127,200,160,.4)}
+.ideas{display:flex;gap:8px;flex-wrap:wrap}
+.idea{border:1px dashed rgba(236,229,214,.25);background:none;border-radius:99px;padding:5px 12px;font-size:13px;cursor:pointer;color:var(--mute)}
+.idea:hover{color:var(--paper);border-color:var(--lantern)}
+.empty{padding:22px;text-align:center;color:var(--mute);border:1px dashed var(--line);border-radius:12px}
+
+/* Budget & expenses */
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:600px){.kpis{grid-template-columns:minmax(0,1fr)}}
+.kpi{padding:14px 16px;border-radius:12px;background:var(--ink);border:1px solid var(--line)}
+.kpi small{display:block;color:var(--mute);font-size:12px;letter-spacing:.06em}
+.kpi b{font-family:var(--display);font-size:26px;display:block;margin-top:2px}
+.kpi span{font-size:12px;color:var(--mute)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-weight:500;color:var(--mute);font-size:12px;text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+td.r,th.r{text-align:right}
+.scroll{overflow-x:auto}
+.line-input{width:110px!important;text-align:right;padding:6px 8px!important}
+.bal{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.bal:first-child{border-top:0}
+.pos{color:var(--good)} .neg{color:var(--bad)}
+.settle{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--ink);border:1px solid var(--line);flex-wrap:wrap}
+.settle .arrow{color:var(--lantern)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:99px;padding:3px 10px 3px 3px;cursor:pointer;font-size:13px;user-select:none}
+.chip input{position:absolute;opacity:0;pointer-events:none}
+.chip:has(input:checked){border-color:var(--lantern);background:rgba(233,169,63,.12)}
+.chip:not(:has(input:checked)) .avatar{opacity:.35}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:none;padding:8px 12px;cursor:pointer;color:var(--mute)}
+.seg button[aria-pressed="true"]{background:var(--ink-3);color:var(--paper)}
+.notice{font-size:13px;padding:10px 14px;border-radius:10px;background:rgba(229,138,168,.1);border:1px solid rgba(229,138,168,.3)}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--paper);color:var(--ink);padding:9px 16px;border-radius:99px;font-size:14px;z-index:60;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+/* Fond immersif + calendrier */
+.backdrop{position:fixed;inset:0;z-index:0;background:var(--ink);background-size:cover;background-position:center;pointer-events:none}
+.backdrop::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(14,18,32,.55),rgba(14,18,32,.82) 40%,rgba(14,18,32,.9))}
+main{position:relative;z-index:1}
+.hero::after{background:linear-gradient(180deg,rgba(14,18,32,0) 30%,rgba(14,18,32,.55) 75%,rgba(14,18,32,.75) 100%)}
+.panel{background:rgba(21,26,44,.78);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.act{background:rgba(14,18,32,.55)}
+.cal{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:24px}
+@media (max-width:860px){.cal{grid-template-columns:minmax(0,1fr)}}
+.months{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px}
+.month h4{font-family:var(--display);margin:0 0 8px;font-size:16px;text-transform:capitalize}
+.dow,.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.dow span{font-size:11px;color:var(--mute);text-align:center}
+.day{aspect-ratio:1;max-width:100%;border:1px solid transparent;border-radius:9px;background:rgba(236,229,214,.05);display:grid;place-items:center;position:relative;cursor:pointer;font-size:13px;padding:0}
+.day:hover:not(:disabled){border-color:rgba(236,229,214,.35)}
+.day.out{visibility:hidden}
+.day.in{background:color-mix(in srgb,var(--c) 26%,transparent);font-weight:700}
+.day.in::after{content:"";position:absolute;left:22%;right:22%;bottom:4px;height:3px;border-radius:2px;background:var(--c)}
+.day.sel{border-color:var(--paper);box-shadow:0 0 0 1px var(--paper)}
+.day .dot{position:absolute;top:5px;right:5px;width:5px;height:5px;border-radius:50%;background:var(--paper)}
+.day:disabled{opacity:.35;cursor:default}
+.legend{display:grid;gap:8px}
+.leg{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center}
+.leg>i,.swatch{width:12px;height:12px;border-radius:4px;display:inline-block;flex:0 0 auto}
+.nights{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--mute)}
+.nights input{width:58px!important;padding:5px 6px!important;text-align:center}
+.stage[aria-pressed="true"]{border-color:var(--c,var(--lantern))}
+.daygroup{display:grid;gap:10px;padding:12px;border-radius:12px;border:1px solid var(--line);scroll-margin-top:80px}
+.daygroup.sel{border-color:rgba(236,229,214,.5);background:rgba(236,229,214,.04)}
+.dayhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dayhead b{font-family:var(--display);font-size:16px}
+.mini{width:auto!important;max-width:100%;padding:4px 8px!important;font-size:13px;border-radius:8px!important}
+.link{color:var(--lantern);text-decoration:none;font-size:13px;overflow-wrap:anywhere}
+.link:hover{text-decoration:underline}
+.dual{display:inline-flex;gap:6px;flex-wrap:wrap}
+.dual label{display:inline-flex;align-items:center;gap:4px;color:var(--mute);font-size:13px}
+.dual input{width:112px!important;padding:6px 8px!important;text-align:right;font-variant-numeric:tabular-nums}
+.chart{display:grid;gap:8px;padding-top:22px}
+.track{position:relative;height:26px;border-radius:8px;background:rgba(236,229,214,.08);display:flex}
+.track>i{height:100%;display:block}
+.track>i:first-child{border-radius:8px 0 0 8px}
+.tick{position:absolute;top:-4px;bottom:-4px;width:0;border-left:1.5px dashed rgba(236,229,214,.45)}
+.tick.full{border-left:2px solid var(--paper)}
+.tick em{position:absolute;bottom:100%;left:0;transform:translateX(-50%);font-style:normal;font-size:11px;color:var(--mute);white-space:nowrap;padding-bottom:2px}
+.tick.full em{color:var(--paper);font-weight:700}
+.axis{display:flex;justify-content:space-between;font-size:11px;color:var(--mute)}
+.keys{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--mute)}
+.keys i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.keys b{color:var(--paper);font-weight:500;margin-left:4px}
+.cities{display:grid;gap:10px}
+.city{display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:10px;align-items:center}
+.cn{display:flex;align-items:center;gap:8px;font-size:14px;min-width:0}
+.ctrack{height:12px;border-radius:6px;background:rgba(236,229,214,.08);display:flex;overflow:hidden}
+.ctrack i{display:block;height:100%}
+.cv{text-align:right;font-size:13px;line-height:1.25}
+.pill.info{color:#8FB3E8;border-color:rgba(143,179,232,.45)}
+.pill.warn{color:var(--lantern);border-color:rgba(233,169,63,.5)}
+.pill.crit{color:var(--bad);border-color:rgba(232,128,111,.55)}
+.alert{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;padding:12px 16px;border-radius:12px;border:1px solid;font-size:14px}
+.alert.info{border-color:rgba(143,179,232,.45);background:rgba(143,179,232,.12)}
+.alert.warn{border-color:rgba(233,169,63,.55);background:rgba(233,169,63,.14)}
+.alert.crit{border-color:rgba(232,128,111,.6);background:rgba(232,128,111,.16)}
+.chip.static{cursor:default;padding:3px 4px 3px 12px}
+.tabdot{width:7px;height:7px;border-radius:50%;background:var(--lantern);display:inline-block}
+.tabdot.crit{background:var(--bad)}
+.transport{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-radius:10px;background:rgba(236,229,214,.04);border:1px solid var(--line);font-size:14px}
+.tab .short{display:none}
+@media (max-width:760px){.tab .long{display:none}.tab .short{display:inline}}
+@media (max-width:440px){.city{grid-template-columns:90px minmax(0,1fr) auto}}
+.mapgrid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:20px}
+@media (max-width:860px){.mapgrid{grid-template-columns:minmax(0,1fr)}}
+.mapbox{position:relative;aspect-ratio:16/11;max-width:100%;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:radial-gradient(ellipse at 65% 35%,#1d2a4a 0%,#111833 55%,#0b1020 100%)}
+@media (max-width:600px){.mapbox{aspect-ratio:1/1}}
+.mapsvg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.land{fill:rgba(236,229,214,.12);stroke:rgba(236,229,214,.42);stroke-width:1;stroke-linejoin:round}
+.route{fill:none;stroke:var(--c);stroke-width:2.5;stroke-linecap:round;vector-effect:non-scaling-stroke;filter:drop-shadow(0 0 4px var(--c))}
+.ov{position:absolute;z-index:1}
+.city-mk{display:flex;align-items:center;gap:7px;border:0;background:none;cursor:pointer;color:var(--paper);padding:0;transform:translate(-11px,-50%);z-index:3}
+.dotc{min-width:22px;height:22px;padding:0 5px;border-radius:99px;background:var(--c);display:grid;place-items:center;font-size:11px;font-weight:700;color:#14110b;box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 28%,transparent);transition:box-shadow .2s}
+.city-mk[aria-pressed="true"] .dotc,.city-mk:hover .dotc{box-shadow:0 0 0 7px color-mix(in srgb,var(--c) 40%,transparent)}
+.city-mk .lbl{font-family:var(--display);font-weight:700;font-size:14px;text-shadow:0 1px 4px #000,0 0 10px #000a;white-space:nowrap}
+.legl{transform:translate(-50%,-50%);font-size:11px;padding:2px 8px;border-radius:99px;background:rgba(14,18,32,.88);border:1px solid var(--line);white-space:nowrap;pointer-events:none;font-variant-numeric:tabular-nums}
+.peak{transform:translate(-50%,-50%);font-size:11px;color:var(--paper);white-space:nowrap;pointer-events:none;text-shadow:0 1px 3px #000}
+.poi{width:14px;height:14px;border-radius:50%;border:2px solid var(--c);background:rgba(14,18,32,.85);cursor:pointer;padding:0;transform:translate(-50%,-50%);z-index:2}
+.poi.on{background:var(--c)}
+.poi .pl{position:absolute;left:18px;top:50%;transform:translateY(-50%);font-size:12px;white-space:nowrap;color:var(--paper);text-shadow:0 1px 3px #000,0 0 8px #000;pointer-events:none;opacity:0;transition:opacity .15s}
+.poi:hover .pl,.poi:focus-visible .pl,.poi.sel .pl{opacity:1}
+.poi.sel{box-shadow:0 0 0 4px rgba(236,229,214,.35)}
+.zoombar{position:absolute;top:10px;left:10px;right:10px;display:flex;gap:6px;flex-wrap:wrap;z-index:4}
+.zoombar button{background:rgba(14,18,32,.85);border:1px solid var(--line);border-radius:99px;padding:4px 11px;font-size:12px;cursor:pointer;color:var(--mute)}
+.mapbox{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+.mapbox.dragging{cursor:grabbing}
+.mapbox button{cursor:pointer}
+.zpm{margin-left:auto;display:flex;gap:6px}
+.zpm button{width:30px;padding:4px 0!important;font-size:15px!important;color:var(--paper)!important}
+.maptip{position:absolute;z-index:6;width:230px;border-radius:12px;overflow:hidden;background:rgba(14,18,32,.96);border:1px solid var(--line);box-shadow:0 12px 30px rgba(0,0,0,.55);pointer-events:none}
+.tipimg{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:0}
+.mcard .tipimg{border-radius:9px}
+.tipimg.ph{display:grid;place-items:center;background:linear-gradient(135deg,color-mix(in srgb,var(--c) 40%,#0e1220),#0e1220);font-size:12px;color:var(--mute)}
+.tipbody{padding:8px 11px 10px;display:grid;gap:2px;font-size:13px}
+.zoombar button[aria-pressed="true"]{color:var(--paper);border-color:var(--lantern)}
+.scalebar{position:absolute;left:12px;bottom:10px;font-size:11px;color:var(--paper);z-index:4;text-shadow:0 1px 3px #000}
+.scalebar i{display:block;height:6px;border:1.5px solid var(--paper);border-top:0;margin-bottom:2px}
+.mcard{display:grid;gap:10px;padding:14px;border-radius:12px;background:rgba(14,18,32,.55);border:1px solid var(--line)}
+.mhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mhead b{font-family:var(--display);font-size:17px}
+.mlist{margin:0;padding:0 0 0 2px;list-style:none;display:grid;gap:4px;font-size:14px}
+.legs{display:grid;gap:6px}
+.leg2{display:grid;gap:2px;padding:9px 0;border-top:1px solid var(--line);font-size:14px}
+.leg2 .arrow{color:var(--lantern)}
+/* ---- Carte : placement & mobile ---- */
+.poi.mine{border-radius:4px;transform:translate(-50%,-50%) rotate(45deg)}
+.poi.mine .pl{transform:translateY(-50%) rotate(-45deg);transform-origin:left center}
+.mapbox.placing{cursor:crosshair}
+.maplock{position:absolute;left:50%;bottom:44px;transform:translateX(-50%);z-index:5;border:1px solid rgba(236,229,214,.3);background:rgba(14,18,32,.9);color:var(--paper);border-radius:99px;padding:10px 16px;font-size:14px;white-space:nowrap}
+.mapbox.locked{touch-action:pan-y}
+.placebar{position:absolute;left:8px;right:8px;bottom:36px;z-index:5;display:flex;gap:10px;align-items:center;justify-content:space-between;padding:8px 8px 8px 14px;border-radius:12px;background:rgba(14,18,32,.94);border:1px solid var(--lantern);font-size:14px}
+.zpm .done{width:auto!important;padding:4px 12px!important;font-size:12px!important;border-color:var(--lantern)!important}
+.link-btn{border:0;background:none;padding:0;color:var(--lantern);font-size:13px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.stage small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.city-mk.lbl-t,.city-mk.lbl-b{flex-direction:column;gap:3px;transform:translate(-50%,-11px)}
+.city-mk.lbl-t{flex-direction:column-reverse;transform:translate(-50%,calc(-100% + 11px))}
+/* ---- Sous-navigation ---- */
+.subnav{position:sticky;top:calc(env(safe-area-inset-top,0px) + 54px);z-index:15;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:8px 0}
+.subnav::-webkit-scrollbar{display:none}
+.subnav button{flex:0 0 auto;padding:7px 13px;border-radius:99px;border:1px solid var(--line);background:rgba(21,26,44,.92);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:var(--paper);font-size:13px;cursor:pointer}
+#s-cal,#s-map,#deroule,#s-add{scroll-margin-top:118px}
+/* ---- Responsive ---- */
+.hero{height:auto;min-height:clamp(190px,30vw,300px);display:flex;align-items:flex-end}
+.hero-in{position:relative;width:100%;padding-top:64px}
+@media (max-width:999px){.tab .long{display:none}.tab .short{display:inline}}
+@media (max-width:760px){
+  input,select,textarea{font-size:16px!important}
+  .topbar{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(14,18,32,.97)}
+  .tabs{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(14,18,32,.97)}
+  .topbar-in{padding:8px 12px}
+  .brand{font-size:17px}
+  .subnav{top:calc(env(safe-area-inset-top,0px) + 50px)}
+  .wrap{gap:16px;padding-top:4px}
+  .panel{padding:14px;border-radius:12px}
+  .panel h3{font-size:18px}
+  .hero{min-height:200px}
+  .hero h2{font-size:30px}
+  .hero p{font-size:14px}
+  .hero-in{padding-bottom:14px;gap:12px}
+  .ring{width:92px;height:92px}.ring>div{width:72px;height:72px}.ring b{font-size:21px}
+  .btn{padding:11px 15px}
+  .btn.sm{padding:7px 12px}
+  .icon-btn{padding:8px 10px;font-size:18px}
+  .check{gap:10px;padding:12px 2px}
+  .check input{width:24px;height:24px}
+  .act{grid-template-columns:minmax(0,1fr);padding:12px}
+  .act .side{grid-auto-flow:column;justify-content:space-between;justify-items:start;align-items:center;border-top:1px solid var(--line);padding-top:10px}
+  .act .meta{gap:8px 12px}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .kpis .kpi:last-child{grid-column:1/-1}
+  .kpi{padding:12px}
+  .kpi b{font-size:21px}
+  table.stack thead{display:none}
+  table.stack,table.stack tbody,table.stack tr,table.stack td{display:block;width:100%}
+  table.stack tr{position:relative;padding:10px 36px 10px 0;border-bottom:1px solid var(--line)}
+  table.stack td{border:0;padding:3px 0;text-align:left!important}
+  table.stack td:last-child{position:absolute;right:0;top:6px;width:auto}
+  table.stack td:empty{display:none}
+  .dual input{width:min(120px,36vw)!important}
+  .stage{flex-basis:132px;height:84px}
+  .day{font-size:12px;border-radius:7px}
+  .months{gap:16px}
+  .zoombar{top:8px;left:8px;right:8px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .zoombar::-webkit-scrollbar{display:none}
+  .zoombar button{flex:0 0 auto}
+  .maptip{width:180px}
+  .city-mk .lbl{font-size:13px}
+  .settle{padding:10px}
+  .who{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px));max-width:calc(100% - 32px);text-align:center}
+}
+.gate-msg{margin:0;color:var(--bad);font-size:14px;min-height:1em}
+#gateCode{text-transform:uppercase;letter-spacing:.08em}
+.install{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:24px}
+@media (max-width:860px){.install{grid-template-columns:minmax(0,1fr)}}
+.iconpick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.iconpick button{display:grid;justify-items:center;gap:6px;padding:10px 4px;border-radius:14px;border:1.5px solid transparent;background:rgba(14,18,32,.45);cursor:pointer;font-size:12px;color:var(--mute)}
+.iconpick img{width:58px;height:58px;border-radius:14px;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+.iconpick button[aria-pressed="true"]{border-color:var(--lantern);color:var(--paper)}
+.steps{margin:0;padding-left:20px;display:grid;gap:6px;font-size:14px}
+.codechip{font-family:ui-monospace,Menlo,monospace;letter-spacing:.06em;padding:2px 8px;border-radius:6px;background:rgba(233,169,63,.14);color:var(--lantern)}
+:root{padding-top:env(safe-area-inset-top,0px)}
+body{margin:0}
+img{max-width:100%}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<!-- ============ Code du voyage ============ -->
+<section id="gate" class="login-bg" hidden>
+  <div class="login-card">
+    <div class="eyebrow">日本へ · Voyage entre amis</div>
+    <h1>Japon 2027<span>Entre le code du voyage</span></h1>
+    <form class="add-me" id="gateForm" autocomplete="off">
+      <input type="text" id="gateCode" placeholder="Ex. SAKURA-XXXXXX" maxlength="32" autocapitalize="characters" spellcheck="false" aria-label="Code du voyage">
+      <button class="btn primary" type="submit">Entrer</button>
+    </form>
+    <p id="gateMsg" class="gate-msg" role="alert"></p>
+    <p class="muted" style="margin:0;font-size:13px">Le code t'a été envoyé par l'organisateur du voyage. Tu ne le saisis qu'une fois sur cet appareil.</p>
+  </div>
+</section>
+
+<!-- ============ Connexion ============ -->
+<section id="login" hidden>
+  <div class="login-card">
+    <div class="eyebrow">日本へ · Voyage entre amis</div>
+    <h1 id="loginTitle">Japon 2027<span>Qui se connecte ?</span></h1>
+    <div class="who" id="whoList"></div>
+    <form class="add-me" id="addMeForm">
+      <input type="text" id="newName" placeholder="Ton prénom, si tu n'es pas dans la liste" maxlength="24" autocomplete="given-name">
+      <button class="btn primary" type="submit">Rejoindre le voyage</button>
+    </form>
+    <p class="muted" style="margin:0;font-size:13px">Choisis ton prénom : tu arriveras sur ta propre liste de préparation. Tout le reste est partagé avec le groupe.</p>
+  </div>
+</section>
+
+<!-- ============ Application ============ -->
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="brand" id="brand">Japon 2027</div>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button class="tab" role="tab" data-tab="prep" aria-selected="true"><span class="k">準備</span>Préparation</button>
+      <button class="tab" role="tab" data-tab="plan"><span class="k">旅程</span><span class="long">Itinéraire & activités</span><span class="short">Activités</span></button>
+      <button class="tab" role="tab" data-tab="budget"><span class="k">予算</span>Budget <i class="tabdot" id="budgetDot" hidden></i></button>
+      <button class="tab" role="tab" data-tab="split"><span class="k">割勘</span>Dépenses</button>
+    </nav>
+    <button class="mebtn" id="meBtn" title="Changer de voyageur"></button>
+  </div>
+</header>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><path id="jpLand" vector-effect="non-scaling-stroke" d="M629.7 1420.0L631.1 1425.4L629.1 1427.1L625.3 1435.6L622.7 1437.9L619.8 1435.9L619.5 1434.0L620.9 1433.4L622.1 1430.0L624.4 1426.9L627.3 1425.6L628.5 1424.1L629.7 1420.0ZM781.4 1352.3L781.1 1354.3L782.6 1355.8L783.7 1357.9L781.7 1359.4L779.4 1360.4L778.5 1364.0L778.2 1366.3L776.7 1367.7L775.0 1374.6L773.5 1378.1L772.7 1383.0L768.3 1398.7L764.2 1412.2L764.5 1414.1L764.2 1415.3L765.1 1417.8L766.0 1419.5L768.3 1420.4L768.0 1421.4L766.8 1422.9L766.6 1423.7L764.5 1434.9L765.1 1437.9L762.5 1440.1L761.3 1441.5L761.0 1443.0L759.3 1446.0L759.3 1447.4L759.9 1448.4L759.9 1450.9L758.4 1453.3L757.2 1459.0L756.1 1460.5L755.5 1462.7L754.9 1463.2L753.7 1462.6L754.3 1461.9L754.3 1461.2L749.7 1461.9L748.2 1461.2L747.9 1460.4L747.9 1457.8L745.3 1454.5L744.4 1454.3L742.7 1454.8L740.3 1452.9L736.8 1453.6L733.9 1455.0L732.8 1456.0L730.4 1459.9L729.3 1463.7L730.1 1464.6L734.8 1466.1L736.6 1467.1L736.8 1468.3L736.6 1469.0L734.8 1470.3L734.2 1471.9L735.7 1472.4L738.3 1471.2L738.9 1472.0L733.1 1477.4L730.7 1477.3L728.7 1477.9L728.7 1480.0L725.5 1485.9L723.4 1487.9L717.6 1490.4L713.5 1491.3L711.2 1492.3L709.8 1493.5L709.2 1494.3L706.0 1495.3L702.2 1499.5L700.4 1499.7L701.0 1493.1L703.1 1490.9L707.4 1487.9L709.2 1481.3L708.3 1479.6L710.3 1475.7L711.2 1472.5L711.8 1467.5L710.6 1462.7L709.5 1459.7L707.7 1456.5L704.2 1454.1L703.4 1451.4L704.2 1447.2L703.4 1445.3L698.7 1444.5L695.5 1442.6L694.9 1441.5L696.9 1438.8L698.7 1437.7L700.7 1438.3L702.8 1438.1L704.8 1438.6L705.7 1440.3L705.4 1443.0L705.7 1443.7L706.8 1444.0L708.6 1443.7L710.1 1442.0L711.8 1438.8L712.7 1434.9L712.4 1431.3L710.1 1429.0L706.8 1429.1L702.8 1427.4L699.3 1428.5L696.9 1431.8L696.1 1436.2L693.2 1439.9L692.3 1443.3L690.0 1448.7L689.1 1452.8L689.4 1456.8L691.7 1462.6L692.9 1466.6L693.7 1468.5L696.1 1469.8L697.5 1472.4L700.7 1472.9L700.7 1474.2L699.0 1481.3L696.1 1482.8L694.6 1484.5L693.7 1483.3L690.5 1483.8L689.4 1483.2L689.1 1482.5L689.1 1481.0L687.3 1477.3L683.8 1475.1L671.3 1474.6L669.6 1474.7L667.2 1475.6L665.2 1475.4L664.3 1473.9L663.7 1470.7L662.9 1468.5L661.7 1467.3L664.0 1467.5L664.0 1466.3L663.2 1464.6L661.1 1462.2L656.8 1459.2L659.7 1457.8L662.0 1458.3L663.2 1458.9L664.6 1460.9L665.8 1461.9L666.9 1459.5L671.0 1455.5L671.9 1452.3L672.8 1450.7L674.2 1443.8L673.4 1441.3L674.5 1439.3L674.5 1437.4L673.6 1435.7L671.3 1433.0L668.1 1428.0L663.5 1424.6L662.0 1424.1L662.0 1423.2L661.1 1421.0L662.0 1417.3L662.6 1416.5L666.4 1418.0L664.0 1415.6L663.2 1414.1L664.6 1411.4L664.9 1407.0L664.6 1405.0L663.7 1402.8L661.4 1400.1L661.1 1398.2L662.3 1397.4L663.7 1395.2L663.7 1392.7L661.7 1390.6L664.0 1387.9L667.2 1386.6L669.9 1390.0L671.3 1389.5L673.1 1388.1L673.9 1387.1L675.1 1383.7L676.3 1382.7L676.3 1381.0L682.1 1374.3L683.0 1371.7L684.4 1370.0L684.7 1369.0L684.4 1367.3L685.3 1365.3L685.9 1365.1L687.9 1367.3L688.8 1366.1L688.5 1362.1L690.8 1358.4L692.6 1357.4L693.4 1354.8L693.2 1352.3L691.7 1350.8L692.3 1349.8L693.4 1349.4L695.8 1349.4L694.9 1348.1L693.2 1346.6L692.9 1345.4L700.4 1337.6L701.3 1335.1L699.0 1335.2L685.9 1337.8L684.4 1338.5L683.5 1337.8L684.1 1336.4L685.6 1335.2L691.1 1332.4L693.7 1330.2L695.2 1330.4L696.9 1329.7L697.8 1329.7L697.8 1328.8L696.7 1328.3L695.2 1326.1L695.2 1324.4L696.9 1321.9L695.2 1318.4L689.1 1313.1L685.3 1309.1L683.0 1307.6L682.4 1305.9L681.8 1299.3L681.8 1294.9L681.2 1293.0L681.5 1291.7L681.2 1291.2L680.9 1290.8L679.5 1290.5L677.4 1288.5L676.8 1287.3L676.8 1285.9L672.8 1285.1L670.7 1285.1L668.1 1282.1L666.7 1281.2L664.9 1284.1L661.7 1286.4L659.4 1288.8L657.6 1288.0L657.9 1289.8L659.1 1291.5L660.2 1294.6L663.7 1300.8L665.2 1302.5L664.9 1304.5L663.7 1304.9L663.7 1307.0L662.6 1308.4L660.5 1309.1L659.4 1310.4L655.9 1312.5L657.0 1313.1L657.9 1314.5L659.7 1315.8L661.7 1315.8L662.9 1315.5L666.9 1312.5L672.2 1312.5L674.8 1314.3L677.4 1320.7L677.7 1325.3L676.0 1328.3L675.7 1329.7L676.3 1331.2L674.8 1333.2L671.9 1334.9L669.0 1334.9L668.1 1335.6L668.1 1336.8L667.8 1337.4L666.4 1337.8L666.1 1339.0L665.2 1339.5L663.2 1339.6L662.0 1340.8L660.5 1340.7L661.1 1339.6L660.8 1338.1L659.7 1337.4L659.1 1336.6L657.6 1335.9L657.6 1331.5L658.8 1331.9L659.7 1331.4L662.6 1328.7L664.3 1326.6L664.0 1324.8L662.3 1323.8L662.0 1323.1L662.6 1321.6L661.7 1320.7L659.1 1320.4L658.5 1321.1L657.3 1321.1L654.7 1320.6L652.4 1321.6L649.8 1324.1L646.6 1325.3L644.8 1325.6L644.2 1324.8L644.2 1323.8L643.9 1323.6L643.1 1324.3L643.6 1325.5L639.3 1331.9L638.7 1333.7L635.5 1335.9L634.3 1336.1L633.7 1338.5L630.0 1341.7L629.7 1342.7L627.9 1342.0L626.2 1343.2L625.6 1341.8L627.0 1340.8L629.1 1340.0L629.7 1339.3L630.5 1336.8L632.3 1333.7L632.6 1332.2L632.3 1331.7L631.4 1332.2L630.8 1331.5L630.8 1330.9L633.2 1329.5L633.7 1330.5L634.6 1329.8L635.8 1327.5L632.9 1327.8L632.9 1326.5L631.4 1322.8L630.5 1321.9L629.7 1321.6L628.8 1318.5L627.3 1318.2L626.5 1319.0L625.6 1319.4L624.7 1317.4L622.7 1316.0L621.8 1314.5L620.9 1311.9L620.9 1310.8L619.8 1308.6L619.2 1307.7L618.0 1307.4L617.4 1304.3L617.4 1302.2L618.6 1301.0L619.2 1299.6L618.9 1298.3L619.2 1296.6L619.8 1296.1L620.1 1293.0L621.5 1290.7L624.7 1292.0L625.9 1294.0L625.6 1295.1L625.9 1295.4L627.0 1294.2L627.3 1294.6L627.6 1295.2L626.2 1298.1L625.9 1299.6L626.2 1301.0L627.0 1300.5L628.2 1298.3L630.8 1298.9L632.9 1302.0L632.3 1302.8L632.3 1307.7L631.7 1308.6L631.1 1307.6L630.5 1305.2L630.0 1305.2L630.2 1308.7L631.4 1309.8L631.7 1311.4L630.5 1312.5L632.9 1314.1L633.5 1315.0L634.3 1315.5L634.6 1316.2L636.7 1314.6L637.8 1312.5L646.3 1315.8L647.4 1315.5L641.6 1307.0L641.6 1304.2L643.1 1300.5L642.8 1298.4L640.2 1296.4L637.5 1293.7L635.2 1294.6L633.7 1295.7L632.9 1295.7L632.9 1293.7L630.8 1292.2L630.0 1292.9L629.1 1294.2L627.9 1294.2L626.8 1293.4L625.6 1289.8L627.0 1290.2L626.8 1287.5L627.9 1287.0L627.6 1286.1L626.8 1286.1L625.3 1287.8L624.7 1286.8L624.7 1284.1L623.8 1283.7L623.8 1285.9L623.3 1288.8L621.5 1288.5L620.9 1289.7L620.3 1289.8L619.8 1287.3L621.5 1287.0L621.8 1285.8L620.9 1283.9L619.2 1282.9L619.5 1281.6L618.6 1280.2L618.0 1280.7L617.1 1280.9L616.3 1280.5L614.8 1279.2L613.9 1278.9L611.9 1278.9L611.0 1277.5L612.2 1272.8L612.8 1272.3L613.4 1272.4L614.2 1271.6L613.6 1269.9L612.5 1267.9L613.4 1263.0L614.2 1262.0L616.6 1264.0L618.3 1263.8L620.6 1260.1L621.2 1261.0L620.9 1263.8L623.0 1264.7L626.5 1263.5L631.7 1265.2L632.3 1266.9L632.6 1269.6L634.0 1271.4L635.2 1271.9L634.3 1268.4L634.9 1265.2L636.7 1262.1L636.1 1261.0L636.7 1260.3L632.3 1257.4L630.0 1254.5L631.4 1251.8L632.6 1251.5L634.0 1253.4L634.9 1255.7L636.1 1256.2L636.9 1255.7L636.4 1254.4L634.6 1251.8L634.0 1248.6L635.5 1246.8L635.2 1244.7L636.7 1246.1L638.1 1246.4L639.9 1245.2L642.5 1246.8L643.9 1248.8L642.5 1252.0L643.4 1252.7L644.2 1251.7L644.5 1253.7L645.1 1254.5L646.3 1255.0L648.6 1255.4L649.5 1254.9L650.3 1253.9L650.9 1251.5L651.8 1250.5L655.6 1248.8L656.5 1249.1L657.6 1248.1L660.0 1247.4L660.8 1246.6L661.4 1245.2L657.6 1245.9L657.0 1245.8L656.8 1244.2L655.0 1243.9L654.7 1242.7L656.2 1241.0L658.5 1240.5L660.0 1239.3L659.7 1238.2L660.2 1237.0L662.0 1237.1L663.2 1236.6L663.7 1236.0L664.0 1233.4L666.1 1234.6L666.4 1235.6L665.5 1236.5L666.1 1238.2L667.5 1239.2L669.3 1238.8L669.6 1239.7L668.7 1241.2L670.7 1242.5L671.0 1242.0L671.6 1242.0L672.8 1240.2L676.3 1240.4L677.4 1239.7L678.9 1239.5L679.5 1238.3L680.1 1234.9L679.5 1233.1L676.6 1235.5L675.4 1236.0L673.4 1234.8L673.1 1234.1L672.2 1234.4L671.0 1233.6L670.7 1231.9L671.0 1231.1L671.9 1231.2L672.5 1232.8L673.4 1233.4L675.1 1233.8L678.6 1232.2L681.8 1228.7L683.3 1228.2L685.0 1225.7L685.3 1223.6L685.0 1221.9L684.1 1221.8L683.5 1220.9L683.5 1219.8L683.8 1219.2L684.7 1218.9L685.9 1217.6L686.8 1214.5L687.3 1215.2L688.2 1215.0L690.2 1213.8L691.1 1212.3L692.9 1211.6L696.7 1212.0L698.4 1211.8L700.1 1210.3L702.5 1206.6L704.2 1206.1L706.3 1206.7L708.3 1205.6L711.2 1205.6L714.1 1206.1L713.5 1207.9L714.7 1207.4L717.0 1207.4L718.5 1210.5L719.7 1211.1L721.1 1210.8L722.0 1210.1L723.4 1208.3L724.0 1206.2L726.4 1204.2L728.7 1203.4L729.6 1204.4L729.3 1206.4L728.4 1208.3L728.4 1208.9L727.5 1210.3L728.4 1211.3L728.1 1212.7L726.9 1212.7L727.2 1213.5L726.9 1215.2L725.2 1216.7L724.9 1218.4L726.9 1219.1L728.7 1218.7L728.4 1222.1L728.7 1222.8L729.0 1225.3L733.4 1234.6L734.8 1236.5L736.6 1237.6L737.7 1237.3L743.3 1238.3L745.9 1239.2L748.8 1239.5L751.1 1241.7L754.3 1241.9L757.8 1242.5L761.9 1241.9L766.6 1236.8L767.1 1234.8L768.6 1233.3L770.3 1232.4L772.7 1231.9L775.9 1231.7L777.3 1232.2L778.8 1233.3L782.0 1233.3L784.0 1235.8L787.2 1242.0L787.8 1243.9L788.1 1246.1L787.2 1248.8L787.8 1251.5L785.5 1256.7L785.2 1259.1L784.6 1259.4L781.4 1257.7L780.0 1258.4L779.4 1262.6L776.7 1263.5L776.5 1265.0L773.3 1265.3L772.4 1264.8L771.2 1263.3L769.2 1263.7L768.3 1266.0L769.5 1272.6L770.9 1274.0L772.4 1274.5L777.6 1274.6L781.1 1272.8L784.6 1274.6L785.5 1272.9L789.9 1274.6L794.5 1275.6L796.8 1274.8L799.8 1273.1L801.2 1273.4L799.5 1276.3L798.6 1278.5L798.6 1280.0L798.0 1280.7L796.8 1281.2L795.4 1283.1L795.1 1284.8L793.6 1287.3L796.3 1288.6L798.3 1287.1L800.9 1287.1L801.8 1287.5L799.8 1289.0L798.3 1290.5L798.0 1291.7L799.5 1292.5L800.0 1292.0L801.5 1292.2L802.1 1293.0L803.3 1293.2L803.8 1290.8L804.4 1290.7L805.0 1292.4L805.6 1293.2L807.0 1294.0L807.9 1293.7L808.8 1290.8L810.2 1293.5L809.7 1294.9L807.6 1295.4L803.3 1295.2L802.7 1297.1L801.5 1298.8L801.2 1301.6L803.8 1304.0L805.0 1304.0L805.6 1305.5L807.3 1305.0L807.9 1305.2L808.2 1305.9L808.8 1306.0L809.9 1305.5L810.2 1306.5L810.8 1306.4L811.7 1304.9L815.5 1305.7L815.8 1306.7L814.3 1306.4L811.1 1307.6L808.5 1309.6L807.6 1311.1L807.9 1311.8L808.8 1312.1L809.1 1312.8L807.6 1315.2L806.7 1315.5L805.3 1317.2L806.5 1317.4L808.8 1317.0L809.4 1317.5L808.8 1318.9L807.3 1320.1L805.9 1320.7L804.7 1320.7L803.3 1322.2L799.5 1321.7L798.9 1323.8L798.9 1326.5L798.6 1327.3L797.7 1328.2L797.4 1331.4L796.8 1331.9L795.7 1330.2L794.5 1329.7L794.2 1331.0L792.8 1331.9L791.9 1333.7L790.7 1334.6L790.1 1335.6L790.4 1336.1L790.1 1338.0L788.4 1341.2L787.2 1341.7L785.5 1341.3L783.4 1346.6L783.4 1347.7L784.3 1348.9L785.8 1348.8L786.4 1349.1L787.8 1350.8L786.1 1352.6L784.3 1353.1L781.4 1352.3ZM1026.6 1217.2L1030.7 1216.0L1031.6 1216.5L1024.6 1220.1L1023.4 1221.4L1020.8 1221.8L1019.9 1223.5L1017.6 1223.6L1017.0 1226.3L1015.0 1226.7L1014.4 1228.4L1007.7 1232.9L1003.6 1234.6L1001.3 1236.5L1002.2 1237.6L1000.1 1239.8L999.8 1241.2L999.3 1241.9L998.4 1242.4L997.2 1242.0L996.1 1242.7L996.3 1244.4L996.1 1245.8L992.9 1249.1L990.5 1253.9L988.2 1262.3L987.6 1266.0L986.7 1268.9L986.7 1270.2L986.2 1272.9L986.2 1275.1L985.0 1276.3L982.4 1270.7L981.2 1271.1L979.5 1270.6L979.5 1268.6L973.9 1261.6L972.8 1258.4L970.4 1257.6L968.4 1256.4L966.1 1254.0L964.9 1250.7L959.1 1250.0L951.8 1247.9L949.7 1246.3L944.2 1247.1L939.0 1248.5L937.5 1249.8L927.6 1254.5L926.4 1256.9L926.7 1258.6L925.6 1259.8L923.5 1260.6L919.5 1261.3L918.0 1262.5L916.5 1264.7L916.0 1264.8L916.3 1263.1L915.1 1262.5L913.6 1263.5L911.6 1265.3L910.4 1267.4L910.7 1269.4L910.4 1271.4L911.0 1272.1L911.3 1273.3L911.9 1274.1L910.7 1275.8L910.4 1278.2L908.4 1280.5L907.2 1281.2L907.5 1283.4L908.1 1284.1L906.9 1284.9L906.4 1283.7L905.2 1283.7L903.1 1286.3L900.5 1291.2L898.5 1293.9L897.9 1295.2L897.9 1297.6L897.3 1298.1L894.1 1296.1L891.5 1297.6L890.0 1301.3L889.5 1305.0L890.6 1309.6L890.0 1313.1L889.2 1313.8L886.8 1313.6L886.3 1314.8L886.5 1316.5L886.3 1318.5L887.4 1319.4L888.0 1320.6L890.3 1322.8L892.1 1326.0L892.1 1328.0L890.0 1328.8L888.0 1327.5L886.5 1324.1L885.1 1322.9L883.1 1322.2L881.3 1322.6L880.4 1324.8L879.6 1323.1L878.4 1323.1L876.1 1325.1L874.6 1326.0L873.2 1326.0L870.2 1324.8L866.5 1321.1L862.7 1322.1L859.8 1324.8L859.2 1322.8L859.5 1320.1L861.2 1317.4L862.7 1314.3L866.2 1310.3L866.5 1309.1L860.9 1309.1L859.8 1309.4L855.7 1306.9L854.2 1306.4L855.4 1307.7L853.6 1307.6L852.5 1306.9L851.3 1307.0L851.0 1309.1L852.5 1310.4L851.0 1311.1L849.9 1310.8L848.7 1309.9L847.2 1306.7L849.0 1305.0L848.1 1303.0L849.3 1301.5L849.6 1300.6L847.2 1295.9L844.6 1295.6L842.9 1294.9L841.1 1298.3L839.9 1298.1L841.4 1295.6L841.1 1294.2L842.0 1293.0L845.5 1294.7L847.2 1294.4L848.1 1293.2L846.4 1293.2L846.9 1291.7L846.9 1290.5L846.4 1289.5L845.5 1289.2L845.5 1288.5L847.2 1288.6L848.4 1287.5L848.7 1286.8L845.5 1286.3L844.6 1285.8L844.3 1283.2L846.1 1282.6L845.5 1281.6L843.2 1280.0L842.6 1281.0L841.4 1281.2L840.8 1279.7L842.9 1279.0L846.1 1279.5L846.4 1280.9L847.8 1281.9L848.4 1283.1L849.9 1281.9L849.6 1280.2L850.7 1278.7L852.5 1278.2L853.3 1277.3L852.5 1275.8L851.3 1275.0L852.8 1273.8L851.3 1273.6L850.1 1274.3L849.6 1273.3L848.7 1272.9L848.1 1272.3L848.1 1270.9L849.9 1269.6L851.3 1269.2L851.6 1268.6L848.4 1268.4L842.9 1269.6L839.7 1268.0L840.2 1266.9L842.0 1266.4L842.9 1265.3L843.2 1262.5L841.7 1263.8L840.5 1262.5L840.5 1260.3L842.0 1258.4L842.0 1257.7L840.8 1257.7L841.1 1256.9L841.7 1256.2L843.2 1255.5L839.9 1253.4L837.0 1253.4L835.0 1254.2L833.8 1253.5L831.5 1255.2L829.5 1255.9L823.6 1259.3L821.0 1261.1L820.4 1262.6L819.6 1263.7L818.4 1263.7L817.2 1263.0L817.8 1261.3L811.1 1265.5L809.9 1265.2L811.4 1263.5L813.2 1262.5L816.6 1259.1L819.9 1258.1L821.3 1258.4L822.5 1257.9L821.6 1257.1L821.6 1256.2L822.8 1255.4L825.1 1254.5L826.8 1254.5L828.6 1253.5L830.3 1253.5L832.7 1251.5L842.3 1246.4L843.7 1245.2L844.6 1242.7L846.9 1239.8L849.6 1237.5L857.7 1233.9L861.2 1231.1L863.8 1228.4L865.3 1224.3L865.3 1221.4L864.7 1218.6L866.7 1209.6L870.2 1208.9L870.2 1206.6L871.4 1204.4L871.4 1200.3L877.5 1195.9L878.7 1194.4L883.3 1193.2L883.6 1191.6L884.2 1190.5L883.9 1188.8L881.6 1188.7L881.6 1187.7L884.2 1188.0L885.4 1185.8L886.3 1187.5L888.0 1189.2L892.4 1194.8L896.2 1204.0L897.0 1205.1L900.2 1206.7L901.7 1206.9L904.0 1205.9L909.6 1204.4L910.1 1202.5L912.5 1201.7L914.2 1201.9L916.0 1201.0L917.4 1201.0L919.2 1201.7L923.5 1201.3L929.4 1203.4L931.4 1203.5L934.3 1201.9L935.5 1200.7L936.4 1199.3L941.3 1193.9L941.9 1192.1L942.5 1187.5L941.9 1181.6L940.1 1178.9L936.4 1175.8L935.2 1174.0L939.3 1176.2L941.6 1176.7L942.8 1176.2L944.2 1177.7L946.5 1176.9L953.2 1171.1L958.2 1168.8L960.5 1167.2L961.4 1166.2L962.6 1163.5L965.8 1162.5L966.6 1162.3L968.4 1163.5L969.8 1163.9L971.9 1165.0L974.5 1164.5L977.4 1165.2L978.0 1164.5L978.9 1162.3L980.3 1164.0L981.2 1161.0L982.4 1160.8L983.2 1161.5L983.8 1163.7L983.8 1166.6L984.4 1167.6L985.6 1167.9L988.5 1164.5L989.9 1165.9L992.0 1166.6L992.9 1167.7L991.7 1170.6L994.9 1172.5L996.9 1173.1L998.7 1175.0L999.8 1175.3L1003.0 1175.0L1003.6 1176.5L1006.5 1179.2L1008.9 1179.2L1010.9 1177.5L1016.2 1177.9L1018.8 1176.9L1019.9 1174.8L1020.2 1176.0L1018.8 1178.5L1020.2 1178.4L1021.7 1176.7L1023.1 1176.0L1021.4 1179.9L1021.7 1181.3L1019.9 1181.6L1021.7 1182.3L1022.9 1182.1L1021.4 1185.0L1021.1 1186.5L1019.6 1188.8L1019.6 1191.6L1019.9 1193.2L1018.8 1196.1L1019.6 1199.8L1020.2 1200.3L1021.4 1200.2L1021.4 1199.1L1022.3 1199.0L1024.3 1203.0L1027.2 1204.9L1026.6 1205.7L1027.8 1206.2L1027.5 1207.9L1027.8 1209.4L1026.6 1210.5L1026.3 1211.3L1024.3 1212.5L1023.1 1214.7L1024.3 1215.4L1029.0 1215.2L1029.0 1215.9L1028.1 1215.9L1026.6 1216.5L1026.6 1217.2ZM899.7 989.1L900.8 991.1L899.9 993.6L896.4 997.9L896.4 992.0L897.6 989.8L899.7 989.1ZM894.4 987.6L897.0 987.2L897.0 988.9L894.7 989.8L894.1 991.5L894.4 993.8L893.5 994.5L891.5 994.0L891.2 992.0L890.6 991.8L889.2 992.3L890.3 995.2L889.5 996.2L888.3 996.0L886.0 993.8L887.4 991.8L893.0 986.9L894.4 987.6ZM924.1 1155.4L923.2 1157.6L917.4 1165.2L916.3 1166.4L912.8 1167.9L911.9 1167.7L911.3 1166.9L911.9 1166.1L913.9 1165.5L914.5 1165.0L915.4 1163.4L914.5 1162.2L912.8 1161.7L910.7 1161.8L910.7 1161.0L912.2 1159.8L911.6 1157.9L909.8 1157.3L908.4 1162.3L907.2 1163.7L904.6 1165.9L906.4 1167.2L906.9 1169.3L906.4 1171.1L904.9 1172.0L902.9 1170.6L901.7 1171.8L899.9 1172.3L898.2 1174.3L897.3 1174.7L896.2 1174.0L895.6 1172.3L895.9 1168.2L897.0 1167.4L898.2 1165.5L899.1 1164.9L899.4 1165.7L899.4 1167.4L899.1 1168.6L900.8 1168.2L902.0 1164.9L903.4 1164.5L903.4 1163.7L900.8 1161.8L899.9 1161.5L898.2 1161.5L897.3 1161.0L896.4 1161.8L896.7 1164.9L894.7 1166.7L891.5 1167.7L882.8 1168.6L880.4 1169.6L878.1 1171.3L876.6 1168.9L875.2 1169.6L873.7 1171.6L870.8 1173.0L870.8 1173.7L872.0 1175.7L871.4 1176.5L865.9 1177.4L862.1 1180.1L859.8 1180.2L858.6 1178.2L857.4 1178.7L857.1 1179.6L854.8 1180.7L853.9 1180.7L853.1 1179.6L854.2 1178.2L853.6 1176.9L852.2 1175.5L851.3 1173.0L849.9 1171.3L849.9 1169.9L850.1 1169.1L849.9 1167.2L851.9 1166.6L851.6 1165.4L851.0 1164.7L849.3 1163.7L846.4 1165.0L844.6 1165.0L841.7 1163.2L839.9 1163.4L837.0 1165.0L834.4 1167.2L827.1 1176.2L828.3 1179.6L828.6 1181.1L828.6 1183.3L828.3 1185.8L827.4 1186.8L826.3 1187.5L825.4 1189.2L825.1 1193.6L826.0 1197.5L826.3 1201.0L823.6 1204.2L820.4 1205.4L819.9 1206.2L819.9 1208.6L820.1 1210.5L821.9 1214.3L822.2 1215.9L821.0 1217.0L817.5 1219.1L815.2 1221.3L813.4 1222.3L812.3 1222.5L812.6 1220.6L814.6 1218.9L815.5 1216.5L816.1 1217.6L816.9 1217.6L817.8 1217.0L818.1 1215.5L817.8 1213.7L815.2 1211.3L813.7 1210.5L808.5 1208.6L806.7 1208.3L804.4 1204.9L800.3 1202.9L797.1 1200.2L795.7 1200.5L793.9 1202.9L795.1 1202.9L795.1 1203.5L792.2 1203.5L791.3 1203.0L791.0 1201.3L794.8 1198.0L794.8 1197.3L788.1 1194.4L784.9 1195.6L783.7 1195.3L782.9 1195.9L779.4 1197.3L777.0 1197.3L776.2 1196.3L775.6 1197.3L776.5 1199.7L776.2 1200.8L774.4 1201.5L773.8 1201.0L773.5 1199.5L772.7 1200.0L770.0 1199.1L768.0 1197.1L767.1 1196.8L766.0 1197.3L766.6 1198.1L766.6 1198.6L765.1 1200.0L764.8 1201.3L763.9 1202.2L763.3 1202.0L762.8 1201.3L762.2 1200.0L761.3 1201.7L760.7 1201.9L759.9 1201.3L760.7 1200.0L760.7 1198.3L760.4 1196.8L759.6 1196.1L759.0 1196.6L756.9 1201.0L754.0 1204.7L750.2 1207.3L749.1 1207.6L748.2 1206.2L747.0 1206.7L746.5 1206.6L745.9 1204.9L744.4 1205.6L743.3 1206.7L742.7 1206.9L742.1 1206.6L741.2 1204.7L741.5 1202.4L738.0 1200.0L736.6 1197.0L731.0 1195.3L729.3 1198.5L725.5 1202.9L722.6 1205.4L722.3 1207.8L721.4 1208.6L720.0 1207.6L719.7 1206.7L718.5 1206.2L718.5 1204.9L720.0 1205.1L720.8 1202.7L720.5 1201.5L721.4 1199.0L721.1 1197.8L720.5 1197.1L721.1 1194.6L720.2 1193.4L718.2 1193.2L717.6 1190.9L717.0 1189.9L717.0 1188.7L718.8 1186.1L720.8 1184.6L721.7 1182.9L722.0 1181.6L720.8 1177.5L719.7 1175.5L719.7 1174.3L717.6 1172.1L718.8 1169.9L719.1 1166.9L720.0 1164.5L722.3 1165.0L723.4 1164.9L724.3 1163.9L727.8 1163.0L730.7 1161.8L729.6 1160.7L728.4 1160.7L724.6 1159.6L723.7 1160.8L722.9 1160.5L723.2 1159.3L726.1 1156.1L727.2 1156.4L728.4 1157.4L728.1 1158.5L729.0 1159.0L731.0 1159.0L734.2 1157.4L736.3 1158.6L737.4 1159.0L738.9 1158.8L739.5 1162.2L740.6 1163.0L742.1 1163.2L743.5 1160.7L741.8 1158.3L742.1 1157.1L743.8 1157.4L748.5 1156.3L749.7 1157.3L750.8 1159.1L749.7 1159.1L748.5 1158.1L747.6 1157.9L746.7 1158.3L745.6 1160.3L745.0 1163.0L747.3 1161.8L751.1 1161.7L754.3 1160.7L755.2 1158.5L757.5 1158.5L761.6 1157.6L761.6 1154.6L762.5 1153.4L765.1 1151.0L765.4 1150.0L764.8 1148.2L765.4 1147.6L767.1 1147.3L770.3 1144.8L772.7 1141.9L773.3 1138.5L773.8 1138.0L776.5 1138.4L776.2 1137.5L776.5 1134.0L777.9 1133.5L779.1 1134.1L781.1 1134.6L782.3 1133.8L782.6 1133.0L783.2 1132.5L785.8 1132.8L788.4 1132.5L792.2 1131.4L794.8 1130.3L797.4 1128.6L798.9 1124.0L800.6 1123.7L800.9 1123.0L808.8 1116.2L811.7 1112.4L813.4 1112.7L814.0 1111.5L814.0 1109.3L818.1 1105.8L819.6 1104.1L826.6 1098.7L828.0 1096.5L830.9 1096.0L834.7 1093.8L835.6 1090.7L839.7 1087.5L840.5 1086.5L840.2 1085.5L841.7 1084.0L842.0 1082.5L849.3 1076.7L851.9 1075.5L852.2 1074.2L859.2 1071.5L860.6 1070.5L862.7 1067.1L863.5 1062.7L863.5 1061.5L863.2 1060.0L861.8 1059.3L860.0 1058.0L859.5 1057.0L860.3 1056.0L864.1 1055.1L868.5 1055.1L869.7 1054.8L869.9 1054.4L869.4 1053.6L867.6 1052.9L871.7 1051.9L876.6 1049.4L879.0 1048.9L883.6 1048.7L885.7 1048.2L887.4 1048.4L887.7 1045.8L889.2 1045.5L891.2 1046.0L892.7 1045.3L893.2 1043.8L894.1 1042.6L895.3 1041.9L896.4 1042.4L897.3 1041.3L897.3 1039.9L898.5 1040.3L902.6 1043.8L905.2 1042.8L906.6 1042.8L908.1 1041.8L908.7 1042.1L908.1 1043.1L909.3 1043.6L911.6 1042.6L914.8 1042.3L916.3 1043.1L911.9 1045.0L910.4 1046.7L910.4 1047.9L911.3 1050.4L916.5 1053.4L922.4 1054.6L923.8 1054.3L925.6 1050.9L932.6 1047.7L936.9 1046.7L949.2 1049.7L963.7 1048.5L971.6 1046.3L973.6 1048.0L989.9 1045.3L992.0 1044.6L993.7 1043.5L994.6 1041.4L1000.1 1040.4L1001.3 1038.9L1008.6 1036.2L1014.4 1032.8L1018.5 1034.0L1023.1 1033.5L1035.4 1033.5L1038.3 1034.3L1038.9 1035.5L1040.6 1034.2L1042.1 1034.3L1042.4 1035.4L1043.5 1035.0L1045.9 1035.9L1047.3 1034.5L1048.8 1033.8L1048.5 1032.7L1050.8 1031.0L1054.0 1030.6L1058.7 1027.4L1058.4 1026.1L1062.5 1024.9L1068.6 1023.7L1070.0 1022.7L1072.1 1024.2L1072.9 1026.1L1074.1 1026.9L1076.4 1031.1L1076.4 1032.8L1075.9 1034.2L1074.4 1033.2L1072.7 1034.3L1071.2 1037.7L1066.8 1043.5L1066.8 1045.5L1067.7 1046.0L1068.6 1045.8L1068.6 1044.1L1069.7 1043.1L1070.6 1041.6L1071.8 1040.8L1072.4 1043.0L1073.5 1043.6L1072.9 1044.3L1071.2 1044.1L1070.9 1045.8L1076.2 1048.7L1077.3 1048.2L1077.9 1047.5L1078.8 1049.2L1078.5 1050.6L1077.9 1051.4L1077.0 1054.1L1077.6 1055.3L1078.5 1054.6L1080.2 1051.2L1081.7 1051.4L1083.7 1052.4L1084.3 1051.7L1084.3 1049.4L1082.0 1049.9L1079.9 1049.0L1079.1 1046.3L1080.8 1044.6L1085.5 1043.8L1086.9 1041.9L1087.2 1040.9L1089.3 1039.7L1088.4 1042.8L1090.7 1044.1L1090.4 1045.7L1090.7 1046.7L1090.4 1047.7L1091.9 1047.7L1092.5 1046.8L1093.0 1045.2L1092.8 1048.9L1093.0 1050.2L1094.5 1050.7L1097.7 1050.7L1100.0 1049.5L1100.6 1048.4L1104.1 1045.7L1105.9 1046.5L1105.6 1047.0L1103.5 1047.9L1102.9 1050.7L1102.1 1051.4L1103.8 1051.9L1108.2 1050.9L1110.2 1050.9L1111.4 1050.0L1112.3 1048.7L1112.3 1046.7L1109.9 1047.9L1109.1 1046.0L1107.6 1045.5L1108.8 1043.8L1111.4 1043.0L1112.3 1043.6L1112.8 1045.2L1114.6 1045.0L1116.1 1046.8L1117.2 1047.3L1119.3 1046.5L1118.4 1046.2L1116.6 1043.1L1116.9 1042.4L1117.8 1042.3L1118.7 1043.1L1121.0 1042.1L1119.5 1040.1L1119.0 1038.2L1117.8 1036.9L1117.5 1035.7L1118.4 1035.5L1121.9 1038.2L1124.8 1037.6L1125.4 1038.6L1126.2 1039.2L1127.7 1038.2L1128.6 1037.0L1130.3 1037.4L1131.2 1036.9L1131.2 1035.7L1129.7 1034.5L1130.6 1031.0L1130.3 1029.8L1129.2 1030.0L1129.2 1027.1L1131.2 1026.1L1134.1 1023.5L1135.3 1025.4L1135.3 1026.2L1136.4 1029.6L1136.1 1030.8L1135.3 1030.8L1134.7 1032.0L1136.1 1033.0L1136.4 1034.2L1138.2 1033.8L1138.8 1032.1L1139.4 1031.6L1139.4 1029.6L1140.2 1028.4L1140.2 1025.7L1140.8 1024.0L1140.8 1022.4L1138.2 1017.5L1136.4 1016.1L1132.1 1011.5L1132.4 1008.7L1132.1 1006.5L1130.3 1004.0L1129.2 1002.8L1129.7 1000.1L1131.5 998.9L1132.7 997.5L1135.3 992.0L1136.1 988.9L1140.2 983.9L1142.3 980.0L1143.4 977.6L1142.3 975.4L1142.6 974.7L1145.8 974.7L1148.7 973.6L1155.1 967.8L1156.8 965.3L1160.6 963.4L1163.5 960.9L1167.3 956.7L1184.5 933.7L1188.3 927.0L1194.7 911.1L1194.7 908.7L1193.2 907.4L1194.1 904.8L1194.7 902.0L1194.1 899.9L1192.7 898.6L1191.8 895.2L1190.9 894.5L1190.6 892.3L1191.5 887.3L1190.9 885.7L1190.0 885.1L1189.2 885.2L1188.9 886.4L1187.4 886.3L1186.8 885.1L1187.1 882.4L1187.7 880.2L1188.6 878.5L1189.7 877.1L1189.2 876.1L1190.3 874.9L1191.5 873.1L1192.1 871.6L1191.2 870.2L1190.9 867.5L1193.2 864.1L1200.8 860.1L1204.0 859.2L1205.8 860.1L1208.4 860.1L1217.1 855.2L1219.4 854.7L1220.9 852.7L1222.6 851.3L1234.3 847.6L1237.5 846.9L1241.0 848.3L1241.9 849.4L1241.3 851.3L1241.6 852.5L1242.5 853.3L1242.5 854.7L1241.9 855.4L1239.8 856.0L1236.6 855.7L1234.0 857.0L1233.4 858.6L1232.8 861.9L1233.7 864.3L1235.2 864.5L1234.9 867.3L1234.3 868.5L1232.3 870.7L1230.5 870.7L1227.0 869.9L1222.4 871.7L1219.2 876.1L1219.2 878.2L1218.0 879.0L1216.2 879.5L1215.7 880.9L1214.8 881.5L1211.9 880.3L1209.3 878.3L1210.4 876.5L1209.5 876.6L1209.0 877.5L1207.8 877.8L1206.6 880.2L1204.9 882.7L1203.7 885.6L1205.2 886.1L1204.9 888.3L1204.3 889.0L1202.8 889.0L1202.8 891.2L1202.3 892.3L1203.4 893.0L1206.6 891.8L1208.1 892.0L1210.4 894.9L1211.9 895.4L1213.9 894.5L1215.4 890.5L1216.5 889.8L1217.4 890.1L1218.0 892.0L1217.4 897.7L1218.0 903.3L1215.7 906.2L1215.7 908.5L1212.5 912.9L1213.9 916.5L1217.7 918.8L1220.0 921.0L1223.8 922.4L1226.1 923.9L1229.3 924.2L1233.1 923.6L1237.8 924.2L1240.4 923.7L1241.9 921.7L1244.5 920.0L1245.4 917.3L1246.5 915.5L1247.4 912.3L1247.1 910.2L1248.0 907.9L1249.7 906.7L1253.8 904.5L1268.7 901.3L1278.9 896.9L1286.1 894.2L1294.3 889.0L1298.7 886.9L1300.7 885.1L1302.5 882.9L1307.7 883.9L1311.2 883.0L1314.1 881.7L1320.8 877.0L1329.8 867.9L1338.9 862.3L1341.2 859.7L1344.7 852.3L1347.9 847.6L1352.5 843.5L1354.9 840.3L1356.3 836.6L1359.8 823.9L1361.3 820.2L1363.9 817.2L1369.7 812.5L1380.2 805.4L1380.8 804.5L1386.0 804.2L1392.7 801.0L1394.8 799.6L1400.0 795.7L1408.5 786.8L1409.6 784.9L1410.2 783.1L1412.8 762.5L1413.7 758.8L1415.2 754.5L1418.1 749.1L1423.9 735.1L1425.9 731.9L1433.2 725.5L1435.8 722.1L1437.9 718.2L1441.4 705.9L1444.6 696.8L1445.5 693.8L1446.0 690.2L1447.5 686.7L1448.4 677.5L1449.5 673.8L1450.7 671.3L1453.3 670.1L1455.9 667.2L1458.0 659.3L1460.0 649.5L1460.9 627.2L1459.4 623.0L1459.4 620.6L1458.6 617.6L1456.5 614.9L1453.6 612.0L1449.8 610.2L1446.3 610.7L1445.2 611.7L1443.7 613.9L1442.3 614.2L1436.7 614.2L1434.4 609.7L1432.6 607.6L1432.3 605.4L1433.5 604.8L1432.1 603.9L1431.8 601.2L1432.1 599.4L1435.6 601.7L1440.2 603.8L1442.0 603.9L1445.5 601.6L1448.4 598.2L1454.5 587.4L1455.6 583.0L1455.4 581.0L1457.1 576.4L1458.3 564.6L1456.2 562.2L1451.9 558.2L1451.6 556.5L1451.9 552.3L1451.6 545.5L1450.7 544.5L1450.4 543.0L1449.2 541.4L1446.3 541.6L1444.6 540.9L1444.9 539.1L1448.1 535.7L1450.1 535.4L1451.3 533.0L1453.0 532.2L1455.1 528.3L1455.9 525.7L1460.0 523.2L1461.8 523.4L1463.8 525.1L1465.0 525.6L1466.1 525.6L1467.6 525.1L1468.8 523.9L1472.2 521.4L1474.0 522.2L1475.7 521.7L1477.2 520.5L1478.1 518.8L1480.1 512.6L1481.3 506.3L1481.9 504.6L1482.2 497.2L1482.4 497.2L1484.5 500.2L1485.6 500.8L1486.2 501.4L1487.1 501.1L1486.2 497.9L1486.8 497.2L1487.4 497.0L1489.1 497.4L1488.6 496.0L1484.5 496.2L1483.9 495.0L1482.7 495.9L1482.4 495.5L1482.4 493.0L1482.2 491.6L1480.4 488.9L1478.9 488.1L1476.3 487.6L1476.0 486.6L1476.9 486.1L1478.9 485.9L1480.7 486.4L1482.2 485.1L1483.0 480.8L1482.7 479.8L1483.0 478.8L1483.0 476.3L1483.9 475.4L1483.6 474.1L1483.9 473.4L1486.8 475.6L1488.0 475.9L1491.5 480.2L1493.5 481.7L1495.3 481.7L1497.6 480.2L1498.8 478.0L1500.5 477.5L1504.3 478.0L1507.5 480.5L1508.4 482.9L1507.2 489.4L1507.2 490.6L1507.8 492.8L1508.1 495.9L1509.2 499.2L1510.7 510.4L1513.0 514.6L1517.1 516.5L1520.9 516.1L1525.3 511.6L1526.7 508.5L1526.1 507.8L1526.1 506.7L1526.7 505.5L1524.7 505.3L1524.1 504.6L1525.8 504.3L1525.8 502.8L1526.7 502.3L1526.4 501.6L1527.6 499.2L1528.2 498.9L1529.3 499.1L1530.2 500.4L1533.1 500.9L1534.3 503.1L1535.7 504.0L1535.7 504.6L1535.2 505.3L1535.2 506.2L1535.5 506.5L1538.1 507.0L1539.8 508.2L1541.0 508.5L1541.9 508.4L1542.7 508.9L1543.0 510.0L1543.9 511.4L1546.2 512.7L1547.4 512.7L1549.1 512.1L1552.1 508.9L1555.5 501.3L1556.1 498.4L1556.7 491.8L1557.3 490.1L1557.0 489.3L1557.6 488.1L1558.5 487.4L1559.0 486.4L1559.6 484.5L1559.0 481.5L1557.9 478.8L1556.1 476.3L1553.8 473.6L1552.1 472.2L1550.3 472.2L1548.3 475.3L1548.3 475.8L1548.8 475.8L1549.1 475.1L1550.0 474.4L1549.1 476.4L1546.2 478.6L1544.8 479.0L1543.0 480.3L1541.9 481.7L1539.8 481.3L1537.5 480.5L1536.6 480.7L1535.5 480.3L1534.3 481.0L1532.8 482.7L1529.6 482.7L1528.2 483.7L1527.0 483.4L1526.1 483.5L1523.2 485.4L1522.1 487.1L1520.9 487.1L1518.3 485.6L1518.3 480.3L1519.1 479.3L1519.7 476.4L1519.4 474.8L1520.9 469.7L1521.2 467.0L1522.1 466.3L1522.9 463.6L1523.8 458.2L1525.3 457.0L1529.0 452.0L1529.6 449.9L1529.6 448.7L1529.0 447.6L1529.6 446.2L1530.2 445.4L1531.1 446.7L1533.1 447.7L1535.5 450.3L1536.6 450.9L1538.9 451.6L1542.4 452.0L1545.9 453.6L1550.0 458.4L1551.8 459.4L1552.1 460.2L1552.9 461.2L1556.1 463.3L1559.3 464.6L1562.8 464.6L1565.4 463.9L1568.1 462.8L1572.1 459.4L1574.5 457.0L1574.8 457.4L1574.5 458.7L1574.8 459.6L1573.9 460.4L1573.9 460.7L1574.5 461.2L1574.2 462.3L1573.0 463.4L1572.1 467.0L1571.3 468.7L1570.1 474.4L1569.8 478.0L1568.7 483.9L1569.2 487.2L1568.9 488.4L1568.9 489.8L1569.2 490.8L1568.4 497.0L1568.7 506.7L1568.9 507.8L1569.8 518.3L1571.3 527.4L1572.4 533.0L1575.1 540.6L1576.8 543.8L1579.1 546.2L1580.3 546.9L1581.5 546.9L1582.3 546.0L1583.8 545.8L1584.7 547.9L1587.6 549.9L1595.4 558.7L1595.7 560.7L1597.2 561.5L1598.1 563.1L1600.1 568.5L1602.1 571.0L1605.4 577.4L1604.8 578.6L1603.9 578.9L1603.0 579.8L1602.7 580.8L1603.0 581.6L1603.9 582.5L1606.2 583.3L1607.1 584.0L1608.0 586.0L1605.6 588.6L1604.8 590.6L1605.4 593.0L1606.2 594.5L1611.5 599.2L1614.1 600.4L1615.0 604.6L1614.7 605.6L1613.5 606.8L1613.5 607.5L1614.1 609.3L1615.8 611.7L1616.4 616.1L1618.5 622.7L1618.5 624.0L1618.7 624.7L1618.5 625.5L1617.3 626.9L1616.7 629.3L1616.4 635.2L1615.3 637.4L1615.0 638.9L1615.3 640.2L1619.0 636.3L1621.1 636.2L1620.5 637.0L1620.5 638.2L1621.1 638.9L1620.2 640.6L1620.5 641.6L1623.1 643.9L1623.7 645.0L1623.7 646.0L1622.8 646.6L1622.5 647.3L1619.3 651.2L1615.3 652.9L1614.1 653.9L1615.5 655.6L1617.9 655.4L1619.6 654.1L1621.1 651.5L1622.2 652.2L1622.8 653.4L1621.7 653.9L1621.1 655.9L1621.1 657.6L1620.5 658.3L1616.4 658.8L1613.2 661.5L1615.3 662.5L1614.4 663.9L1610.3 666.9L1612.0 667.6L1613.8 666.9L1616.4 664.9L1616.7 667.2L1615.0 668.8L1611.2 670.5L1612.3 671.6L1612.6 672.5L1610.0 672.5L1609.7 673.8L1610.0 675.2L1613.8 675.0L1613.8 677.2L1612.3 678.7L1610.0 679.6L1608.3 679.2L1608.6 680.8L1609.4 681.3L1612.0 681.3L1611.2 683.0L1609.4 684.1L1605.4 684.8L1610.6 689.0L1610.9 690.2L1609.1 691.1L1604.8 689.5L1603.3 690.9L1606.8 692.7L1607.7 693.8L1604.8 694.4L1603.6 694.3L1603.6 695.1L1605.6 696.5L1606.2 697.5L1605.6 697.8L1602.4 697.1L1599.2 697.5L1597.5 697.3L1596.0 696.3L1596.0 697.8L1597.8 701.2L1596.0 701.2L1594.9 702.5L1596.0 703.0L1596.6 703.9L1596.3 704.9L1595.2 705.2L1594.0 704.9L1592.2 702.9L1591.7 701.9L1592.5 701.4L1593.1 700.5L1589.9 700.3L1588.7 701.5L1589.3 707.8L1591.4 712.7L1591.7 714.9L1589.9 713.5L1589.3 711.7L1588.7 710.8L1587.0 711.5L1585.5 711.5L1584.7 711.8L1584.4 712.7L1584.7 718.1L1583.5 719.4L1580.0 722.0L1579.4 723.1L1580.3 723.6L1581.5 725.8L1582.9 727.2L1583.5 728.2L1582.9 729.7L1582.3 730.1L1581.2 729.2L1580.6 729.6L1579.7 731.1L1576.8 732.3L1574.5 733.9L1574.5 734.5L1575.4 735.5L1576.5 736.0L1580.3 736.1L1580.3 736.8L1579.1 739.7L1575.1 743.1L1577.4 745.8L1578.8 746.4L1580.0 745.1L1581.5 748.1L1581.2 751.8L1580.0 751.7L1579.4 751.0L1578.8 749.1L1577.7 753.0L1577.1 753.9L1578.0 754.5L1578.3 755.4L1576.2 755.9L1575.4 756.4L1575.1 757.1L1575.6 758.1L1575.6 759.8L1576.5 760.8L1577.4 760.1L1579.1 759.8L1580.6 760.1L1581.5 761.5L1580.3 761.0L1579.1 761.0L1578.3 761.5L1577.7 762.8L1579.7 764.0L1580.0 768.2L1581.2 769.7L1580.6 770.4L1579.7 773.3L1576.8 770.8L1574.5 770.1L1574.5 768.7L1575.1 768.2L1575.1 767.7L1574.2 766.9L1571.6 765.7L1572.7 762.8L1571.9 762.0L1569.2 762.3L1567.5 761.5L1565.7 759.8L1564.0 759.1L1561.7 759.3L1555.8 760.6L1553.5 761.5L1551.8 762.8L1551.2 765.2L1551.2 767.5L1550.9 767.7L1549.4 767.7L1547.7 762.8L1546.5 763.5L1545.6 763.3L1545.1 762.8L1543.6 763.8L1541.6 767.0L1541.0 769.1L1541.9 768.6L1543.6 768.9L1543.9 769.7L1543.6 770.6L1541.3 772.1L1538.7 775.5L1536.0 779.4L1534.6 782.9L1531.1 795.1L1530.5 799.3L1530.5 803.5L1531.7 811.1L1536.6 820.1L1537.8 825.0L1538.7 826.0L1538.9 827.3L1538.9 829.4L1537.8 831.5L1537.8 832.1L1539.2 834.2L1539.5 835.3L1540.4 862.3L1540.1 865.5L1538.4 872.9L1538.4 876.0L1537.8 877.3L1537.8 886.6L1536.0 891.0L1535.2 899.8L1534.0 903.3L1531.1 906.2L1528.5 906.9L1525.8 908.5L1523.8 909.2L1522.6 910.6L1521.2 911.4L1521.2 914.3L1520.3 916.3L1516.2 923.2L1512.4 938.3L1507.8 946.0L1506.6 949.4L1505.5 956.7L1506.9 963.6L1506.0 966.3L1503.1 969.5L1502.0 971.7L1502.0 975.4L1503.1 983.9L1508.4 998.7L1520.0 1019.1L1523.5 1023.9L1524.4 1025.7L1527.0 1027.1L1527.3 1027.9L1525.8 1031.3L1524.7 1030.5L1523.2 1028.6L1521.2 1029.1L1514.5 1031.8L1514.2 1030.1L1509.8 1031.1L1504.6 1034.9L1495.3 1043.5L1490.6 1050.9L1487.4 1061.9L1489.1 1067.1L1489.7 1069.8L1488.9 1074.0L1488.6 1077.7L1488.0 1080.3L1486.8 1082.3L1484.5 1082.0L1483.0 1084.2L1483.3 1085.8L1482.2 1087.0L1480.7 1086.7L1480.1 1085.3L1478.7 1086.9L1476.6 1086.5L1475.5 1088.7L1468.8 1088.2L1467.0 1087.7L1464.7 1090.2L1464.4 1092.4L1462.3 1094.1L1460.6 1094.1L1455.4 1098.0L1454.2 1101.0L1453.3 1102.4L1453.0 1105.9L1452.4 1107.1L1450.4 1109.3L1446.6 1109.8L1445.7 1109.5L1443.4 1110.0L1443.1 1109.5L1442.0 1108.8L1442.0 1106.4L1440.8 1105.6L1438.5 1104.6L1436.4 1104.4L1436.1 1103.6L1436.1 1102.4L1439.6 1102.7L1441.7 1101.9L1442.3 1101.0L1443.4 1100.9L1444.9 1101.4L1445.5 1100.9L1445.7 1100.0L1445.5 1098.7L1444.6 1097.8L1442.8 1097.3L1442.8 1096.3L1443.7 1095.3L1444.0 1093.1L1442.8 1090.1L1443.1 1086.5L1441.7 1084.2L1442.0 1083.0L1441.7 1081.5L1442.0 1080.1L1445.5 1077.6L1445.5 1075.4L1444.0 1072.8L1444.0 1070.6L1438.5 1068.6L1438.5 1068.1L1440.2 1068.3L1442.0 1067.1L1442.0 1065.2L1443.1 1064.1L1443.7 1062.4L1447.5 1063.6L1448.7 1062.2L1448.7 1060.7L1448.1 1057.6L1449.2 1056.6L1451.6 1055.8L1453.0 1054.4L1454.8 1054.1L1456.8 1052.6L1462.1 1045.7L1463.5 1046.0L1464.4 1043.3L1463.2 1043.3L1462.6 1039.6L1456.8 1034.0L1455.9 1034.3L1454.8 1033.2L1452.2 1032.8L1449.8 1033.8L1451.3 1036.4L1447.8 1038.6L1447.5 1037.7L1444.0 1036.2L1443.4 1037.0L1443.1 1038.6L1442.0 1037.7L1441.7 1036.2L1440.5 1036.2L1440.2 1038.1L1439.0 1039.7L1437.9 1038.2L1438.2 1035.9L1437.3 1034.7L1436.7 1036.9L1437.6 1039.9L1438.8 1041.9L1438.8 1043.1L1439.9 1046.0L1439.0 1047.3L1439.0 1048.9L1438.2 1049.9L1435.6 1051.6L1433.2 1053.6L1430.9 1053.9L1429.1 1053.3L1428.0 1053.6L1427.4 1054.6L1430.3 1056.1L1430.9 1056.8L1430.6 1058.2L1430.9 1060.0L1428.0 1059.0L1426.8 1059.8L1427.4 1061.2L1428.6 1062.4L1427.7 1070.1L1428.6 1071.3L1429.1 1070.1L1430.0 1070.8L1431.5 1073.2L1434.7 1073.5L1435.6 1075.0L1434.1 1076.7L1434.7 1077.7L1434.1 1079.3L1431.2 1079.1L1429.1 1080.6L1428.9 1082.1L1429.4 1084.0L1430.9 1086.0L1429.1 1086.5L1427.1 1086.0L1425.9 1086.9L1425.1 1086.5L1424.8 1085.8L1425.1 1084.7L1425.1 1082.6L1423.9 1079.8L1425.9 1078.8L1425.4 1078.1L1424.2 1077.6L1423.6 1076.1L1421.3 1073.2L1421.3 1072.3L1420.7 1071.3L1419.8 1071.2L1419.2 1069.1L1418.1 1069.8L1416.3 1069.6L1414.6 1070.0L1413.1 1068.6L1408.8 1068.1L1398.3 1070.3L1394.2 1071.5L1390.1 1073.7L1387.2 1076.6L1386.9 1081.6L1388.1 1086.4L1385.2 1085.0L1382.5 1089.1L1381.7 1092.4L1381.4 1094.6L1384.0 1095.1L1383.1 1098.8L1382.3 1100.2L1383.4 1102.6L1386.0 1103.4L1386.9 1105.8L1387.2 1109.5L1386.6 1112.9L1384.9 1113.2L1383.4 1114.4L1382.5 1115.7L1381.4 1119.1L1379.6 1122.2L1378.8 1123.2L1377.6 1123.5L1375.3 1126.7L1375.6 1127.9L1374.4 1129.9L1374.1 1131.6L1374.7 1135.0L1373.2 1135.5L1370.6 1134.0L1366.8 1137.2L1361.9 1140.4L1359.5 1138.7L1356.9 1135.3L1357.5 1133.6L1356.3 1132.5L1355.2 1131.8L1354.9 1130.9L1354.6 1127.0L1355.7 1126.2L1356.0 1125.2L1357.2 1124.9L1355.7 1121.8L1354.9 1118.6L1355.7 1117.1L1356.0 1115.4L1356.0 1113.0L1355.5 1112.0L1356.0 1110.7L1357.2 1109.5L1358.4 1109.3L1356.9 1106.8L1356.0 1102.1L1358.1 1097.3L1363.6 1098.2L1366.8 1098.0L1368.0 1097.0L1363.6 1092.1L1362.2 1090.1L1359.5 1087.9L1354.6 1086.5L1350.8 1086.2L1345.8 1088.4L1341.8 1088.5L1339.1 1090.4L1337.1 1095.0L1334.8 1096.8L1334.5 1099.9L1335.4 1100.9L1335.4 1098.8L1336.5 1098.0L1337.4 1098.3L1335.9 1102.1L1324.0 1108.3L1321.7 1112.5L1321.1 1114.6L1321.1 1115.4L1322.0 1117.4L1320.8 1119.3L1319.9 1120.1L1318.2 1123.5L1314.7 1126.0L1311.8 1128.7L1310.0 1135.8L1310.6 1137.9L1312.6 1138.4L1313.8 1139.7L1313.2 1140.6L1309.7 1139.9L1298.4 1134.5L1291.7 1133.3L1285.8 1133.3L1277.7 1136.0L1269.0 1133.0L1261.7 1132.3L1257.9 1132.3L1248.0 1133.3L1241.0 1135.3L1225.0 1141.1L1221.2 1140.7L1217.1 1141.9L1214.8 1142.1L1216.8 1138.2L1217.7 1135.3L1219.4 1133.5L1221.8 1136.2L1222.4 1137.5L1223.2 1136.7L1223.2 1136.2L1227.0 1134.3L1233.1 1130.3L1234.6 1129.6L1236.3 1126.9L1237.8 1127.2L1237.5 1130.9L1238.1 1131.1L1238.7 1129.4L1238.7 1127.4L1240.4 1127.9L1241.0 1127.4L1238.7 1126.4L1239.8 1123.3L1239.5 1122.7L1237.5 1120.3L1236.0 1119.1L1235.2 1119.6L1231.7 1118.4L1230.2 1119.8L1229.3 1119.3L1228.8 1123.0L1227.3 1123.7L1227.3 1121.6L1226.1 1121.8L1225.0 1121.1L1221.8 1121.5L1220.6 1122.3L1219.4 1121.5L1217.7 1122.3L1215.1 1121.6L1211.6 1117.4L1210.1 1116.7L1210.4 1114.2L1212.2 1110.2L1211.9 1107.6L1211.0 1108.8L1210.1 1111.5L1208.7 1113.9L1208.1 1115.4L1207.5 1117.3L1206.6 1122.5L1208.4 1125.4L1210.4 1126.5L1211.3 1128.7L1211.3 1130.4L1209.3 1130.1L1206.6 1128.9L1202.0 1126.0L1201.1 1124.7L1200.8 1123.2L1201.7 1121.3L1202.0 1119.4L1202.6 1117.9L1202.6 1116.4L1202.0 1114.4L1200.8 1112.9L1199.6 1112.9L1199.1 1110.5L1199.1 1106.1L1199.9 1102.7L1203.7 1095.6L1204.3 1091.1L1203.1 1090.7L1201.4 1096.0L1200.8 1094.0L1200.8 1092.4L1199.6 1092.1L1200.5 1096.8L1198.5 1097.3L1198.2 1095.1L1197.3 1095.1L1197.3 1097.7L1195.6 1098.0L1193.5 1097.3L1192.9 1097.7L1191.2 1097.3L1187.7 1099.9L1186.0 1101.5L1185.1 1103.1L1185.1 1103.7L1184.5 1105.3L1184.8 1105.8L1186.2 1105.9L1184.8 1107.0L1185.1 1108.8L1184.2 1111.2L1182.5 1114.7L1175.8 1123.5L1174.6 1131.9L1175.8 1134.0L1176.9 1134.8L1176.3 1137.3L1176.3 1138.4L1177.2 1139.9L1178.7 1140.4L1182.2 1140.4L1183.9 1140.9L1187.4 1144.6L1193.5 1148.7L1197.6 1150.5L1198.5 1151.4L1199.3 1151.0L1201.7 1151.4L1202.8 1153.2L1203.4 1155.2L1204.0 1156.3L1206.6 1156.6L1207.5 1157.6L1206.9 1162.3L1205.8 1161.8L1204.9 1161.8L1204.0 1162.2L1203.4 1163.0L1204.3 1164.4L1206.3 1164.5L1204.9 1165.7L1204.0 1167.2L1205.2 1169.9L1205.5 1171.8L1205.2 1173.3L1204.3 1174.0L1200.2 1175.3L1197.0 1174.7L1195.3 1173.8L1195.3 1172.6L1196.4 1172.3L1198.2 1172.6L1200.8 1174.0L1200.2 1172.0L1201.4 1172.6L1202.0 1170.6L1201.1 1169.3L1199.6 1168.8L1197.9 1169.3L1198.2 1169.9L1197.9 1171.3L1195.3 1169.3L1193.8 1170.4L1191.5 1171.0L1189.4 1170.4L1191.2 1166.9L1189.7 1166.6L1185.1 1168.6L1186.5 1169.1L1186.5 1170.3L1185.7 1171.5L1183.0 1172.5L1181.9 1173.5L1180.4 1173.7L1179.0 1172.0L1178.1 1173.1L1178.1 1174.0L1174.9 1172.6L1174.6 1173.8L1173.4 1175.3L1174.3 1177.0L1173.4 1177.0L1170.8 1176.2L1167.3 1178.5L1166.4 1179.6L1163.8 1179.6L1159.7 1181.6L1156.8 1184.6L1156.5 1187.5L1158.3 1188.5L1158.6 1189.2L1157.7 1191.0L1155.7 1191.9L1154.8 1191.4L1153.6 1189.5L1153.0 1189.2L1150.4 1192.6L1150.4 1193.2L1152.5 1193.6L1153.0 1195.6L1155.4 1198.3L1154.8 1199.3L1154.8 1202.9L1153.6 1203.4L1152.7 1202.9L1151.3 1200.7L1149.3 1202.9L1149.3 1203.5L1151.0 1203.9L1151.6 1205.2L1151.0 1206.2L1149.8 1205.6L1149.3 1207.3L1148.7 1207.9L1145.5 1208.6L1144.3 1210.6L1143.7 1211.0L1141.1 1210.8L1138.2 1215.4L1134.1 1226.7L1131.8 1231.7L1131.2 1234.8L1129.4 1235.8L1129.2 1237.5L1127.4 1238.3L1127.7 1239.7L1129.4 1240.7L1125.7 1245.2L1124.2 1245.8L1123.3 1247.1L1118.7 1248.6L1117.2 1249.5L1116.3 1250.5L1115.2 1252.7L1115.8 1254.7L1115.5 1255.9L1114.3 1255.5L1113.1 1256.7L1112.8 1254.9L1114.0 1253.2L1113.7 1251.8L1103.2 1250.5L1091.3 1245.9L1087.8 1244.9L1084.9 1242.5L1083.1 1240.5L1083.1 1239.2L1083.4 1238.2L1082.6 1236.3L1080.8 1234.6L1079.4 1234.3L1078.2 1232.9L1079.4 1230.6L1084.3 1229.9L1083.4 1228.7L1079.4 1225.5L1077.6 1224.6L1077.0 1223.5L1075.6 1223.6L1073.2 1221.9L1070.6 1221.8L1070.3 1220.1L1067.7 1218.6L1065.7 1216.2L1064.2 1212.5L1061.3 1210.6L1056.9 1211.5L1056.3 1212.0L1056.6 1211.0L1057.2 1210.3L1056.3 1209.8L1056.9 1209.4L1058.1 1209.4L1058.1 1208.1L1057.2 1206.9L1059.8 1204.6L1059.5 1204.0L1058.1 1204.0L1057.8 1202.2L1059.3 1200.8L1061.0 1200.7L1064.2 1199.0L1064.8 1197.5L1064.8 1196.1L1064.2 1195.1L1060.7 1193.4L1059.3 1193.2L1061.0 1189.9L1062.2 1189.2L1062.2 1187.8L1061.6 1186.3L1063.6 1186.1L1066.8 1186.5L1067.1 1185.0L1065.1 1181.3L1063.6 1181.4L1062.8 1177.2L1059.3 1174.0L1056.6 1173.3L1057.5 1171.5L1060.1 1168.2L1068.6 1165.7L1077.6 1157.1L1080.2 1153.2L1082.0 1151.5L1082.0 1148.2L1083.4 1147.6L1084.0 1146.6L1084.9 1146.0L1085.2 1144.3L1085.5 1139.0L1084.6 1136.5L1084.3 1134.1L1085.2 1130.8L1082.6 1131.9L1081.1 1131.1L1079.4 1129.1L1075.0 1129.4L1075.0 1131.9L1072.4 1132.3L1072.4 1129.9L1069.5 1130.9L1071.2 1135.0L1068.9 1134.5L1068.3 1132.3L1066.8 1132.5L1066.5 1134.8L1060.7 1136.0L1058.1 1137.2L1055.5 1137.5L1053.1 1135.8L1048.5 1135.7L1046.7 1133.3L1044.1 1132.3L1042.7 1130.9L1038.3 1127.9L1035.7 1126.9L1031.0 1123.3L1027.2 1122.3L1016.7 1123.3L1015.3 1122.7L1012.9 1124.0L1010.9 1123.5L1010.6 1122.7L1010.6 1121.3L1009.5 1121.8L1008.9 1123.0L1008.9 1123.8L1007.7 1124.0L1005.1 1127.4L1003.9 1127.4L1002.5 1126.2L1001.6 1126.0L1000.7 1126.4L999.8 1127.2L999.3 1128.4L999.6 1129.4L997.2 1129.6L993.1 1128.4L990.8 1128.2L988.8 1127.2L987.6 1127.2L988.5 1128.7L989.1 1129.2L993.4 1130.3L990.5 1130.9L988.8 1133.6L987.9 1133.8L986.7 1134.8L984.7 1135.3L983.2 1136.3L983.8 1136.8L985.3 1136.8L986.2 1136.3L985.3 1138.5L982.7 1140.2L980.0 1141.4L977.7 1141.9L976.5 1141.4L974.8 1139.5L973.0 1139.0L969.3 1139.4L967.2 1140.7L965.8 1141.2L964.9 1142.2L965.2 1143.9L966.1 1144.4L967.5 1143.6L969.6 1141.1L971.0 1140.6L972.5 1140.4L973.6 1140.7L974.5 1141.9L974.5 1143.6L973.6 1144.8L972.2 1145.6L971.3 1146.6L971.9 1148.0L969.6 1147.1L968.1 1149.3L967.2 1152.5L965.8 1154.9L959.4 1153.7L956.4 1153.7L956.7 1156.3L954.1 1155.8L953.0 1153.7L952.1 1151.2L950.0 1149.3L949.5 1149.8L948.9 1149.3L948.6 1147.3L948.0 1148.0L946.5 1147.5L945.4 1148.0L944.2 1149.0L938.1 1151.7L937.2 1152.4L937.2 1153.1L936.1 1154.1L934.3 1154.2L932.9 1155.4L927.9 1157.6L931.1 1153.7L932.3 1151.7L930.5 1150.9L929.7 1151.0L927.9 1152.4L926.7 1152.7L924.7 1152.7L923.8 1153.2L923.5 1154.9L924.1 1155.4ZM1770.2 183.3L1772.8 184.8L1777.8 185.2L1775.1 186.0L1764.7 183.1L1765.0 182.5L1766.7 182.5L1770.2 183.3ZM1922.8 261.3L1924.0 261.3L1927.5 262.7L1926.3 263.8L1923.7 264.4L1922.2 266.4L1917.3 267.7L1916.1 268.9L1915.2 269.3L1912.9 268.7L1910.9 269.6L1910.6 270.6L1907.7 273.5L1906.5 275.3L1905.9 277.9L1905.3 279.0L1902.7 282.4L1903.6 283.1L1902.7 283.4L1901.0 283.3L1897.5 281.6L1893.4 282.4L1885.2 282.6L1883.5 283.4L1881.7 285.1L1879.4 286.0L1871.8 287.1L1871.0 288.0L1870.4 289.3L1870.7 291.2L1874.5 292.0L1872.7 293.4L1869.8 293.6L1868.6 295.6L1866.9 296.6L1864.9 296.6L1861.1 295.6L1863.1 299.1L1861.9 301.0L1855.2 302.2L1852.6 302.0L1850.0 301.2L1848.0 299.3L1848.0 297.1L1847.7 295.9L1844.5 295.3L1843.3 295.9L1842.4 297.3L1841.3 298.1L1839.5 300.8L1839.2 302.0L1839.8 303.5L1843.3 306.6L1839.8 307.6L1828.4 305.0L1822.0 305.6L1820.0 306.7L1817.4 306.2L1810.7 303.9L1809.5 302.2L1808.9 300.0L1807.8 299.6L1806.0 299.8L1794.7 302.3L1783.3 307.4L1770.8 315.5L1762.9 324.3L1750.7 333.9L1745.4 339.7L1735.2 354.5L1727.1 368.0L1725.6 372.3L1725.3 377.0L1726.2 382.7L1726.2 387.1L1723.6 397.4L1722.7 399.4L1720.4 401.3L1719.5 405.9L1718.4 407.2L1717.2 406.7L1713.7 403.8L1712.8 402.8L1712.2 401.0L1708.2 397.2L1695.6 389.5L1679.3 384.2L1662.1 375.0L1655.2 372.9L1640.9 363.3L1635.9 358.7L1631.6 354.0L1623.1 353.0L1616.4 349.0L1612.0 344.2L1610.6 343.4L1608.8 343.0L1603.3 340.0L1595.7 338.3L1588.7 338.5L1581.5 339.8L1571.9 343.5L1558.5 353.2L1556.1 354.2L1554.7 355.5L1551.8 356.2L1544.5 360.8L1537.2 369.6L1535.2 370.1L1533.4 369.6L1532.0 368.0L1531.7 367.2L1532.0 366.7L1535.2 367.4L1535.7 367.0L1536.0 366.0L1535.2 365.3L1532.8 364.7L1531.1 363.5L1529.9 362.0L1529.0 357.9L1515.6 343.5L1511.9 342.0L1509.8 342.0L1504.6 342.9L1498.8 341.9L1496.7 342.0L1493.2 343.5L1490.0 346.2L1487.1 349.5L1482.4 356.7L1480.7 360.8L1479.5 365.0L1478.9 369.6L1479.8 374.1L1482.2 376.6L1490.6 380.7L1493.2 382.7L1499.0 388.8L1500.5 389.5L1505.5 388.3L1512.4 387.5L1513.9 386.6L1518.8 389.8L1520.0 392.5L1525.3 398.9L1528.5 400.8L1535.2 408.6L1538.1 410.6L1543.9 411.8L1545.6 412.8L1552.1 418.2L1553.2 420.0L1552.6 420.9L1548.8 421.4L1547.1 422.1L1545.6 422.9L1540.7 427.6L1537.8 428.8L1534.0 427.8L1527.0 424.1L1522.9 422.9L1518.8 422.9L1515.4 424.9L1513.6 425.4L1512.7 424.1L1513.3 422.6L1514.8 421.7L1515.6 420.7L1515.1 418.9L1513.6 417.5L1511.6 417.0L1509.5 417.3L1508.1 418.5L1507.2 420.2L1506.0 424.6L1505.2 426.5L1500.2 428.8L1498.5 430.2L1492.9 431.9L1491.2 435.6L1492.1 443.7L1491.2 446.9L1488.6 448.7L1478.4 451.8L1475.7 454.3L1474.6 456.2L1474.0 458.2L1473.1 459.9L1471.1 459.6L1467.3 457.9L1464.4 458.7L1460.3 456.5L1459.4 455.7L1458.6 453.8L1457.4 449.8L1454.8 444.0L1454.5 441.8L1455.1 439.6L1456.5 436.6L1457.7 430.3L1462.1 423.9L1462.9 419.9L1463.2 419.5L1465.8 419.5L1466.7 417.7L1466.7 414.8L1466.1 413.5L1467.0 412.4L1467.9 412.1L1468.2 410.9L1468.2 409.2L1468.5 408.6L1467.9 407.0L1467.3 403.3L1467.9 401.8L1465.3 398.9L1461.2 392.0L1458.6 389.5L1450.4 386.1L1448.9 384.4L1448.9 383.9L1448.4 383.4L1446.9 380.5L1443.7 379.2L1439.9 376.5L1439.0 375.3L1438.2 372.9L1437.3 368.9L1438.8 365.0L1442.3 359.8L1443.1 357.6L1444.0 353.0L1444.0 348.6L1442.8 341.2L1443.7 337.3L1446.3 333.6L1449.5 332.2L1457.4 331.9L1459.4 331.4L1460.6 330.5L1464.7 326.2L1467.3 325.3L1469.9 320.4L1471.1 319.1L1472.5 318.6L1474.3 319.9L1476.0 322.8L1477.2 324.0L1478.9 324.3L1480.7 322.9L1481.6 318.4L1482.2 317.4L1483.6 316.5L1486.8 310.6L1488.0 309.1L1493.5 304.0L1497.0 302.0L1498.5 300.3L1498.8 298.5L1498.2 296.9L1496.7 295.4L1495.5 291.7L1491.8 286.6L1489.1 283.9L1485.9 281.7L1483.6 278.9L1482.7 275.0L1485.4 267.6L1489.4 267.6L1491.5 267.2L1492.9 266.0L1493.8 263.2L1494.4 262.7L1495.5 262.8L1497.6 264.4L1499.6 265.2L1506.3 269.9L1511.9 275.2L1517.7 277.7L1518.6 278.4L1519.7 279.9L1520.6 280.4L1521.8 280.7L1529.9 279.6L1538.1 277.0L1538.9 277.7L1538.1 278.9L1537.5 280.7L1538.9 282.4L1542.7 283.1L1550.9 286.0L1553.5 285.6L1555.5 284.6L1561.7 280.2L1567.2 275.0L1569.2 272.0L1571.3 268.2L1572.7 263.8L1572.7 259.3L1571.6 256.6L1567.2 250.3L1566.3 247.6L1566.3 245.6L1568.7 242.1L1566.6 237.2L1566.9 235.3L1564.9 230.9L1564.3 228.7L1564.9 226.9L1566.0 224.5L1568.4 220.8L1569.5 219.6L1573.3 217.7L1576.8 217.2L1579.7 215.9L1584.4 212.5L1587.0 209.6L1589.0 206.3L1590.5 201.5L1591.4 193.3L1590.2 172.3L1591.1 168.8L1597.5 157.6L1601.3 140.2L1601.6 135.9L1600.4 123.5L1598.1 111.5L1595.4 104.4L1584.7 83.5L1583.5 79.3L1584.4 74.9L1587.0 71.5L1587.6 70.3L1587.9 68.5L1589.6 65.9L1589.6 64.3L1588.7 61.0L1588.7 57.8L1589.6 56.3L1591.1 55.0L1592.0 55.6L1592.5 56.3L1592.5 57.5L1593.1 59.7L1594.0 59.9L1596.0 59.2L1599.8 58.7L1603.6 57.7L1608.0 55.1L1608.0 52.6L1608.3 51.6L1609.4 49.9L1611.5 48.4L1613.5 47.9L1615.0 49.1L1616.1 51.9L1617.0 53.1L1619.3 54.5L1622.5 59.9L1625.7 62.7L1632.7 67.5L1635.9 70.0L1661.6 98.2L1667.7 109.7L1669.1 111.7L1671.8 113.4L1675.8 119.3L1691.6 135.2L1694.2 136.5L1697.4 141.4L1702.3 144.5L1708.5 150.4L1715.4 155.3L1718.4 156.3L1723.0 160.5L1726.5 161.4L1727.4 161.9L1728.8 164.9L1728.8 165.4L1730.9 167.8L1743.7 174.7L1761.8 181.1L1761.8 181.8L1755.1 180.9L1753.9 181.8L1756.8 184.8L1758.0 188.7L1759.1 187.9L1760.3 189.0L1762.3 189.9L1774.3 190.1L1774.9 190.4L1778.4 187.0L1779.8 186.7L1789.4 187.0L1792.3 188.2L1793.8 189.4L1793.8 189.7L1792.6 189.9L1791.2 190.7L1790.0 191.9L1788.3 196.8L1791.2 198.0L1792.3 198.0L1793.2 197.5L1795.2 195.0L1796.1 191.7L1797.3 188.9L1799.6 188.0L1801.1 189.2L1800.5 192.1L1802.2 196.3L1803.7 196.8L1805.7 200.9L1806.3 201.5L1810.4 204.4L1814.8 205.8L1826.1 207.4L1839.8 208.5L1843.6 207.8L1847.1 205.8L1856.4 196.6L1864.6 187.9L1870.4 184.5L1874.2 180.9L1875.6 180.4L1877.1 179.4L1880.9 172.8L1885.8 168.4L1886.4 166.4L1887.0 165.7L1888.4 165.4L1889.0 167.4L1891.1 170.8L1890.8 175.2L1889.0 178.9L1884.4 184.5L1883.2 186.7L1882.6 191.4L1881.7 193.1L1874.5 201.5L1872.4 204.7L1869.2 212.0L1870.1 213.7L1868.1 219.9L1866.9 221.5L1866.6 222.5L1866.6 223.8L1866.9 224.7L1870.1 231.3L1871.3 232.8L1877.7 239.4L1878.5 241.1L1879.1 243.1L1879.1 245.3L1879.4 245.9L1880.6 247.0L1882.0 251.0L1884.4 259.5L1885.8 263.3L1888.7 266.7L1892.5 269.4L1889.9 269.9L1884.9 265.9L1882.6 265.4L1881.7 266.2L1882.0 268.4L1884.9 269.1L1886.1 269.8L1886.7 270.4L1885.2 270.8L1886.7 272.3L1889.0 273.5L1891.6 274.1L1898.6 274.7L1900.7 275.5L1902.7 277.0L1903.0 275.8L1901.3 274.3L1901.0 273.0L1908.0 266.4L1908.8 265.7L1912.0 264.7L1913.2 262.7L1914.4 262.0L1919.3 262.0L1921.4 260.6L1921.9 260.6L1922.8 261.3ZM146.8 2160.8L148.5 2160.5L151.4 2161.0L154.6 2162.0L156.4 2163.3L156.7 2165.9L151.4 2174.1L149.7 2174.3L141.2 2171.9L136.3 2171.4L134.8 2170.4L136.3 2167.7L137.5 2168.4L138.0 2167.2L139.8 2168.4L140.9 2168.1L141.5 2167.0L141.8 2163.5L143.3 2158.1L144.4 2158.4L146.8 2160.8ZM81.2 2152.5L82.1 2153.0L82.4 2154.0L80.7 2156.1L76.6 2156.1L76.0 2155.6L76.3 2153.4L77.2 2152.7L81.2 2152.5ZM188.4 2141.7L188.7 2142.9L184.1 2151.2L181.4 2163.7L178.8 2166.4L176.2 2166.7L173.3 2165.9L171.8 2164.0L173.3 2161.5L172.4 2160.8L171.8 2158.6L168.9 2157.8L168.0 2157.1L168.0 2156.4L169.5 2156.1L171.2 2153.2L172.1 2153.0L172.7 2154.4L174.4 2155.9L178.2 2155.7L179.7 2153.9L181.1 2150.5L183.5 2149.0L187.3 2141.2L188.4 2141.7ZM1566.0 2121.1L1566.6 2122.3L1564.0 2123.1L1561.7 2126.5L1560.5 2127.4L1560.5 2124.0L1561.4 2121.5L1564.0 2120.6L1566.0 2121.1ZM274.1 2121.8L277.3 2123.1L279.3 2125.5L278.7 2126.3L273.8 2127.4L267.1 2127.4L263.6 2126.7L265.0 2114.4L263.9 2111.5L266.5 2113.0L269.1 2118.9L271.7 2121.8L274.1 2121.8ZM748.8 2012.5L750.5 2014.2L749.4 2015.4L748.5 2018.1L745.3 2017.1L745.9 2014.4L747.6 2012.4L748.8 2012.5ZM389.1 1964.8L387.9 1969.5L387.3 1969.6L385.9 1968.6L385.0 1966.6L381.8 1965.3L380.6 1964.4L380.1 1963.1L380.6 1962.0L384.4 1960.9L387.3 1962.0L389.1 1964.8ZM1633.6 1935.4L1632.1 1936.2L1632.7 1938.1L1631.0 1936.7L1626.9 1927.9L1628.1 1927.9L1629.5 1929.8L1631.6 1929.8L1631.6 1930.5L1630.4 1931.3L1630.7 1932.2L1632.7 1932.7L1632.1 1934.7L1633.0 1934.2L1633.6 1935.4ZM512.6 1920.3L512.0 1921.4L512.6 1923.5L510.3 1928.3L510.3 1930.0L509.4 1929.8L506.8 1934.7L505.0 1936.7L498.3 1938.1L496.9 1939.8L496.0 1942.0L497.1 1942.6L496.6 1944.7L492.8 1945.7L489.9 1945.0L484.0 1952.1L481.4 1953.3L481.1 1955.0L473.6 1955.8L472.4 1957.5L472.7 1958.3L474.4 1959.3L475.6 1964.8L478.8 1969.0L477.3 1969.5L472.4 1967.6L471.5 1968.3L467.4 1976.7L466.6 1980.3L467.1 1981.5L471.2 1981.3L468.9 1986.0L467.1 1987.9L465.7 1987.5L464.5 1988.4L463.1 1991.1L461.9 1991.6L457.2 1991.6L457.5 1987.9L456.1 1980.8L456.1 1978.6L457.8 1978.8L459.3 1976.9L461.0 1972.3L462.5 1972.5L463.7 1971.0L464.5 1968.0L462.8 1959.3L463.1 1957.0L463.7 1956.0L469.8 1955.3L471.8 1951.1L480.3 1946.9L482.3 1943.6L482.3 1941.8L481.7 1940.6L480.5 1939.8L476.8 1939.1L476.2 1937.9L475.6 1930.5L484.3 1930.6L485.5 1932.0L484.6 1934.7L484.9 1936.0L486.7 1936.6L490.2 1935.5L494.5 1932.7L493.7 1930.8L497.7 1926.9L498.6 1924.2L499.8 1923.7L500.6 1922.0L504.4 1918.7L506.2 1911.4L512.3 1918.7L512.6 1920.3ZM1633.6 1890.8L1635.9 1890.1L1637.7 1891.6L1637.1 1895.0L1635.6 1896.0L1634.2 1894.8L1632.7 1892.1L1635.3 1893.7L1634.8 1892.0L1633.6 1890.8ZM542.0 1854.5L542.6 1855.2L541.7 1856.3L538.5 1859.0L536.5 1862.4L535.3 1862.1L535.0 1863.6L533.0 1863.8L530.6 1865.0L529.5 1864.6L528.0 1862.8L528.0 1860.2L528.9 1858.2L535.6 1858.4L542.0 1854.5ZM565.3 1818.9L568.2 1821.4L568.8 1822.7L565.6 1829.3L562.1 1831.9L560.6 1831.4L559.5 1827.8L557.7 1827.1L557.4 1825.8L558.0 1823.1L556.6 1817.5L557.4 1814.6L557.7 1810.9L562.1 1808.6L563.6 1810.6L564.4 1816.3L565.3 1818.9ZM590.3 1788.1L592.7 1787.6L594.4 1789.3L594.7 1791.3L592.4 1792.2L590.6 1790.0L589.8 1790.5L588.9 1792.3L587.7 1790.2L584.2 1790.2L583.6 1785.9L581.3 1782.6L581.0 1781.0L584.8 1780.5L584.2 1782.4L585.1 1782.9L588.0 1782.6L586.6 1785.6L590.3 1788.1ZM649.8 1762.6L649.8 1764.3L648.9 1766.8L646.8 1770.9L643.6 1771.6L640.2 1770.2L645.1 1765.7L649.8 1762.6ZM623.5 1753.8L624.7 1755.5L624.7 1756.5L624.1 1757.1L622.4 1757.1L616.6 1759.9L615.7 1761.6L613.4 1763.0L611.0 1767.2L606.7 1771.2L605.8 1771.7L602.6 1770.9L603.2 1772.3L602.6 1773.4L600.2 1775.0L604.0 1778.5L599.1 1781.5L598.8 1783.7L596.5 1783.2L594.7 1783.9L596.8 1785.9L596.8 1788.1L589.5 1782.2L588.9 1781.0L588.9 1778.2L588.0 1777.0L587.1 1778.5L586.0 1778.5L583.1 1777.0L579.3 1776.0L578.1 1775.0L578.7 1773.9L579.6 1773.8L581.0 1774.4L583.1 1773.6L588.3 1774.4L589.8 1771.6L586.9 1771.6L584.8 1769.6L587.7 1767.2L590.3 1766.3L593.3 1763.5L598.5 1762.8L599.7 1760.6L601.4 1761.3L602.9 1760.8L604.9 1757.9L605.2 1758.9L608.1 1760.6L609.6 1756.9L611.6 1754.9L616.9 1751.7L616.0 1755.2L616.3 1756.2L617.4 1756.5L619.2 1754.9L620.9 1751.7L620.3 1750.5L620.6 1749.0L622.1 1749.1L623.5 1753.8ZM624.1 1634.5L626.8 1634.0L627.3 1635.5L626.5 1637.8L624.7 1639.4L623.8 1635.8L624.1 1634.5ZM638.7 1612.5L639.0 1615.4L641.3 1617.4L640.7 1618.1L636.1 1617.6L634.3 1615.0L633.7 1612.7L635.2 1611.3L638.7 1612.5ZM701.9 1562.5L701.3 1566.1L699.6 1571.0L696.1 1574.7L694.0 1576.4L686.5 1577.4L682.7 1576.0L681.8 1574.5L678.6 1566.1L677.7 1560.5L681.5 1560.2L684.4 1555.9L685.0 1554.3L686.8 1554.3L687.6 1553.2L689.7 1555.1L693.2 1556.5L695.8 1558.8L699.0 1559.7L701.9 1562.5ZM732.2 1515.9L733.1 1515.9L733.1 1517.6L735.1 1521.7L733.9 1523.0L734.5 1530.1L732.5 1533.8L732.8 1538.9L731.3 1541.1L731.0 1544.3L728.4 1544.8L726.7 1548.0L726.7 1550.4L725.5 1552.1L725.2 1554.4L726.1 1555.1L726.4 1556.3L725.8 1557.5L726.4 1560.0L725.2 1561.3L725.2 1562.7L723.4 1562.5L720.5 1563.4L718.8 1565.6L717.6 1565.6L716.5 1563.4L717.3 1560.3L717.0 1557.6L716.2 1555.9L716.2 1552.9L717.6 1553.6L718.2 1551.9L722.6 1546.0L724.0 1540.6L724.0 1535.9L723.2 1532.8L725.5 1529.8L726.9 1527.1L726.9 1525.9L728.1 1525.4L728.7 1521.0L732.2 1515.9ZM657.0 1378.8L661.4 1379.7L662.3 1380.3L662.9 1382.4L660.8 1388.6L659.4 1388.9L658.2 1388.3L657.6 1386.8L657.9 1385.1L657.0 1384.0L656.2 1380.7L657.0 1378.8ZM678.3 1349.1L684.1 1347.4L685.0 1348.8L682.4 1350.8L678.9 1360.2L676.6 1362.4L676.0 1357.5L673.4 1359.1L670.1 1359.2L666.7 1360.4L664.3 1356.4L664.9 1354.3L666.7 1354.0L670.7 1350.3L674.8 1348.6L676.6 1347.2L677.7 1347.7L678.3 1349.1ZM660.2 1345.4L662.6 1347.7L663.5 1352.0L663.5 1360.4L664.0 1361.9L663.7 1366.1L662.0 1368.2L660.0 1369.0L657.6 1373.9L655.0 1375.4L653.3 1378.0L648.3 1381.0L646.8 1381.0L648.0 1374.8L647.1 1375.6L645.4 1375.4L643.9 1376.3L643.9 1374.8L646.8 1371.7L648.6 1370.7L651.5 1370.4L652.4 1369.4L649.8 1368.7L648.0 1369.4L646.6 1368.5L645.1 1364.5L645.7 1362.4L646.8 1361.1L646.3 1359.6L646.8 1357.5L649.8 1351.8L647.4 1346.7L648.6 1346.7L650.6 1348.1L658.5 1345.2L660.2 1345.4ZM556.6 1332.5L558.3 1335.2L558.0 1335.8L554.8 1335.6L551.6 1336.6L551.3 1335.2L549.6 1334.7L548.4 1335.2L547.8 1336.8L549.9 1339.0L549.3 1341.3L547.8 1342.8L544.9 1339.6L539.1 1339.8L538.2 1340.8L535.6 1339.0L533.8 1338.6L535.9 1333.2L536.8 1333.4L537.0 1336.4L538.2 1333.2L538.5 1331.2L537.3 1327.8L537.9 1325.6L537.3 1323.9L538.8 1321.7L540.3 1321.7L542.0 1325.6L548.4 1322.4L549.0 1321.2L550.7 1320.1L551.0 1323.4L553.6 1324.1L554.2 1325.8L553.6 1329.7L554.5 1331.2L556.6 1332.5ZM1437.3 1284.9L1445.2 1289.3L1446.3 1291.2L1442.8 1296.1L1440.2 1295.2L1439.0 1294.2L1435.6 1288.1L1435.3 1286.6L1437.3 1284.9ZM574.3 1301.1L575.2 1301.6L580.2 1299.5L581.0 1301.5L580.4 1303.3L579.0 1304.2L577.5 1306.2L575.8 1306.4L574.3 1308.1L573.7 1309.4L574.3 1312.5L574.0 1314.3L571.7 1313.8L571.7 1318.2L570.0 1317.9L570.3 1315.8L569.7 1313.8L569.7 1310.4L570.3 1309.1L569.1 1306.7L564.7 1305.2L564.7 1304.0L567.9 1302.0L569.1 1303.3L570.8 1302.0L569.7 1300.0L570.3 1296.1L571.7 1295.6L571.7 1298.1L573.2 1297.6L572.9 1294.4L573.2 1292.4L574.6 1291.7L574.9 1289.8L574.0 1287.5L575.2 1283.4L575.8 1284.1L575.2 1287.8L576.4 1289.2L575.5 1293.0L574.6 1294.6L574.0 1298.3L574.3 1301.1ZM611.3 1258.9L611.9 1263.3L609.0 1267.7L609.9 1268.4L609.0 1269.7L607.8 1270.2L606.1 1275.5L602.6 1280.2L599.7 1282.2L596.8 1283.1L594.1 1282.1L594.7 1278.7L597.3 1281.7L598.8 1281.4L599.1 1280.5L597.3 1279.5L596.8 1278.5L598.2 1276.0L600.0 1276.3L599.1 1272.4L601.7 1270.4L602.0 1265.2L606.4 1264.2L607.5 1261.8L608.7 1263.1L609.9 1262.1L608.7 1261.0L608.7 1259.4L611.3 1258.9ZM828.6 1220.6L831.2 1223.1L829.8 1223.5L825.7 1221.8L824.2 1222.1L824.8 1220.6L826.0 1219.9L828.6 1220.6ZM629.1 1222.6L631.1 1223.5L631.1 1224.8L629.7 1226.2L625.9 1226.3L624.7 1228.4L624.7 1230.2L622.1 1228.4L621.2 1227.0L621.5 1225.7L620.6 1225.0L619.5 1225.7L618.6 1222.8L621.8 1224.1L621.8 1223.5L619.8 1221.6L619.5 1218.4L621.2 1218.6L620.6 1216.7L622.1 1212.8L623.0 1213.8L628.5 1215.5L627.9 1217.7L628.2 1219.8L630.8 1221.4L629.1 1222.1L629.1 1222.6ZM828.0 1213.2L826.6 1214.5L824.2 1207.9L825.4 1205.6L827.4 1204.7L829.5 1205.1L833.2 1206.9L835.3 1210.3L836.5 1210.3L839.4 1208.3L841.1 1208.4L842.0 1207.8L842.6 1206.2L846.9 1206.2L844.3 1209.6L842.9 1209.4L840.2 1210.6L839.4 1215.9L835.9 1215.2L835.6 1212.5L834.7 1211.6L834.1 1212.5L833.2 1211.6L832.1 1213.8L828.6 1213.8L828.0 1213.2ZM1414.9 1193.9L1415.5 1190.7L1417.8 1188.7L1420.4 1188.7L1421.9 1191.0L1420.7 1194.3L1418.7 1196.3L1416.3 1196.4L1414.9 1193.9ZM853.9 1192.9L852.2 1191.7L847.8 1191.9L845.8 1191.2L847.2 1189.5L849.3 1188.3L850.1 1186.8L849.3 1184.3L851.0 1182.6L853.1 1182.3L853.6 1182.9L852.5 1184.3L853.3 1185.5L853.6 1189.2L855.7 1188.2L856.0 1190.0L855.1 1192.4L853.9 1192.9ZM889.8 1179.2L887.1 1180.7L886.3 1180.2L886.8 1178.2L889.2 1176.9L888.9 1175.2L887.4 1174.7L890.6 1171.0L892.4 1170.4L894.4 1175.7L894.1 1177.7L892.7 1179.2L889.8 1179.2ZM591.5 1172.0L591.8 1170.6L594.1 1170.6L594.4 1171.3L594.1 1172.1L592.7 1172.8L592.1 1174.2L592.7 1177.0L590.3 1178.2L590.9 1179.1L590.3 1182.9L589.5 1183.4L588.6 1187.2L587.7 1187.7L586.3 1190.0L585.4 1189.9L584.2 1191.0L582.5 1188.8L581.6 1188.5L580.2 1189.4L580.2 1185.3L580.7 1182.9L580.4 1180.4L581.0 1177.2L581.6 1176.5L582.5 1168.4L583.1 1167.1L584.5 1167.2L584.8 1167.9L584.5 1170.6L588.6 1169.3L588.0 1167.7L588.9 1167.7L590.6 1169.3L590.6 1171.1L591.5 1172.0ZM1397.1 1160.5L1399.7 1158.3L1399.4 1163.2L1398.3 1166.4L1397.1 1167.7L1395.9 1165.9L1397.1 1160.5ZM1052.0 1139.2L1054.0 1140.9L1054.0 1142.1L1052.0 1144.8L1050.5 1149.5L1048.2 1151.5L1043.8 1158.1L1043.2 1162.7L1043.5 1165.0L1045.0 1166.2L1045.9 1169.1L1048.5 1173.0L1040.0 1176.4L1035.7 1179.9L1029.8 1180.9L1029.6 1179.1L1027.5 1177.9L1029.3 1174.7L1026.3 1175.7L1024.6 1173.5L1024.0 1171.1L1026.1 1167.2L1027.8 1167.7L1029.3 1167.1L1035.4 1155.2L1039.7 1152.4L1042.4 1147.0L1046.7 1144.9L1050.2 1139.7L1052.0 1139.2ZM602.9 1138.0L604.9 1140.2L604.9 1141.2L602.3 1148.5L598.8 1151.9L597.0 1154.7L597.3 1157.6L595.6 1159.5L595.3 1161.0L596.8 1160.5L598.2 1159.0L597.3 1161.7L597.6 1163.4L599.4 1164.9L598.8 1166.2L597.0 1167.6L596.2 1169.3L594.1 1169.9L592.7 1169.6L590.9 1167.6L592.4 1166.6L594.1 1167.2L594.4 1164.4L593.3 1163.9L591.8 1165.7L590.9 1165.7L591.2 1161.5L589.5 1163.4L590.1 1165.0L589.5 1165.5L588.3 1164.4L586.3 1164.9L584.8 1164.4L585.4 1163.2L588.3 1162.5L588.6 1158.6L588.0 1156.8L588.6 1155.9L589.8 1155.9L591.5 1153.9L591.2 1153.4L590.1 1154.7L588.9 1154.9L588.6 1153.7L590.9 1148.0L592.7 1146.5L591.2 1143.9L589.8 1144.4L589.8 1143.1L590.9 1141.2L592.4 1135.2L597.0 1135.5L599.4 1132.5L600.8 1132.3L600.2 1131.4L600.5 1130.4L604.0 1129.9L605.8 1132.3L605.5 1133.8L604.3 1134.8L605.8 1135.3L605.8 1136.5L604.6 1138.4L602.9 1138.0ZM1407.9 1121.1L1410.8 1122.8L1412.3 1126.2L1412.5 1128.6L1412.0 1132.1L1409.3 1132.3L1404.4 1129.7L1403.8 1128.1L1404.1 1120.3L1407.9 1121.1ZM918.6 970.5L920.9 974.2L920.6 979.1L919.2 980.8L918.6 979.6L916.8 980.1L916.3 980.8L917.4 982.5L916.3 984.2L910.7 983.5L905.5 979.5L905.2 978.5L905.8 972.2L906.9 970.3L913.6 965.8L913.6 967.0L916.0 967.8L916.5 969.5L918.6 970.5ZM1331.6 793.0L1334.5 793.4L1338.3 792.4L1340.9 792.5L1340.9 796.4L1340.3 798.3L1336.8 803.7L1333.9 810.8L1324.3 817.2L1315.8 820.2L1314.1 820.4L1312.4 819.7L1311.5 818.0L1311.8 817.0L1317.3 815.2L1317.6 809.4L1322.3 803.3L1319.9 800.3L1314.4 802.2L1313.2 799.3L1313.5 794.7L1314.1 792.9L1319.6 783.3L1329.0 774.3L1333.0 768.1L1335.9 767.7L1336.5 768.2L1336.5 769.2L1333.9 781.9L1329.8 791.7L1329.8 793.6L1330.4 794.7L1331.0 794.7L1331.6 793.0ZM1419.8 375.6L1421.0 376.8L1417.5 382.6L1416.6 390.0L1415.2 392.2L1412.3 394.9L1411.4 394.5L1410.2 392.7L1409.6 386.8L1408.5 384.6L1408.8 382.7L1409.6 380.9L1412.0 378.5L1416.6 377.5L1419.8 375.6ZM1884.1 239.9L1888.7 242.4L1890.2 244.4L1886.1 245.8L1884.7 247.8L1883.8 248.1L1882.9 247.8L1883.2 246.1L1887.6 243.4L1877.1 238.7L1884.1 239.9ZM1563.7 82.8L1564.3 84.2L1562.2 87.6L1558.8 89.9L1556.1 89.8L1549.1 85.4L1547.7 83.0L1548.8 81.0L1547.7 78.9L1550.6 76.1L1553.5 75.1L1558.8 77.4L1563.7 82.8ZM1541.3 55.0L1542.7 55.8L1543.0 57.5L1541.9 67.8L1540.1 73.5L1539.5 72.2L1540.1 70.8L1536.9 64.9L1536.6 62.9L1537.2 58.0L1534.6 53.6L1536.0 53.3L1537.8 56.0L1541.3 55.0ZM663.5 1551.9L666.9 1553.6L668.4 1555.3L668.4 1556.5L666.7 1556.5L666.1 1557.6L664.3 1558.0L662.9 1556.1L662.6 1553.9L661.1 1554.6L658.8 1551.0L660.5 1551.0L662.6 1552.4L663.5 1551.9ZM1000.4 1144.6L1000.1 1145.5L1001.0 1148.7L1000.7 1151.5L999.0 1156.9L997.8 1155.6L995.5 1155.4L995.5 1154.9L997.2 1154.6L997.5 1153.7L996.6 1153.1L994.9 1153.6L992.0 1157.9L990.5 1158.3L990.5 1153.6L988.8 1152.7L984.7 1153.4L983.8 1152.0L984.7 1151.4L985.0 1148.0L987.3 1148.8L993.7 1145.6L1000.4 1144.6ZM522.2 1895.2L522.2 1897.2L521.6 1897.9L520.4 1897.9L517.5 1895.9L517.8 1894.8L520.2 1893.3L521.3 1893.7L522.2 1895.2ZM1424.8 1210.3L1426.2 1212.8L1425.6 1214.3L1423.3 1214.5L1422.4 1213.7L1422.2 1212.0L1423.3 1210.5L1424.8 1210.3ZM259.2 2115.4L260.4 2118.4L259.2 2119.4L256.3 2119.9L254.8 2119.6L254.0 2118.4L254.2 2117.1L255.4 2116.6L256.0 2114.5L257.2 2114.4L259.2 2115.4ZM641.9 1413.3L641.3 1413.6L641.6 1417.3L638.4 1419.0L635.8 1417.7L634.9 1415.6L635.5 1414.4L634.3 1414.6L633.7 1415.6L632.6 1415.5L632.9 1413.8L634.6 1411.9L636.4 1412.4L639.9 1415.5L640.2 1413.3L641.9 1413.3ZM666.9 1369.9L668.4 1370.5L668.4 1371.9L666.9 1373.7L664.6 1374.8L664.3 1372.4L665.2 1370.9L666.9 1369.9ZM683.3 1340.3L683.8 1341.0L683.8 1343.7L683.3 1344.7L681.5 1345.4L681.8 1346.2L680.3 1345.0L680.1 1343.9L680.6 1342.7L679.5 1340.7L680.6 1338.6L680.9 1339.0L682.7 1338.0L683.8 1339.0L683.3 1340.3ZM558.3 1318.2L558.9 1320.6L556.9 1323.4L555.4 1323.4L553.4 1322.2L553.1 1316.7L554.8 1317.0L556.0 1320.1L556.3 1319.5L555.1 1316.5L555.7 1316.2L558.3 1318.2ZM562.1 1311.9L563.0 1315.8L562.7 1317.0L561.8 1317.7L561.8 1319.5L559.8 1317.9L560.1 1317.0L558.0 1314.3L556.9 1314.5L556.6 1313.8L557.4 1313.0L558.9 1313.3L560.6 1315.0L560.3 1313.8L561.2 1314.0L562.1 1311.9ZM567.0 1307.6L568.8 1311.1L568.2 1315.2L567.6 1315.2L567.6 1314.3L566.8 1313.5L565.0 1313.8L563.8 1312.8L563.6 1310.3L565.9 1310.9L564.7 1308.4L565.0 1307.0L567.0 1307.6ZM577.2 1270.1L578.4 1273.1L576.7 1275.3L574.6 1275.1L573.2 1274.0L572.3 1274.0L573.5 1271.6L577.2 1270.1ZM611.3 1250.7L612.8 1250.3L613.1 1251.2L611.0 1252.7L609.0 1252.0L606.9 1252.7L607.2 1251.7L610.2 1249.3L611.0 1249.3L611.3 1250.7ZM860.9 1198.6L861.2 1200.0L860.3 1203.5L857.7 1205.1L856.5 1204.4L857.1 1201.9L860.9 1198.6ZM894.4 1180.6L898.2 1182.9L897.6 1184.0L893.5 1188.2L892.1 1188.8L891.2 1188.2L891.5 1185.0L893.0 1184.6L892.1 1182.4L892.7 1181.1L894.4 1180.6ZM866.5 1179.7L870.2 1181.1L870.5 1182.3L870.2 1183.3L868.8 1184.0L868.8 1183.1L864.7 1181.1L865.3 1180.1L866.5 1179.7ZM881.6 1174.3L884.2 1171.6L884.5 1172.5L884.2 1174.8L883.1 1177.9L882.2 1178.7L880.4 1179.1L879.0 1179.2L877.8 1178.5L877.2 1177.2L877.5 1176.0L881.6 1174.3ZM836.5 1169.6L837.0 1171.8L833.0 1175.7L831.5 1176.2L830.6 1175.5L830.6 1174.7L833.2 1170.8L835.6 1169.4L836.5 1169.6ZM977.7 1154.1L973.9 1151.7L976.5 1150.2L977.7 1150.0L979.2 1150.9L979.2 1151.9L977.7 1154.1ZM1217.4 884.7L1217.1 887.3L1216.5 887.9L1209.3 890.3L1205.8 885.6L1206.3 884.9L1207.8 886.3L1211.3 884.7L1213.3 886.1L1214.8 885.6L1215.7 884.4L1216.8 884.1L1217.4 884.7Z"/></defs></svg>
+<div class="backdrop" id="bd" aria-hidden="true"></div>
+<main id="app"></main>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(() => {
+/* ---------- Données de démarrage (utilisées seulement hors ligne) ---------- */
+const PALETTE = ["#E9A93F","#E58AA8","#7FC8A0","#8FB3E8","#C9A6E8","#E8806F","#D9CF7A","#6FD0D0"];
+const STAGE_IMG = {tokyo:"img/shibuya.jpg",kyoto:"img/kinkakuji.jpg",osaka:"img/osaka.jpg",fuji:"img/fuji-gare.jpg",retour:"img/tokyo-tower.jpg"};
+const IDEAS = {
+  tokyo:["Carrefour de Shibuya","Temple Senso-ji (Asakusa)","teamLab Planets","Quartier de Shinjuku la nuit","Harajuku & Meiji-jingu"],
+  kyoto:["Fushimi Inari","Kinkaku-ji (Pavillon d'or)","Bambouseraie d'Arashiyama","Gion le soir","Sanctuaire Yasaka"],
+  osaka:["Dotonbori street food","Château d'Osaka","Universal Studios Japan","Kuromon Market","Excursion à Nara"],
+  fuji:["Pagode Chureito","Lac Kawaguchi","Nuit en ryokan avec onsen","Train Fujikyu"],
+  retour:["Tokyo Tower","Akihabara","Marché extérieur de Tsukiji","Odaiba & Rainbow Bridge","Shopping souvenirs"]
+};
+const DEFAULTS = {
+  trip:{title:"Japon 2027",rate:170},
+  stages:[
+    {id:"tokyo",name:"Tokyo",order:1,nights:4},{id:"kyoto",name:"Kyoto",order:2,nights:3},
+    {id:"osaka",name:"Osaka",order:3,nights:2},{id:"fuji",name:"Mont Fuji",order:4,nights:1},
+    {id:"retour",name:"Retour à Tokyo",order:5,nights:2}],
+  tasks:[
+    {id:"t1",title:"Se mettre d'accord sur les dates",cat:"Dates & congés",order:1,done:{}},
+    {id:"t2",title:"Poser ses congés",cat:"Dates & congés",order:2,done:{}},
+    {id:"t3",title:"Trouver le billet d'avion",cat:"Vol",order:3,done:{}},
+    {id:"t4",title:"Payer le billet d'avion",cat:"Vol",order:4,done:{}},
+    {id:"t5",title:"Préparer son budget",cat:"Budget",order:5,done:{}}],
+  budget:[
+    {id:"b1",label:"Billet d'avion",order:1,amounts:{}},{id:"b2",label:"Hébergement",order:2,amounts:{}},
+    {id:"b3",label:"Transports sur place",order:3,amounts:{}},{id:"b4",label:"Nourriture",order:4,amounts:{}}],
+  travelers:[],activities:[],expenses:[]
+};
+
+/* ---------- État ---------- */
+const S = {trip:{},travelers:[],tasks:[],stages:[],activities:[],budget:[],expenses:[]};
+let me=null, tab="prep", stageSel="tokyo", ready=false; const local=false;
+const open = {task:false, act:false, line:false, exp:true};
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ls = {get(k){try{return localStorage.getItem(k)}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const rate = () => Number(S.trip.rate) > 0 ? Number(S.trip.rate) : 170;
+const eur = n => (Math.round(n) ).toLocaleString("fr-FR") + " €";
+const eur2 = n => n.toLocaleString("fr-FR",{minimumFractionDigits:2,maximumFractionDigits:2}) + " €";
+const yen = n => "¥" + Math.round(n).toLocaleString("fr-FR");
+const toEur = (amt,cur) => cur === "JPY" ? amt / rate() : amt;
+const byOrder = (a,b) => (a.order ?? 0) - (b.order ?? 0) || String(a.createdAt||"").localeCompare(String(b.createdAt||""));
+const T = id => S.travelers.find(t => t.id === id);
+const av = (t,cls="") => t ? `<span class="avatar ${cls}" style="--c:${t.color}" title="${esc(t.name)}">${esc((t.name||"?")[0].toUpperCase())}</span>` : "";
+function copyText(t){(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("Lien copié"),()=>toast("Copie impossible sur cet appareil"))}
+function toast(m){const el=$("#toast");el.textContent=m;el.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove("on"),1800)}
+
+/* ---------- Données partagées (Supabase, accès par code du voyage) ---------- */
+const SB_URL="https://hsggyjmeurjsiwegqzbo.supabase.co", SB_KEY="sb_publishable_0CiI_uRcS4WqSY3OTsc85w_TieGW2Ce";
+let sb=null, code=null, tripInfo=null, chan=null, refetchT=0;
+const COLS=["travelers","tasks","stages","activities","budget","expenses"];
+function rpc(fn,args){return sb.rpc(fn,args).then(({data,error})=>{if(error)throw error;return data})}
+function notifyOthers(){try{chan&&chan.send({type:"broadcast",event:"changed",payload:{t:Date.now()}})}catch(e){}}
+async function loadAll(){
+  const rows=await rpc("get_items",{p_code:code});
+  const fresh={};COLS.forEach(c=>fresh[c]=[]);let trip={};
+  (rows||[]).forEach(r=>{if(r.data&&r.data._deleted)return;if(r.col==="settings"){if(r.id==="trip")trip={...r.data}}else if(fresh[r.col])fresh[r.col].push({id:r.id,...r.data})});
+  Object.assign(S,fresh);S.trip=trip;
+}
+function scheduleRefetch(ms=250){clearTimeout(refetchT);refetchT=setTimeout(async()=>{try{await loadAll();render()}catch(e){fail(e)}},ms)}
+async function write(fn,args){try{await rpc(fn,{p_code:code,...args});notifyOthers()}catch(e){fail(e);scheduleRefetch(0)}}
+async function put(col,id,data){
+  const a=S[col],i=a.findIndex(x=>x.id===id);i<0?a.push({id,...data}):a[i]={id,...data};render();
+  await write("put_item",{p_col:col,p_id:id,p_data:data});
+}
+async function patch(col,id,data){
+  const x=S[col].find(x=>x.id===id);if(x)deepMerge(x,data);render();
+  await write("patch_item",{p_col:col,p_id:id,p_patch:data});
+}
+async function remove(col,id){
+  S[col]=S[col].filter(x=>x.id!==id);render();
+  await write("put_item",{p_col:col,p_id:id,p_data:{_deleted:true}});
+}
+async function setTrip(data){
+  Object.assign(S.trip,data);render();
+  await write("patch_item",{p_col:"settings",p_id:"trip",p_patch:data});
+}
+function deepMerge(t,s){for(const k in s){if(s[k]&&typeof s[k]==="object"&&!Array.isArray(s[k])){if(!t[k]||typeof t[k]!=="object")t[k]={};deepMerge(t[k],s[k])}else t[k]=s[k]}}
+function fail(e){
+  if(e&&(e.code==="28000"||/code invalide/.test(e.message||""))){ls.set("japon-code","");code=null;showGate("Ce code ne fonctionne plus. Demande le nouveau code à l'organisateur.");return}
+  toast(navigator.onLine===false?"Pas de connexion : modification non enregistrée.":"Modification non enregistrée, réessaie.");
+}
+const nid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+function codeFromUrl(){const m=location.hash.match(/(?:^#|&)c=([A-Za-z0-9-]+)/);return m?m[1].toUpperCase():null}
+function setUrlCode(c){try{history.replaceState(null,"",location.pathname+location.search+"#c="+encodeURIComponent(c))}catch(e){}}
+function showGate(msg){
+  ready=false;$("#gate").hidden=false;$("#login").hidden=true;$("#gateMsg").textContent=msg||"";
+  setTimeout(()=>{const i=$("#gateCode");i&&i.focus()},50);
+}
+async function tryCode(c){
+  c=String(c||"").trim().toUpperCase();if(!c)return false;
+  const info=await rpc("check_code",{p_code:c});
+  if(!info)return false;
+  code=c;tripInfo=info;ls.set("japon-code",c);setUrlCode(c);return true;
+}
+async function startTrip(){
+  $("#gate").hidden=true;
+  await loadAll();ready=true;pickMe();render();
+  try{chan&&sb.removeChannel(chan)}catch(e){}
+  chan=sb.channel("trip-"+tripInfo.id,{config:{broadcast:{self:false}}});
+  chan.on("broadcast",{event:"changed"},()=>scheduleRefetch()).subscribe();
+  setInterval(()=>{if(document.visibilityState==="visible")scheduleRefetch(0)},45000);
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")scheduleRefetch(0)});
+}
+async function boot(){
+  render();
+  try{sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false,autoRefreshToken:false}})}catch(e){showGate("Impossible de charger l'outil. Vérifie ta connexion puis recharge la page.");return}
+  const c=codeFromUrl()||ls.get("japon-code");
+  try{ if(c && await tryCode(c)) { await startTrip(); return } }catch(e){ showGate("Connexion impossible pour l'instant. Vérifie ton réseau et réessaie.");return }
+  showGate(c?"Ce code n'est pas reconnu.":"");
+}
+function pickMe(){
+  const saved=ls.get("japon-me");
+  me = S.travelers.find(t=>t.id===saved) || null;
+}
+
+/* ---------- Rendu ---------- */
+function render(){
+  if(me) me = T(me.id) || null;
+  const title=S.trip.title||"Japon 2027";
+  $("#brand").innerHTML=esc(title)+(local?'<small>aperçu</small>':"");
+  $("#loginTitle").innerHTML=esc(title)+"<span>Qui se connecte ?</span>";
+  document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===tab));
+  $("#meBtn").innerHTML = me ? av(me)+esc(me.name) : "Se connecter";
+  renderLogin();
+  if(ready&&me){const l=level(personBudget(me).pct);const dot=$("#budgetDot");dot.hidden=!(l&&l.lvl!=="ok");dot.className="tabdot"+(l&&l.lvl==="crit"?" crit":"")}
+  if(!ready){$("#app").innerHTML=`<div class="wrap" style="padding-top:40px"><p class="muted">Chargement du voyage…</p></div>`;return}
+  const html = {prep:renderPrep,plan:renderPlan,budget:renderBudget,split:renderSplit}[tab]();
+  const keep = captureForms();
+  $("#app").innerHTML = html;
+  restoreForms(keep);
+  const bgImg = tab==="prep"?"img/pont.jpg":tab==="plan"?(STAGE_IMG[stageSel]||"img/lanternes.jpg"):tab==="budget"?"img/rainbow.jpg":"img/ruelle.jpg";
+  const bd=$("#bd"); bd.style.backgroundImage=`url("${bgImg}")`; bd.style.backgroundPosition=HERO_POS[bgImg]||"center";
+  if(tab==="plan") mountMap();
+  if(scrollDay&&daySel){scrollDay=false;const g=document.getElementById("day-"+daySel);g&&g.scrollIntoView({behavior:"smooth",block:"start"})}
+}
+function renderLogin(){
+  const show = ready && !me;
+  $("#login").hidden = !show;
+  if(!show) return;
+  $("#whoList").innerHTML = S.travelers.length
+    ? S.travelers.slice().sort(byOrder).map(t=>`<button data-act="login" data-id="${t.id}">${av(t,"lg")}<span>${esc(t.name)}</span></button>`).join("")
+    : `<p class="muted" style="margin:0">Personne n'est encore inscrit. Ajoute ton prénom pour commencer.</p>`;
+}
+const HERO_POS={"img/pont.jpg":"center 45%","img/avion.jpg":"center 72%","img/fuji-gare.jpg":"center 55%","img/kinkakuji.jpg":"center 40%"};
+function hero(img,k,title,sub,right=""){
+  return `<section class="hero"><img src="${img}" alt="" style="object-position:${HERO_POS[img]||"center"}"><div class="hero-in"><div><h2><span class="k">${k}</span>${title}</h2>${sub?`<p>${sub}</p>`:""}</div>${right}</div></section>`;
+}
+const notice = () => "";
+
+/* ----- Préparation ----- */
+function pct(t){const n=S.tasks.length;if(!n)return 0;return Math.round(100*S.tasks.filter(x=>x.done&&x.done[t.id]).length/n)}
+function renderPrep(){
+  const trav=S.travelers.slice().sort(byOrder);
+  const global = trav.length ? Math.round(trav.reduce((s,t)=>s+pct(t),0)/trav.length) : 0;
+  const mine = me ? pct(me) : 0;
+  const cats=[...new Set(S.tasks.slice().sort(byOrder).map(t=>t.cat||"Autre"))];
+  const list = S.tasks.length ? cats.map(c=>`<div class="cat"><div class="cat-title">${esc(c)}</div>${
+    S.tasks.filter(t=>(t.cat||"Autre")===c).sort(byOrder).map(t=>{
+      const d=!!(me&&t.done&&t.done[me.id]);
+      const who=trav.filter(p=>t.done&&t.done[p.id]);
+      return `<div class="check ${d?"done":""}"><input type="checkbox" id="c-${t.id}" data-act="toggleTask" data-id="${t.id}" ${d?"checked":""} ${me?"":"disabled"}>
+      <label class="t" for="c-${t.id}">${esc(t.title)}</label>
+      <span class="stack" title="${who.length}/${trav.length} ont terminé">${who.map(p=>av(p,"xs")).join("")}</span>
+      <button class="icon-btn" data-act="delTask" data-id="${t.id}" aria-label="Supprimer l'étape">×</button></div>`}).join("")}</div>`).join("")
+    : `<div class="empty">Aucune étape pour l'instant. Ajoute la première ci-dessous.</div>`;
+  const catOpts=[...new Set(["Dates & congés","Vol","Budget","Documents","Hébergement","Sur place"].concat(cats))].map(c=>`<option>${esc(c)}</option>`).join("");
+  return hero("img/pont.jpg","準備 · junbi","Préparation du voyage", (me?`${esc(me.name)}, tu es prêt·e à ${mine} %.`:"") + (S.trip.start?` · ${tripDatesLabel()}`:` · <button class="link-btn" data-tab="plan">Choisir les dates du voyage</button>`),
+    `<div class="ring" style="--p:${global}" aria-label="Préparation globale ${global} %"><div><span><b class="num">${global}%</b><br><small class="muted">du groupe</small></span></div></div>`)
+  + `<div class="wrap">${notice()}<div class="grid2">
+    <div class="panel"><h3>Ma liste<small>${me?esc(me.name):""} · ${S.tasks.filter(t=>me&&t.done&&t.done[me.id]).length}/${S.tasks.length} étapes</small></h3>
+      ${list}
+      <div style="margin-top:14px">${open.task?`<form class="form" data-form="task">
+        <div class="row"><label class="f">Étape<input type="text" name="title" required maxlength="80" placeholder="Ex. Vérifier la validité du passeport"></label>
+        <label class="f">Catégorie<select name="cat">${catOpts}</select></label></div>
+        <div class="row"><button class="btn primary" type="submit">Ajouter pour tout le monde</button><button class="btn ghost" type="button" data-act="close" data-k="task">Annuler</button></div></form>`
+        :`<button class="btn" data-act="openf" data-k="task">+ Ajouter une étape</button>`}</div>
+    </div>
+    <div class="panel"><h3>Le groupe<small>${trav.length} voyageur${trav.length>1?"s":""}</small></h3>
+      <div class="people">${trav.map(t=>`<div class="person">${av(t)}<div><div style="display:flex;justify-content:space-between;gap:8px"><span>${esc(t.name)}${me&&t.id===me.id?' <span class="muted">(toi)</span>':""}</span><span class="num muted">${pct(t)} %</span></div><div class="bar" style="margin-top:6px"><i style="width:${pct(t)}%"></i></div></div></div>`).join("")||'<p class="muted">Personne pour l\'instant.</p>'}</div>
+      <p class="muted" style="font-size:13px;margin:16px 0 0">Chaque étape cochée fait avancer ton pourcentage. Celui du groupe est la moyenne de tout le monde.</p>
+    </div></div>${renderInstall()}</div>`;
+}
+
+/* ----- Installation sur téléphone & partage ----- */
+const ICONS=[["torii","Torii"],["fuji","Mont Fuji"],["lanterne","Lanterne"],["sakura","Sakura"],["pagode","Pagode"],["tour","Tokyo Tower"],["kinkakuji","Pavillon d'or"],["shibuya","Shibuya"]];
+let iconSel=ls.get("japon-icon")||"torii", installEvt=null;
+function applyIcon(k){
+  const a=document.getElementById("appleIcon"),m=document.getElementById("manifestLink"),f=document.getElementById("favIcon");
+  if(a)a.href=`icons/${k}-180.png`;if(m)m.href=`manifest-${k}.webmanifest`;if(f)f.href=`icons/${k}-96.png`;
+}
+applyIcon(iconSel);
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEvt=e;if(tab==="prep")render()});
+const isStandalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone===true;
+const platform = () => {const u=navigator.userAgent;if(/iPhone|iPad|iPod/.test(u)||(/Macintosh/.test(u)&&navigator.maxTouchPoints>1))return "ios";if(/Android/.test(u))return "android";return "other"};
+const shareUrl = () => location.origin+location.pathname+"#c="+encodeURIComponent(code||"");
+function renderInstall(){
+  const p=platform();
+  const steps = isStandalone() ? `<p class="pos" style="margin:0">L'outil est déjà installé sur cet appareil.</p>`
+    : p==="ios" ? `<ol class="steps"><li>Ouvre cette page dans <b>Safari</b>.</li><li>Touche le bouton <b>Partager</b> (le carré avec une flèche vers le haut).</li><li>Choisis <b>Sur l'écran d'accueil</b>, puis <b>Ajouter</b>.</li></ol>`
+    : p==="android" ? `${installEvt?`<button class="btn primary" data-act="install">Installer l'appli</button>`:""}<ol class="steps"><li>Dans Chrome, touche le menu <b>⋮</b> en haut à droite.</li><li>Choisis <b>Ajouter à l'écran d'accueil</b> ou <b>Installer l'application</b>.</li><li>Confirme : l'icône apparaît avec tes autres applis.</li></ol>`
+    : `${installEvt?`<button class="btn primary" data-act="install">Installer sur cet ordinateur</button>`:""}<p class="muted" style="margin:0;font-size:14px">Sur téléphone, ouvre ce lien puis ajoute-le à l'écran d'accueil depuis le menu du navigateur.</p>`;
+  return `<div class="panel" id="install"><h3>L'outil sur ton téléphone<small>comme une appli, sans rien télécharger</small></h3>
+    <div class="install">
+      <div style="display:grid;gap:12px;min-width:0">
+        <div class="cat-title" style="margin:0">1. Choisis ton icône</div>
+        <div class="iconpick">${ICONS.map(([k,l])=>`<button data-act="pickIcon" data-k="${k}" aria-pressed="${k===iconSel}"><img src="icons/${k}-192.png" alt="" width="64" height="64"><span>${l}</span></button>`).join("")}</div>
+        <p class="muted" style="margin:0;font-size:13px">Choisis-la avant d'ajouter le raccourci : l'icône est figée au moment de l'ajout.</p>
+      </div>
+      <div style="display:grid;gap:12px;align-content:start;min-width:0">
+        <div class="cat-title" style="margin:0">2. Ajoute-la à l'écran d'accueil</div>
+        ${steps}
+        <div class="cat-title" style="margin:8px 0 0">Inviter un ami</div>
+        <p style="margin:0;font-size:14px">Code du voyage : <b class="codechip">${esc(code||"")}</b></p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" data-act="share">Partager le lien</button><button class="btn" data-act="copyLink">Copier le lien</button></div>
+        <p class="muted" style="margin:0;font-size:13px">Le lien contient déjà le code : ton ami arrive directement dans le voyage.</p>
+      </div>
+    </div></div>`;
+}
+
+/* ----- Itinéraire & activités ----- */
+const STAGE_COLOR={tokyo:"#E9A93F",kyoto:"#E58AA8",osaka:"#8FB3E8",fuji:"#7FC8A0",retour:"#C9A6E8"};
+const sc = id => STAGE_COLOR[id] || "#D9CF7A";
+const pd = s => new Date(s+"T00:00:00Z");
+const iso = d => d.toISOString().slice(0,10);
+const addD = (s,n) => {const d=pd(s);d.setUTCDate(d.getUTCDate()+n);return iso(d)};
+const diffD = (a,b) => Math.round((pd(b)-pd(a))/864e5);
+const fmtD = (s,o={day:"numeric",month:"short"}) => pd(s).toLocaleDateString("fr-FR",{...o,timeZone:"UTC"});
+const safeUrl = u => {u=String(u||"").trim();if(!u)return "";if(!/^https?:\/\//i.test(u))u="https://"+u;try{const x=new URL(u);return /^https?:$/.test(x.protocol)?x.href:""}catch(e){return ""}};
+const host = u => {try{return new URL(u).hostname.replace(/^www\./,"")}catch(e){return "lien"}};
+let daySel=null, calEdit=false, calTmp=null, calMonth=null, scrollDay=false;
+function stages(){return (S.stages.length?S.stages:DEFAULTS.stages).slice().sort(byOrder)}
+const totalNights = () => stages().reduce((n,x)=>n+(Number(x.nights)||0),0);
+function tripDays(){const s=S.trip.start;if(!s)return [];const e=S.trip.end||addD(s,totalNights());const n=Math.max(0,diffD(s,e));return Array.from({length:n+1},(_,i)=>addD(s,i))}
+function stageForIndex(i){const st=stages();let c=0;for(const x of st){c+=Number(x.nights)||0;if(i<c)return x}return st[st.length-1]}
+function stageForDate(d){const s=S.trip.start;if(!s||!d)return null;const i=diffD(s,d);if(i<0||i>=tripDays().length)return null;return stageForIndex(i)}
+function stageDays(id){return tripDays().filter(d=>stageForDate(d)?.id===id)}
+const editingCal = () => calEdit || !S.trip.start;
+function tripDatesLabel(){const d=tripDays();if(!d.length)return "";return `Du ${fmtD(d[0],{weekday:"short",day:"numeric",month:"long"})} au ${fmtD(d[d.length-1],{weekday:"short",day:"numeric",month:"long",year:"numeric"})}`}
+
+function monthsToShow(){
+  const days=tripDays();
+  if(!editingCal()&&days.length){const a=pd(days[0]),b=pd(days[days.length-1]);const out=[];let y=a.getUTCFullYear(),m=a.getUTCMonth();
+    while(y<b.getUTCFullYear()||(y===b.getUTCFullYear()&&m<=b.getUTCMonth())){out.push([y,m]);m++;if(m>11){m=0;y++}}return out.slice(0,3)}
+  if(!calMonth){const base=S.trip.start?pd(S.trip.start):new Date();calMonth=[base.getUTCFullYear(),base.getUTCMonth()]}
+  const [y,m]=calMonth;return [[y,m],[m===11?y+1:y,(m+1)%12]];
+}
+function monthHTML(y,m){
+  const first=new Date(Date.UTC(y,m,1)),lead=(first.getUTCDay()+6)%7,n=new Date(Date.UTC(y,m+1,0)).getUTCDate();
+  const title=first.toLocaleDateString("fr-FR",{month:"long",year:"numeric",timeZone:"UTC"});
+  const ed=editingCal();let cells="";
+  for(let i=0;i<lead;i++)cells+=`<span class="day out"></span>`;
+  for(let d=1;d<=n;d++){
+    const s=iso(new Date(Date.UTC(y,m,d)));let cls="day",style="",dot="";
+    if(ed){const a=calTmp||S.trip.start,b=calTmp?null:S.trip.end;if(a&&(s===a||(b&&s>=a&&s<=b))){cls+=" in";style="--c:var(--lantern)"}}
+    else{const st=stageForDate(s);if(st){cls+=" in";style=`--c:${sc(st.id)}`;if(S.activities.some(x=>x.date===s))dot='<i class="dot"></i>'}if(s===daySel)cls+=" sel"}
+    const dis=!ed&&!stageForDate(s);
+    cells+=`<button class="${cls}" style="${style}" data-act="calDay" data-d="${s}" ${dis?"disabled":""} aria-label="${fmtD(s,{weekday:"long",day:"numeric",month:"long"})}">${d}${dot}</button>`;
+  }
+  return `<div class="month"><h4>${title}</h4><div class="dow">${["L","M","M","J","V","S","D"].map(x=>`<span>${x}</span>`).join("")}</div><div class="days">${cells}</div></div>`;
+}
+function renderCalendar(){
+  const st=stages(),ed=editingCal(),days=tripDays(),tn=totalNights();
+  const nav=ed?`<div style="display:flex;gap:6px"><button class="btn sm" data-act="calNav" data-n="-1" aria-label="Mois précédent">‹</button><button class="btn sm" data-act="calNav" data-n="1" aria-label="Mois suivant">›</button></div>`:"";
+  const side = ed
+    ? `<div style="display:grid;gap:12px;align-content:start"><p style="margin:0">${calTmp?`Départ le <b>${fmtD(calTmp,{weekday:"long",day:"numeric",month:"long"})}</b>. Clique maintenant sur le jour du retour.`:"Clique sur le jour du départ, puis sur le jour du retour."}</p>
+       ${S.trip.start?`<div><button class="btn ghost sm" data-act="calCancel">Annuler</button></div>`:""}
+       <p class="muted" style="font-size:13px;margin:0">Une fois la période choisie, chaque jour prend la couleur de la ville où vous serez, selon le nombre de nuits de chaque étape.</p></div>`
+    : `<div style="display:grid;gap:10px;align-content:start">
+       <div><b>${tripDatesLabel()}</b><div class="muted" style="font-size:13px">${days.length} jours · ${days.length-1} nuits</div></div>
+       <div class="legend">${st.map(s=>{const sd=stageDays(s.id);return `<div class="leg"><i style="background:${sc(s.id)}"></i><span><b>${esc(s.name)}</b><br><small class="muted">${sd.length?`${fmtD(sd[0])} → ${fmtD(sd[sd.length-1])}`:"aucun jour"}</small></span>
+         <label class="nights"><input type="number" min="0" max="30" id="nights-${s.id}" value="${Number(s.nights)||0}" data-act="nights" data-id="${s.id}" aria-label="Nuits à ${esc(s.name)}"> nuits</label></div>`}).join("")}</div>
+       ${tn!==days.length-1?`<div class="notice">Les étapes totalisent ${tn} nuit${tn>1?"s":""} alors que le séjour en compte ${days.length-1}. Ajuste les nuits pour que tout colle.</div>`:""}
+       <div><button class="btn sm" data-act="calEditOn">Modifier les dates</button></div></div>`;
+  return `<div class="panel" id="s-cal"><h3 style="justify-content:space-between">Calendrier du séjour${nav}</h3>
+    <div class="cal"><div class="months">${monthsToShow().map(([y,m])=>monthHTML(y,m)).join("")}</div>${side}</div></div>`;
+}
+function actCard(a,days){
+  const r=rate(),j=!!(me&&a.joined&&a.joined[me.id]),who=S.travelers.filter(t=>a.joined&&a.joined[t.id]),p=Number(a.price)||0;
+  const dateSel = days.length ? `<select class="mini" data-act="actDate" data-id="${a.id}" id="ad-${a.id}" aria-label="Jour de l'activité"><option value="">Jour à choisir</option>${days.map((d,)=>`<option value="${d}" ${a.date===d?"selected":""}>${fmtD(d,{weekday:"short",day:"numeric",month:"short"})}</option>`).join("")}</select>` : (a.day?`<span>${esc(a.day)}</span>`:"");
+  return `<article class="act"><div style="display:grid;gap:6px;min-width:0"><h4>${esc(a.title)}</h4>
+    ${a.note?`<div class="muted" style="font-size:14px;overflow-wrap:anywhere">${esc(a.note)}</div>`:""}
+    <div class="meta">${a.url?`<a class="link" href="${esc(a.url)}" target="_blank" rel="noopener noreferrer">${esc(host(a.url))} ↗</a>`:`<input class="mini" type="url" placeholder="Coller un lien" id="au-${a.id}" data-act="actUrl" data-id="${a.id}" aria-label="Lien de l'activité">`}${dateSel}${actGeo(a)?`<button class="link-btn" data-act="showOnMap" data-id="${a.id}">Voir sur la carte</button>`:`<button class="link-btn" data-act="placeAct" data-id="${a.id}">Placer sur la carte</button>`}</div>
+    <div class="meta"><span class="stack">${who.map(t=>av(t,"xs")).join("")}</span><span>${who.length} participant${who.length>1?"s":""}</span>
+    <button class="pill ${a.booked?"ok":""}" style="background:none;cursor:pointer" data-act="toggleBooked" data-id="${a.id}">${a.booked?"✓ Réservé":"À réserver"}</button>
+    <button class="icon-btn" data-act="delAct" data-id="${a.id}" aria-label="Supprimer l'activité">×</button></div></div>
+    <div class="side"><div class="price num">${p?yen(p):'<span class="muted" style="font-size:14px">Prix à définir</span>'}</div>${p?`<small class="muted num">≈ ${eur(p/r)} / pers.</small>`:""}
+    <button class="join" aria-pressed="${j}" data-act="toggleJoin" data-id="${a.id}" ${me?"":"disabled"}>${j?"✓ J'y vais":"Je participe"}</button></div></article>`;
+}
+/* ----- Carte du parcours ----- */
+const KU=100, KC=Math.cos(36*Math.PI/180);
+const proj=(lat,lon)=>[(lon-122)*KC*KU,(46-lat)*KU];
+const STAGE_GEO={tokyo:[35.681,139.767],kyoto:[34.985,135.758],osaka:[34.702,135.495],fuji:[35.498,138.769],retour:[35.681,139.767]};
+const POI={
+  "Carrefour de Shibuya":["tokyo",35.6595,139.7005],"Temple Senso-ji (Asakusa)":["tokyo",35.7148,139.7967],"teamLab Planets":["tokyo",35.6491,139.7898],
+  "Quartier de Shinjuku la nuit":["tokyo",35.6938,139.7034],"Harajuku & Meiji-jingu":["tokyo",35.6764,139.6993],
+  "Fushimi Inari":["kyoto",34.9671,135.7727],"Kinkaku-ji (Pavillon d'or)":["kyoto",35.0394,135.7292],"Bambouseraie d'Arashiyama":["kyoto",35.0170,135.6713],
+  "Gion le soir":["kyoto",35.0037,135.7750],"Sanctuaire Yasaka":["kyoto",35.0036,135.7785],
+  "Dotonbori street food":["osaka",34.6687,135.5013],"Château d'Osaka":["osaka",34.6873,135.5262],"Universal Studios Japan":["osaka",34.6654,135.4323],
+  "Kuromon Market":["osaka",34.6655,135.5065],"Excursion à Nara":["osaka",34.6851,135.8430],
+  "Pagode Chureito":["fuji",35.5012,138.8016],"Lac Kawaguchi":["fuji",35.5167,138.7500],
+  "Tokyo Tower":["retour",35.6586,139.7454],"Akihabara":["retour",35.6984,139.7731],"Marché extérieur de Tsukiji":["retour",35.6655,139.7707],"Odaiba & Rainbow Bridge":["retour",35.6365,139.7633]
+};
+const POI_IMG={"Carrefour de Shibuya":"img/poi-shibuya.jpg","Quartier de Shinjuku la nuit":"img/poi-shinjuku.jpg","Kinkaku-ji (Pavillon d'or)":"img/poi-kinkakuji.jpg","Sanctuaire Yasaka":"img/poi-yasaka.jpg","Gion le soir":"img/poi-yasaka.jpg","Pagode Chureito":"img/poi-chureito.jpg","Lac Kawaguchi":"img/poi-kawaguchi.jpg","Tokyo Tower":"img/poi-tokyotower.jpg","Odaiba & Rainbow Bridge":"img/poi-odaiba.jpg"};
+const POI_EN={"Carrefour de Shibuya":"Shibuya Crossing","Temple Senso-ji (Asakusa)":"Senso-ji Asakusa","teamLab Planets":"teamLab Planets Tokyo","Quartier de Shinjuku la nuit":"Shinjuku night","Harajuku & Meiji-jingu":"Meiji Jingu","Fushimi Inari":"Fushimi Inari-taisha","Kinkaku-ji (Pavillon d'or)":"Kinkaku-ji","Bambouseraie d'Arashiyama":"Arashiyama bamboo grove","Gion le soir":"Gion Kyoto","Sanctuaire Yasaka":"Yasaka Shrine","Dotonbori street food":"Dotonbori","Château d'Osaka":"Osaka Castle","Universal Studios Japan":"Universal Studios Japan","Kuromon Market":"Kuromon Market Osaka","Excursion à Nara":"Nara Park deer","Pagode Chureito":"Chureito Pagoda","Lac Kawaguchi":"Lake Kawaguchi Fuji","Tokyo Tower":"Tokyo Tower","Akihabara":"Akihabara","Marché extérieur de Tsukiji":"Tsukiji Outer Market","Odaiba & Rainbow Bridge":"Rainbow Bridge Odaiba"};
+const commonsUrl = n => "https://commons.wikimedia.org/w/index.php?title=Special:MediaSearch&type=image&search="+encodeURIComponent(POI_EN[n]||n);
+const poiImg = (n,st) => POI_IMG[n] ? `<img class="tipimg" src="${POI_IMG[n]}" alt="${esc(n)}">` : `<div class="tipimg ph" style="--c:${sc(st)}"><span>Pas encore de photo</span></div>`;
+const VIEWS={japon:[128.4,30.4,146.4,45.7],parcours:[134.6,33.9,141.4,36.5],tokyo:[139.60,35.60,139.88,35.75],kansai:[135.36,34.60,135.93,35.09],fuji:[138.58,35.30,138.95,35.57]};
+const VIEW_LABEL={japon:"Japon",parcours:"Parcours",tokyo:"Tokyo",kansai:"Kyoto & Osaka",fuji:"Mont Fuji"};
+const STAGE_VIEW={tokyo:"tokyo",retour:"tokyo",kyoto:"kansai",osaka:"kansai",fuji:"fuji"};
+const LEG_INFO={"tokyo>kyoto":"Shinkansen Nozomi · env. 2 h 15","kyoto>osaka":"Train JR · 15 à 30 min","osaka>fuji":"Shinkansen + bus via Mishima · env. 4 h","fuji>retour":"Bus express · env. 2 h","fuji>tokyo":"Bus express · env. 2 h"};
+let mapView=null, mapKey="parcours", mapSel=null, mapRaf=0, placing=null;
+const coarse = () => matchMedia("(pointer: coarse)").matches;
+let mapTouch=false;
+function actGeo(a){if(a.lat!=null&&a.lon!=null)return [a.lat,a.lon];const p=POI[a.title];return p?[p[1],p[2]]:null}
+function actMapCard(id){
+  const a=S.activities.find(x=>x.id===id);if(!a)return "";const stg=stages().find(x=>x.id===a.stage);const n=S.travelers.filter(t=>a.joined&&a.joined[t.id]).length;
+  return `<div class="mcard"><div class="mhead"><i class="swatch" style="background:${sc(a.stage)}"></i><b>${esc(a.title)}</b><span class="muted">${esc(stg?.name||"")}</span></div>
+    <p style="margin:0;font-size:14px"><span class="pos">✓ Dans le programme</span>${a.date?" · "+fmtD(a.date,{weekday:"short",day:"numeric",month:"short"}):" · jour à choisir"} · ${n} participant${n>1?"s":""}</p>
+    ${a.note?`<p class="muted" style="margin:0;font-size:14px">${esc(a.note)}</p>`:""}
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">${a.url?`<a class="link" href="${esc(a.url)}" target="_blank" rel="noopener noreferrer">${esc(host(a.url))} ↗</a>`:""}<button class="link-btn" data-act="placeAct" data-id="${a.id}">Déplacer sur la carte</button></div></div>`;
+}
+function bboxView(k){const [a,b,c,d]=VIEWS[k];const [x1,y1]=proj(d,a),[x2,y2]=proj(b,c);const w=x2-x1,h=y2-y1;return {x:x1-w*.06,y:y1-h*.16,w:w*1.12,h:h*1.24}}
+function fitView(v,asp){let {x,y,w,h}=v;if(w/h<asp){const nw=h*asp;x-=(nw-w)/2;w=nw}else{const nh=w/asp;y-=(nh-h)/2;h=nh}return {x,y,w,h}}
+function km(a,b){const R=6371,r=Math.PI/180,dLa=(b[0]-a[0])*r,dLo=(b[1]-a[1])*r;const h=Math.sin(dLa/2)**2+Math.cos(a[0]*r)*Math.cos(b[0]*r)*Math.sin(dLo/2)**2;return 2*R*Math.asin(Math.sqrt(h))}
+function legs(){const st=stages().filter(s=>STAGE_GEO[s.id]);const out=[];for(let i=1;i<st.length;i++){const A=st[i-1],B=st[i];out.push({A,B,km:km(STAGE_GEO[A.id],STAGE_GEO[B.id]),info:LEG_INFO[A.id+">"+B.id]||""})}return out}
+function curve(A,B){const [x1,y1]=proj(...A),[x2,y2]=proj(...B);const dx=x2-x1,dy=y2-y1,cx=(x1+x2)/2-dy*.18,cy=(y1+y2)/2+dx*.18;
+  return {d:`M${x1.toFixed(1)} ${y1.toFixed(1)}Q${cx.toFixed(1)} ${cy.toFixed(1)} ${x2.toFixed(1)} ${y2.toFixed(1)}`,mid:[.25*x1+.5*cx+.25*x2,.25*y1+.5*cy+.25*y2]}}
+function cityGroups(){const m={};stages().forEach((s,i)=>{const g=STAGE_GEO[s.id];if(!g)return;const k=g.join();(m[k]=m[k]||{g,list:[]}).list.push({s,n:i+1})});return Object.values(m)}
+function stageCard(id){
+  const s=stages().find(x=>x.id===id);if(!s)return "";const acts=S.activities.filter(a=>a.stage===id).sort(byOrder),sd=stageDays(id);
+  return `<div class="mcard"><div class="mhead"><i class="swatch" style="background:${sc(id)}"></i><b>${esc(s.name)}</b><span class="muted">${sd.length?fmtD(sd[0])+" → "+fmtD(sd[sd.length-1]):(Number(s.nights)||0)+" nuits"}</span></div>
+    <ul class="mlist">${acts.slice(0,7).map(a=>`<li>${a.booked?'<span class="pos">✓</span> ':""}${esc(a.title)}${a.date?` <small class="muted">· ${fmtD(a.date)}</small>`:""}${a.url?` <a class="link" href="${esc(a.url)}" target="_blank" rel="noopener noreferrer">↗</a>`:""}</li>`).join("")||'<li class="muted">Aucune activité pour l\'instant.</li>'}${acts.length>7?`<li class="muted">+ ${acts.length-7} autres</li>`:""}</ul>
+    <button class="btn sm" data-act="mapGoStage" data-id="${id}">Voir le déroulé jour par jour</button></div>`;
+}
+function poiCard(name){
+  const [st]=POI[name],a=S.activities.find(x=>x.title===name),stg=stages().find(x=>x.id===st);
+  const n=a?S.travelers.filter(t=>a.joined&&a.joined[t.id]).length:0;
+  return `<div class="mcard">${poiImg(name,st)}<div class="mhead"><i class="swatch" style="background:${sc(st)}"></i><b>${esc(name)}</b><span class="muted">${esc(stg?.name||"")}</span></div>
+    ${a?`<p style="margin:0;font-size:14px"><span class="pos">✓ Dans le programme</span>${a.date?" · "+fmtD(a.date,{weekday:"short",day:"numeric",month:"short"}):" · jour à choisir"} · ${n} participant${n>1?"s":""}</p>`
+      :`<p class="muted" style="margin:0;font-size:14px">Pas encore dans le programme.</p><div><button class="btn sm primary" data-act="idea" data-t="${esc(name)}" data-stage="${st}">Ajouter à ${esc(stg?.name||"")}</button></div>`}
+    <a class="link" href="${commonsUrl(name)}" target="_blank" rel="noopener noreferrer">Voir des photos libres sur Wikimedia Commons ↗</a></div>`;
+}
+function renderMap(){
+  const L=legs(),total=L.reduce((s,l)=>s+l.km,0);
+  const paths=L.map(l=>({l,c:curve(STAGE_GEO[l.A.id],STAGE_GEO[l.B.id])}));
+  const xy=p=>{const [x,y]=proj(p[0],p[1]);return `data-x="${x.toFixed(2)}" data-y="${y.toFixed(2)}"`};
+  const cities=cityGroups().map(g=>{const ids=g.list.map(x=>x.s.id);const on=mapSel&&mapSel.t==="stage"&&ids.includes(mapSel.id);const c=sc(g.list[0].s.id);
+    const pos={kyoto:"t",osaka:"b",fuji:"b"}[g.list[0].s.id]||"r";return `<button class="ov city-mk lbl-${pos}" ${xy(g.g)} data-act="mapCity" data-ids="${ids.join(",")}" aria-pressed="${!!on}" style="--c:${c}"><span class="dotc">${g.list.map(x=>x.n).join("·")}</span><span class="lbl">${esc(g.list[0].s.name)}</span></button>`}).join("");
+  const legl=paths.map(({l,c})=>{const [x,y]=c.mid;return `<span class="ov legl" data-x="${x.toFixed(2)}" data-y="${y.toFixed(2)}" data-maxw="${l.km<120?220:900}">${Math.round(l.km)} km</span>`}).join("");
+  const pois=Object.entries(POI).map(([n,[st,la,lo]])=>{const on=S.activities.some(a=>a.title===n);const sel=mapSel&&mapSel.t==="poi"&&mapSel.n===n;
+    return `<button class="ov poi ${on?"on":""} ${sel?"sel":""}" ${xy([la,lo])} data-maxw="90" data-act="mapPoi" data-n="${esc(n)}" style="--c:${sc(st)}" aria-label="${esc(n)}"><span class="pl">${esc(n)}</span></button>`}).join("");
+  const custom=S.activities.filter(a=>a.lat!=null&&a.lon!=null&&!POI[a.title]).map(a=>{const sel=mapSel&&mapSel.t==="act"&&mapSel.id===a.id;
+    return `<button class="ov poi on mine ${sel?"sel":""}" ${xy([a.lat,a.lon])} data-maxw="120" data-act="mapAct" data-id="${a.id}" style="--c:${sc(a.stage)}" aria-label="${esc(a.title)}"><span class="pl">${esc(a.title)}</span></button>`}).join("");
+  const peak=`<span class="ov peak" ${xy([35.3606,138.7274])} data-maxw="260">▲ Mont Fuji · 3 776 m</span>`;
+  const info = mapSel ? (mapSel.t==="stage"?stageCard(mapSel.id):mapSel.t==="act"?actMapCard(mapSel.id):poiCard(mapSel.n)) : `<p class="muted" style="margin:0;font-size:14px">Glisse la carte pour te déplacer, molette ou +/− pour zoomer. Clique sur une ville pour voir ses activités. En zoomant, les lieux à visiter apparaissent : les points pleins sont déjà au programme.</p>`;
+  return `<div class="panel" id="s-map"><h3>Carte du parcours<small>≈ ${Math.round(total).toLocaleString("fr-FR")} km à vol d'oiseau</small></h3>
+    <div class="mapgrid">
+      <div class="mapbox ${coarse()&&!mapTouch&&!placing?"locked":""} ${placing?"placing":""}" id="mapBox">
+        ${coarse()&&!mapTouch&&!placing?`<button class="maplock" data-act="mapUnlock">Toucher pour explorer la carte</button>`:""}
+        ${placing?`<div class="placebar"><span>${coarse()?"Touche":"Clique sur"} l'endroit de « ${esc((S.activities.find(x=>x.id===placing)||{}).title||"")} »</span><button class="btn sm" data-act="placeCancel">Annuler</button></div>`:""}
+        <svg class="mapsvg" id="mapSvg" preserveAspectRatio="none" aria-hidden="true"><use href="#jpLand" class="land"/>${paths.map(({l,c})=>`<path d="${c.d}" class="route" style="--c:${sc(l.B.id)}"/>`).join("")}</svg>
+        ${legl}${peak}${pois}${custom}${cities}
+        <div class="zoombar">${Object.keys(VIEWS).map(k=>`<button data-act="mapZoom" data-k="${k}" aria-pressed="${k===mapKey}">${VIEW_LABEL[k]}</button>`).join("")}<span class="zpm">${coarse()&&mapTouch&&!placing?`<button class="done" data-act="mapLock">Terminer</button>`:""}<button data-act="mapStep" data-f="0.6" aria-label="Zoomer">+</button><button data-act="mapStep" data-f="1.65" aria-label="Dézoomer">−</button></span></div>
+        <div class="maptip" id="mapTip" hidden></div>
+        <div class="scalebar" id="mapScale"><i></i><span></span></div>
+      </div>
+      <div style="display:grid;gap:14px;align-content:start;min-width:0">
+        ${info}
+        <div class="legs">${L.map(l=>{const tr=amtEur(l.B.transport);return `<div class="leg2"><div style="display:flex;gap:8px;align-items:center"><i class="swatch" style="background:${sc(l.A.id)}"></i><span>${esc(l.A.name)} <span class="arrow">→</span> ${esc(l.B.name)}</span><b class="num" style="margin-left:auto">${Math.round(l.km)} km</b></div><small class="muted">${l.info}${tr?` · ${yen(tr*rate())} / pers.`:""}</small></div>`}).join("")}</div>
+        <p class="muted" style="font-size:12px;margin:0">Distances à vol d'oiseau. Les durées de trajet sont indicatives, à vérifier au moment de réserver.</p>
+      </div>
+    </div></div>`;
+}
+function mapAspect(){const b=$("#mapBox");return b&&b.clientHeight?b.clientWidth/b.clientHeight:1.45}
+function applyView(){
+  const v=mapView,box=$("#mapBox"),svg=$("#mapSvg");if(!box||!svg||!v)return;
+  svg.setAttribute("viewBox",`${v.x} ${v.y} ${v.w} ${v.h}`);
+  box.querySelectorAll(".ov").forEach(el=>{
+    const x=+el.dataset.x,y=+el.dataset.y,mx=el.dataset.maxw?+el.dataset.maxw:Infinity;
+    el.style.left=((x-v.x)/v.w*100)+"%";el.style.top=((y-v.y)/v.h*100)+"%";
+    el.hidden = v.w>mx || x<v.x-v.w*.02 || x>v.x+v.w*1.02 || y<v.y-v.h*.02 || y>v.y+v.h*1.02;
+  });
+  const kmPx=v.w/box.clientWidth*111.32/KU;const nice=[1,2,5,10,20,50,100,200,500];const k=nice.find(n=>n/kmPx>=70)||500;
+  const sb=$("#mapScale");if(sb){sb.querySelector("i").style.width=(k/kmPx)+"px";sb.querySelector("span").textContent=k+" km"}
+}
+function clampView(v){const cx=Math.min(2550,Math.max(100,v.x+v.w/2)),cy=Math.min(2150,Math.max(50,v.y+v.h/2));return {x:cx-v.w/2,y:cy-v.h/2,w:v.w,h:v.h}}
+function freeKey(){mapKey="libre";document.querySelectorAll('[data-act="mapZoom"]').forEach(b=>b.setAttribute("aria-pressed","false"))}
+function animateView(to){
+  const from={...mapView};cancelAnimationFrame(mapRaf);
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches||!from.w){mapView=to;applyView();return}
+  const t0=performance.now(),D=700;
+  const step=t=>{const p=Math.min(1,(t-t0)/D),e=p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2;
+    mapView={x:from.x+(to.x-from.x)*e,y:from.y+(to.y-from.y)*e,w:from.w+(to.w-from.w)*e,h:from.h+(to.h-from.h)*e};applyView();if(p<1)mapRaf=requestAnimationFrame(step)};
+  mapRaf=requestAnimationFrame(step);
+}
+function zoomTo(k){mapKey=k;document.querySelectorAll('[data-act="mapZoom"]').forEach(b=>b.setAttribute("aria-pressed",b.dataset.k===k));animateView(fitView(bboxView(k),mapAspect()))}
+function zoomBy(f,fx=.5,fy=.5,anim=false){const v=mapView;const nw=Math.min(2600,Math.max(6,v.w*f)),nh=nw*v.h/v.w;
+  const to=clampView({x:v.x+fx*(v.w-nw),y:v.y+fy*(v.h-nh),w:nw,h:nh});freeKey();if(anim)animateView(to);else{mapView=to;applyView()}}
+function hideTip(){const t=$("#mapTip");if(t)t.hidden=true}
+function showTip(p){
+  const t=$("#mapTip"),box=$("#mapBox");if(!t||!box)return;
+  if(p.dataset.id){const a=S.activities.find(x=>x.id===p.dataset.id);if(!a)return;const stg=stages().find(x=>x.id===a.stage);
+    t.innerHTML=`<div class="tipbody"><b>${esc(a.title)}</b><span class="muted">${esc(stg?.name||"")} · <span class="pos">au programme</span>${a.date?" · "+fmtD(a.date):""}</span></div>`}
+  else{const n=p.dataset.n;const [st]=POI[n]||[];const a=S.activities.find(x=>x.title===n),stg=stages().find(x=>x.id===st);
+    t.innerHTML=`${poiImg(n,st)}<div class="tipbody"><b>${esc(n)}</b><span class="muted">${esc(stg?.name||"")} · ${a?'<span class="pos">au programme</span>':(coarse()?"détail sous la carte":"clique pour l'ajouter")}</span></div>`}
+  t.hidden=false;
+  const br=box.getBoundingClientRect(),pr=p.getBoundingClientRect();const tw=t.offsetWidth,th=t.offsetHeight;
+  let x=pr.left-br.left+pr.width/2+12,y=pr.top-br.top-th-10;
+  if(x+tw>br.width-8)x=pr.left-br.left-tw-6;if(x<8)x=8;if(y<44)y=pr.bottom-br.top+10;if(y+th>br.height-8)y=br.height-th-8;
+  t.style.left=x+"px";t.style.top=y+"px";
+}
+function mountMap(){
+  const box=$("#mapBox");if(!box)return;const asp=mapAspect();
+  mapView = mapView&&mapView.w ? fitView({...mapView},asp) : fitView(bboxView(VIEWS[mapKey]?mapKey:"parcours"),asp);
+  applyView();
+  if(mapSel&&mapSel.t!=="stage"&&coarse()){const el=box.querySelector(mapSel.t==="act"?`.poi[data-id="${mapSel.id}"]`:`.poi.sel`);if(el&&!el.hidden)showTip(el)}
+  let drag=null,pinch=null;const pts=new Map();
+  const locked=()=>box.classList.contains("locked");
+  box.addEventListener("pointerdown",e=>{
+    if(e.pointerType==="touch"&&locked())return;
+    if(e.target.closest("button,a"))return;
+    pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    try{box.setPointerCapture(e.pointerId)}catch(_){}
+    cancelAnimationFrame(mapRaf);hideTip();
+    if(pts.size===2){const [p1,p2]=[...pts.values()];pinch={d:Math.hypot(p1.x-p2.x,p1.y-p2.y)||1,v:{...mapView},mx:(p1.x+p2.x)/2,my:(p1.y+p2.y)/2};drag=null;freeKey();return}
+    if(e.button!==0&&e.pointerType==="mouse")return;
+    drag={x:e.clientX,y:e.clientY,v:{...mapView},moved:false};box.classList.add("dragging");
+  });
+  box.addEventListener("pointermove",e=>{
+    if(!pts.has(e.pointerId))return;pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pinch&&pts.size>=2){const [p1,p2]=[...pts.values()];const d=Math.hypot(p1.x-p2.x,p1.y-p2.y)||1;const r=box.getBoundingClientRect();
+      const fx=(pinch.mx-r.left)/r.width,fy=(pinch.my-r.top)/r.height,v=pinch.v;const nw=Math.min(2600,Math.max(6,v.w*pinch.d/d)),nh=nw*v.h/v.w;
+      mapView=clampView({x:v.x+fx*(v.w-nw),y:v.y+fy*(v.h-nh),w:nw,h:nh});applyView();return}
+    if(!drag)return;const k=drag.v.w/box.clientWidth,dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+    if(!drag.moved&&Math.abs(dx)+Math.abs(dy)>4){drag.moved=true;freeKey()}
+    if(drag.moved){mapView=clampView({...drag.v,x:drag.v.x-dx*k,y:drag.v.y-dy*k});applyView()}
+  });
+  const end=e=>{
+    const wasClick=drag&&!drag.moved&&!pinch;pts.delete(e.pointerId);
+    if(pts.size<2)pinch=null;if(!pts.size){box.classList.remove("dragging")}
+    if(wasClick&&placing&&e.type==="pointerup"){const r=box.getBoundingClientRect(),v=mapView;
+      const x=v.x+(e.clientX-r.left)/r.width*v.w,y=v.y+(e.clientY-r.top)/r.height*v.h;
+      const lon=x/(KC*KU)+122,lat=46-y/KU,id=placing;placing=null;mapSel={t:"act",id};
+      patch("activities",id,{lat:Math.round(lat*1e5)/1e5,lon:Math.round(lon*1e5)/1e5});toast("Activité placée sur la carte");render()}
+    drag=null;
+  };
+  box.addEventListener("pointerup",end);box.addEventListener("pointercancel",end);
+  box.addEventListener("wheel",e=>{e.preventDefault();cancelAnimationFrame(mapRaf);hideTip();const r=box.getBoundingClientRect();zoomBy(Math.exp(e.deltaY*(e.deltaMode===1?0.05:0.0015)),(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height)},{passive:false});
+  box.addEventListener("pointerover",e=>{if(e.pointerType!=="mouse")return;const p=e.target.closest(".poi");if(p&&!drag)showTip(p)});
+  box.addEventListener("pointerout",e=>{if(e.pointerType!=="mouse")return;const p=e.target.closest(".poi");if(p&&!p.contains(e.relatedTarget))hideTip()});
+  box.addEventListener("focusin",e=>{const p=e.target.closest(".poi");if(p)showTip(p)});
+}
+function focusPoint(lat,lon,w=40){const [x,y]=proj(lat,lon);freeKey();const asp=mapAspect();animateView(clampView({x:x-w/2,y:y-w/asp/2,w,h:w/asp}))}
+function scrollToId(id){const el=document.getElementById(id);if(el)el.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"})}
+window.addEventListener("resize",()=>{if(tab==="plan"&&mapView){mapView=VIEWS[mapKey]?fitView(bboxView(mapKey),mapAspect()):fitView(mapView,mapAspect());applyView()}});
+
+function renderPlan(){
+  const st=stages(); if(!st.find(s=>s.id===stageSel)) stageSel=st[0]?.id;
+  const cur=st.find(s=>s.id===stageSel)||{};
+  const acts=S.activities.filter(a=>a.stage===stageSel).sort(byOrder);
+  const r=rate(), days=stageDays(stageSel), hasDates=!!S.trip.start;
+  if(daySel && !days.includes(daySel)) daySel=null;
+  let flow;
+  if(hasDates && days.length){
+    const planned = days.map(d=>{const i=diffD(S.trip.start,d)+1;const list=acts.filter(a=>a.date===d);
+      return `<section class="daygroup ${d===daySel?"sel":""}" id="day-${d}"><div class="dayhead"><b>Jour ${i}</b><span class="muted">${fmtD(d,{weekday:"long",day:"numeric",month:"long"})}</span><button class="btn sm ghost" data-act="pickDay" data-d="${d}" style="margin-left:auto">${d===daySel?"Jour sélectionné":"Ajouter ici"}</button></div>
+        ${list.length?`<div class="acts">${list.map(a=>actCard(a,days)).join("")}</div>`:`<p class="muted" style="margin:0;font-size:14px">Rien de prévu pour l'instant.</p>`}</section>`}).join("");
+    const rest=acts.filter(a=>!a.date||!days.includes(a.date));
+    flow = planned + `<section class="daygroup"><div class="dayhead"><b>À planifier</b><span class="muted">${rest.length} activité${rest.length>1?"s":""} sans jour</span></div>
+      ${rest.length?`<div class="acts">${rest.map(a=>actCard(a,days)).join("")}</div>`:`<p class="muted" style="margin:0;font-size:14px">Toutes les activités ont un jour.</p>`}</section>`;
+  } else {
+    flow = acts.length ? `<div class="acts">${acts.map(a=>actCard(a,[])).join("")}</div>`
+      : `<div class="empty">Aucune activité prévue à ${esc(cur.name||"")} pour l'instant.</div>`;
+    if(!hasDates) flow = `<p class="muted" style="margin:0 0 12px;font-size:14px">Choisis les dates dans le calendrier pour répartir les activités jour par jour.</p>` + flow;
+  }
+  const ideas=(IDEAS[stageSel]||[]).filter(i=>!acts.some(a=>a.title===i));
+  const stageCost=acts.reduce((s,a)=>s+(Number(a.price)||0),0);
+  const dayOpts=days.map(d=>`<option value="${d}" ${d===daySel?"selected":""}>${fmtD(d,{weekday:"short",day:"numeric",month:"short"})}</option>`).join("");
+  return hero(STAGE_IMG[stageSel]||"img/lanternes-kyoto.jpg","旅程 · ryotei","Itinéraire & activités", hasDates?tripDatesLabel():`${st.length} étapes · ${totalNights()} nuits prévues`)
+  + `<div class="wrap">${notice()}<nav class="subnav" aria-label="Sections de la page">${[["s-cal","Calendrier"],["s-map","Carte"],["deroule","Déroulé"],["s-add","Ajouter une activité"]].map(([i,l])=>`<button data-act="jump" data-to="${i}">${l}</button>`).join("")}</nav>${renderCalendar()}${renderMap()}
+    <div class="stages" role="group" aria-label="Étapes">${st.map(s=>{const sd=stageDays(s.id);return `<button class="stage" data-act="stage" data-id="${s.id}" aria-pressed="${s.id===stageSel}" style="--c:${sc(s.id)}"><img src="${STAGE_IMG[s.id]||"img/lanternes.jpg"}" alt=""><span><b>${esc(s.name)}</b><small>${sd.length?`${fmtD(sd[0])} → ${fmtD(sd[sd.length-1])}`:`${Number(s.nights)||0} nuit${(Number(s.nights)||0)>1?"s":""}`}</small><small>${S.activities.filter(a=>a.stage===s.id).length} activité${S.activities.filter(a=>a.stage===s.id).length>1?"s":""}</small></span></button>`}).join("")}</div>
+    <div class="grid2">
+      <div class="panel" id="deroule"><h3><span class="swatch" style="background:${sc(cur.id)}"></span>${esc(cur.name||"")}<small>Déroulé · ${yen(stageCost)} ≈ ${eur(stageCost/r)} / pers.</small></h3>
+        <div class="transport"><span>Trajet pour arriver à ${esc(cur.name||"")} <span class="muted">(train, bus… par personne)</span></span>${dual("tr-"+cur.id,cur.transport,`data-act="dual" data-kind="transport" data-id="${cur.id}"`)}</div>
+        <div style="display:grid;gap:14px;margin-top:14px">${flow}</div>
+      </div>
+      <div style="display:grid;gap:22px;min-width:0">
+        <div class="panel" id="s-add"><h3>Ajouter une activité<small>${esc(cur.name||"")}${daySel?" · "+fmtD(daySel,{weekday:"short",day:"numeric",month:"short"}):""}</small></h3>
+          <form class="form" data-form="act" style="border-style:solid">
+            <label class="f">Activité<input type="text" name="title" required maxlength="80" placeholder="Ex. Dîner à Gion"></label>
+            <div class="row"><label class="f">Prix / pers. (¥)<input type="number" name="price" id="fp-JPY" data-base="fp" data-cur="JPY" data-sync="1" min="0" step="100" placeholder="0"></label><label class="f">soit (€)<input type="number" name="priceEur" id="fp-EUR" data-base="fp" data-cur="EUR" data-sync="1" min="0" step="0.5" placeholder="0"></label>
+            ${days.length?`<label class="f">Jour<select name="date"><option value="">À choisir plus tard</option>${dayOpts}</select></label>`:""}</div>
+            <label class="f">Lien (site, réservation, vidéo…)<input type="url" name="url" maxlength="500" placeholder="https://…"></label>
+            <label class="f">Note<input type="text" name="note" maxlength="160" placeholder="Adresse, horaires, conseil…"></label>
+            <div><button class="btn primary" type="submit">Ajouter l'activité</button></div></form>
+        </div>
+        <div class="panel"><h3>Idées pour ${esc(cur.name||"")}<small>un clic pour les ajouter${daySel?" au jour sélectionné":""}</small></h3>
+          <div class="ideas">${ideas.map(i=>`<button class="idea" data-act="idea" data-t="${esc(i)}">+ ${esc(i)}</button>`).join("")||'<span class="muted">Toutes les idées sont déjà dans la liste.</span>'}</div>
+          <p class="muted" style="font-size:13px;margin:14px 0 0">Coche « Je participe » sur ce qui te tente : ton budget se calcule tout seul dans l'onglet Budget.</p>
+        </div>
+      </div>
+    </div></div>`;
+}
+
+/* ----- Budget ----- */
+const amtEur = x => x==null||x==="" ? 0 : typeof x==="number" ? x : toEur(Number(x.v)||0, x.c);
+const num2 = n => Math.round(n*100)/100;
+function dual(base,val,attrs){
+  let j="",e="";
+  if(val!=null&&val!==""){
+    if(typeof val==="number"){e=num2(val);j=Math.round(val*rate())}
+    else if(val.c==="JPY"){j=Math.round(Number(val.v)||0);e=num2((Number(val.v)||0)/rate())}
+    else {e=num2(Number(val.v)||0);j=Math.round((Number(val.v)||0)*rate())}
+  }
+  return `<div class="dual"><label><input type="number" min="0" step="100" id="${base}-JPY" data-base="${base}" data-cur="JPY" value="${j}" placeholder="0" ${attrs}><span>¥</span></label><label><input type="number" min="0" step="1" id="${base}-EUR" data-base="${base}" data-cur="EUR" value="${e}" placeholder="0" ${attrs}><span>€</span></label></div>`;
+}
+const DEFAULT_ALERTS=[50,75,90,100];
+const alerts = () => (Array.isArray(S.trip.alerts)&&S.trip.alerts.length?S.trip.alerts:DEFAULT_ALERTS).map(Number).filter(n=>n>0).sort((a,b)=>a-b);
+function personBudget(t){
+  const fixed=S.budget.reduce((s,b)=>s+amtEur(b.amounts&&b.amounts[t.id]),0);
+  const travel=stages().reduce((s,x)=>s+amtEur(x.transport),0);
+  const list=S.activities.filter(a=>a.joined&&a.joined[t.id]);
+  const acts=list.reduce((s,a)=>s+(Number(a.price)||0),0)/rate();
+  const booked=list.filter(a=>a.booked).reduce((s,a)=>s+(Number(a.price)||0),0)/rate();
+  const target=amtEur(t.target), total=fixed+travel+acts;
+  return {fixed,travel,acts,booked,total,target,count:list.length,pct:target?100*total/target:null};
+}
+function level(pct){
+  if(pct==null) return null;
+  const reached=alerts().filter(a=>pct>=a);
+  if(!reached.length) return {lvl:"ok",step:null};
+  const step=reached[reached.length-1];
+  return {lvl:pct>=100?"crit":step>=75?"warn":"info",step};
+}
+function spentBy(t){
+  return S.expenses.reduce((s,e)=>{const among=(e.among||[]).filter(id=>T(id));if(!among.includes(t.id))return s;return s+toEur(Number(e.amount)||0,e.currency)/among.length},0);
+}
+const bothCur = v => `${eur(v)} <span class="muted">· ${yen(v*rate())}</span>`;
+function stackChart(b){
+  const max=Math.max(b.target,b.total,1)*1.1, w=v=>(100*v/max).toFixed(2);
+  const segs=[["Postes fixes",b.fixed,"var(--seg1)"],["Trajets",b.travel,"var(--seg2)"],["Activités",b.acts,"var(--seg3)"]];
+  const ticks = b.target ? alerts().filter(a=>a<=110).map(a=>{const x=w(b.target*a/100);return `<span class="tick ${a===100?"full":""}" style="left:${x}%"><em style="${x>88?"transform:translateX(-100%)":x<6?"transform:none":""}">${a===100?"Prévisionnel":a+" %"}</em></span>`}).join("") : "";
+  return `<div class="chart" role="img" aria-label="Budget prévu ${eur(b.total)} sur un prévisionnel de ${eur(b.target)}">
+    <div class="track">${segs.map(([l,v,c])=>v>0?`<i style="width:${w(v)}%;background:${c}" title="${l} : ${eur(v)}"></i>`:"").join("")}${ticks}</div>
+    <div class="axis"><span>0 €</span><span>${eur(max)}</span></div>
+    <div class="keys">${segs.map(([l,v,c])=>`<span><i style="background:${c}"></i>${l} <b class="num">${eur(v)}</b></span>`).join("")}</div></div>`;
+}
+function alertBanner(b,who){
+  const L=level(b.pct); if(!L||L.lvl==="ok") return "";
+  const p=Math.round(b.pct), reste=b.target-b.total;
+  const msg = L.lvl==="crit"
+    ? `${who} : budget prévisionnel dépassé. ${p} % est déjà prévu, soit ${eur(-reste)} de trop.`
+    : `${who} : palier de ${L.step} % atteint. ${p} % du budget prévisionnel est déjà prévu, il reste ${eur(reste)}.`;
+  return `<div class="alert ${L.lvl}" role="status"><b>${L.lvl==="crit"?"Dépassement":"Alerte budget"}</b><span>${msg}</span></div>`;
+}
+function renderBudget(){
+  const trav=S.travelers.slice().sort(byOrder), st=stages(), r=rate();
+  const mb = me ? personBudget(me) : personBudget({id:"_"});
+  const mySpent = me ? spentBy(me) : 0;
+  const lines=S.budget.slice().sort(byOrder);
+  const myActs=S.activities.filter(a=>me&&a.joined&&a.joined[me.id]);
+  const L=level(mb.pct);
+  const cities=st.map(s=>{const a=myActs.filter(x=>x.stage===s.id);const ay=a.reduce((n,x)=>n+(Number(x.price)||0),0);return {s,n:a.length,act:ay/r,tr:amtEur(s.transport)}});
+  const cmax=Math.max(1,...cities.map(c=>c.act+c.tr));
+  const group=trav.map(t=>({t,b:personBudget(t)}));
+  const gTarget=group.reduce((s,x)=>s+x.b.target,0), gTotal=group.reduce((s,x)=>s+x.b.total,0);
+  return hero("img/rainbow.jpg","予算 · yosan","Budget",`Taux utilisé : 1 € = ${r} ¥`,
+    `<label class="f" style="color:var(--paper)">Taux de change (¥ pour 1 €)<input type="number" id="rateInput" min="1" step="1" value="${r}" data-act="rate" style="width:140px"></label>`)
+  + `<div class="wrap">${notice()}${me?alertBanner(mb,"Toi"):""}
+    <div class="panel"><h3>Mon budget prévisionnel<small>${me?esc(me.name):""} · ce que tu t'autorises à dépenser pour tout le voyage</small></h3>
+      <div class="cal">
+        <div style="display:grid;gap:16px;min-width:0">
+          <div class="row" style="align-items:center"><div style="flex:0 1 auto">${dual("target",me?me.target:null,`data-act="dual" data-kind="target" ${me?"":"disabled"}`)}</div>
+            ${L?`<span class="pill ${L.lvl}">${Math.round(mb.pct)} % prévu</span>`:`<span class="muted" style="font-size:13px">Saisis un montant en yens ou en euros : l'autre se calcule tout seul.</span>`}</div>
+          <div class="kpis">
+            <div class="kpi"><small>DÉJÀ PRÉVU</small><b class="num">${eur(mb.total)}</b><span class="num">${yen(mb.total*r)}</span></div>
+            <div class="kpi"><small>RESTE DISPONIBLE</small><b class="num ${mb.target&&mb.target-mb.total<0?"neg":""}">${mb.target?eur(mb.target-mb.total):"—"}</b><span class="num">${mb.target?yen((mb.target-mb.total)*r):"Pas de prévisionnel"}</span></div>
+            <div class="kpi"><small>DÉJÀ DÉPENSÉ SUR PLACE</small><b class="num">${eur(mySpent)}</b><span>ma part des dépenses communes</span></div>
+          </div>
+          ${stackChart(mb)}
+        </div>
+        <div style="display:grid;gap:10px;align-content:start">
+          <div class="cat-title" style="margin:0">Paliers d'alerte</div>
+          <p class="muted" style="margin:0;font-size:13px">Une alerte s'affiche dès que le budget prévu atteint un palier. Les paliers valent pour tout le groupe.</p>
+          <div class="chips">${alerts().map(a=>`<span class="chip static">${a} %<button class="icon-btn" data-act="delAlert" data-v="${a}" aria-label="Retirer le palier ${a} %">×</button></span>`).join("")}</div>
+          <div class="row" style="align-items:center"><label class="nights" style="flex:0 0 auto"><input type="number" id="newAlert" min="1" max="200" placeholder="60"> %</label><button class="btn sm" data-act="addAlert">Ajouter un palier</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="panel"><h3>Détail de mon budget<small>yens ou euros, au choix</small></h3>
+        <div class="scroll"><table class="stack"><thead><tr><th>Poste</th><th>Montant par personne</th><th></th></tr></thead><tbody>
+        ${lines.map(b=>`<tr><td>${esc(b.label)}</td><td>${dual("bl-"+b.id,me&&b.amounts?b.amounts[me.id]:null,`data-act="dual" data-kind="line" data-id="${b.id}" ${me?"":"disabled"}`)}</td><td class="r"><button class="icon-btn" data-act="delLine" data-id="${b.id}" aria-label="Supprimer le poste">×</button></td></tr>`).join("")}
+        <tr><td>Trajets entre les villes<br><small class="muted">saisis dans Itinéraire & activités</small></td><td class="num">${bothCur(mb.travel)}</td><td></td></tr>
+        <tr><td>Activités choisies <span class="muted">(${mb.count})</span><br><small class="muted">dont ${eur(mb.booked)} déjà réservés</small></td><td class="num">${bothCur(mb.acts)}</td><td></td></tr>
+        <tr><td><b>Total prévu</b></td><td class="num"><b>${eur(mb.total)}</b> <span class="muted">· ${yen(mb.total*r)}</span></td><td></td></tr>
+        </tbody></table></div>
+        <div style="margin-top:14px">${open.line?`<form class="form" data-form="line"><div class="row"><label class="f">Nouveau poste<input type="text" name="label" required maxlength="40" placeholder="Ex. Assurance voyage"></label><button class="btn primary" type="submit">Ajouter</button><button class="btn ghost" type="button" data-act="close" data-k="line">Annuler</button></div></form>`
+        :`<button class="btn" data-act="openf" data-k="line">+ Ajouter un poste</button>`}</div>
+      </div>
+      <div style="display:grid;gap:22px;min-width:0">
+        <div class="panel"><h3>Coût par ville<small>trajet + mes activités</small></h3>
+          <div class="cities">${cities.map(c=>`<div class="city"><span class="cn"><i class="swatch" style="background:${sc(c.s.id)}"></i>${esc(c.s.name)}</span>
+            <div class="ctrack"><i style="width:${(100*c.tr/cmax).toFixed(2)}%;background:var(--seg2)"></i><i style="width:${(100*c.act/cmax).toFixed(2)}%;background:var(--seg3)"></i></div>
+            <span class="cv num">${eur(c.tr+c.act)}<br><small class="muted">${yen((c.tr+c.act)*r)}</small></span></div>`).join("")}</div>
+          <div class="keys" style="margin-top:12px"><span><i style="background:var(--seg2)"></i>Trajet</span><span><i style="background:var(--seg3)"></i>Activités</span></div>
+        </div>
+        <div class="panel"><h3>Le groupe<small>${gTarget?`${Math.round(100*gTotal/gTarget)} % du prévisionnel commun`:"prévu / prévisionnel"}</small></h3>
+          <div class="people">${group.map(({t,b})=>{const l=level(b.pct);const p=b.target?Math.min(100,100*b.total/b.target):0;return `<div class="person">${av(t)}<div><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span>${esc(t.name)}</span><span class="num muted">${eur(b.total)} / ${b.target?eur(b.target):"?"}</span></div><div class="bar" style="margin-top:6px"><i style="width:${p.toFixed(1)}%;background:${l&&l.lvl==="crit"?"var(--bad)":l&&l.lvl==="warn"?"var(--lantern)":"var(--good)"}"></i></div></div>${l?`<span class="pill ${l.lvl}">${Math.round(b.pct)} %</span>`:'<span class="pill">—</span>'}</div>`}).join("")||'<p class="muted">Personne pour l\'instant.</p>'}</div>
+          <p class="muted" style="font-size:13px;margin:14px 0 0">Total du groupe : ${eur(gTotal)} prévus${gTarget?` pour ${eur(gTarget)} de prévisionnel`:""}.</p>
+        </div>
+      </div>
+    </div></div>`;
+}
+
+/* ----- Dépenses partagées ----- */
+function balances(){
+  const bal={}; S.travelers.forEach(t=>bal[t.id]=0);
+  S.expenses.forEach(e=>{const amt=toEur(Number(e.amount)||0,e.currency);const among=(e.among||[]).filter(id=>id in bal);if(!among.length||!(e.payer in bal))return;
+    bal[e.payer]+=amt; among.forEach(id=>bal[id]-=amt/among.length)});
+  return bal;
+}
+function settlements(bal){
+  const cred=[],debt=[];Object.entries(bal).forEach(([id,v])=>{if(v>0.005)cred.push([id,v]);else if(v<-0.005)debt.push([id,-v])});
+  cred.sort((a,b)=>b[1]-a[1]);debt.sort((a,b)=>b[1]-a[1]);const out=[];let i=0,j=0;
+  while(i<debt.length&&j<cred.length){const m=Math.min(debt[i][1],cred[j][1]);out.push({from:debt[i][0],to:cred[j][0],amt:m});debt[i][1]-=m;cred[j][1]-=m;if(debt[i][1]<0.005)i++;if(cred[j][1]<0.005)j++}
+  return out;
+}
+let expCur="EUR";
+function renderSplit(){
+  const trav=S.travelers.slice().sort(byOrder);
+  const bal=balances(), set=settlements(bal);
+  const total=S.expenses.reduce((s,e)=>s+toEur(Number(e.amount)||0,e.currency),0);
+  const exps=S.expenses.slice().sort((a,b)=>String(b.date||b.createdAt).localeCompare(String(a.date||a.createdAt)));
+  const today=new Date().toISOString().slice(0,10);
+  return hero("img/ruelle.jpg","割り勘 · warikan","Dépenses partagées",`${S.expenses.length} dépense${S.expenses.length>1?"s":""} · ${eur2(total)} au total`)
+  + `<div class="wrap">${notice()}
+    <div class="grid2">
+      <div style="display:grid;gap:22px;min-width:0">
+        <div class="panel"><h3>Ajouter une dépense</h3>
+          ${trav.length?`<form class="form" data-form="exp" style="border-style:solid">
+            <div class="row"><label class="f">Quoi ?<input type="text" name="title" required maxlength="60" placeholder="Ex. Ramen à Shinjuku"></label>
+            <label class="f">Montant<input type="number" name="amount" required min="0" step="0.01" placeholder="0"></label>
+            <div class="f" style="flex:0 0 auto"><span>Devise</span><div class="seg"><button type="button" data-act="cur" data-c="EUR" aria-pressed="${expCur==="EUR"}">€</button><button type="button" data-act="cur" data-c="JPY" aria-pressed="${expCur==="JPY"}">¥</button></div></div></div>
+            <div class="row"><label class="f">Payé par<select name="payer">${trav.map(t=>`<option value="${t.id}" ${me&&t.id===me.id?"selected":""}>${esc(t.name)}</option>`).join("")}</select></label>
+            <label class="f">Date<input type="date" name="date" value="${today}"></label></div>
+            <div class="f"><span>Pour qui ?</span><div class="chips">${trav.map(t=>`<label class="chip"><input type="checkbox" name="among" value="${t.id}" checked>${av(t,"xs")}${esc(t.name)}</label>`).join("")}</div></div>
+            <div><button class="btn primary" type="submit">Enregistrer la dépense</button></div></form>`:`<div class="empty">Ajoute des voyageurs pour partager des dépenses.</div>`}
+        </div>
+        <div class="panel"><h3>Historique</h3>
+          ${exps.length?`<div class="scroll"><table class="stack"><thead><tr><th>Dépense</th><th>Payé par</th><th class="r">Montant</th><th></th></tr></thead><tbody>${exps.map(e=>{const p=T(e.payer);const among=(e.among||[]).map(T).filter(Boolean);return `<tr><td><div>${esc(e.title)}</div><small class="muted">${e.date?new Date(e.date+"T12:00").toLocaleDateString("fr-FR",{day:"numeric",month:"short"}):""} · pour ${among.length===trav.length?"tout le monde":among.map(x=>esc(x.name)).join(", ")}</small></td><td>${p?av(p,"xs")+" "+esc(p.name):"?"}</td><td class="r num">${e.currency==="JPY"?yen(e.amount)+`<br><small class="muted">${eur2(toEur(e.amount,"JPY"))}</small>`:eur2(Number(e.amount)||0)}</td><td class="r"><button class="icon-btn" data-act="delExp" data-id="${e.id}" aria-label="Supprimer la dépense">×</button></td></tr>`}).join("")}</tbody></table></div>`
+          :`<div class="empty">Aucune dépense pour l'instant. La première note de restaurant ira ici.</div>`}
+        </div>
+      </div>
+      <div style="display:grid;gap:22px;min-width:0">
+        <div class="panel"><h3>Soldes<small>en euros</small></h3>
+          ${trav.map(t=>{const v=bal[t.id]||0;return `<div class="bal">${av(t)}<span>${esc(t.name)}${me&&t.id===me.id?' <span class="muted">(toi)</span>':""}</span><b class="num ${v>0.005?"pos":v<-0.005?"neg":"muted"}">${v>0.005?"+":""}${eur2(v)}</b></div>`}).join("")||'<p class="muted">Personne pour l\'instant.</p>'}
+        </div>
+        <div class="panel"><h3>Qui rembourse qui ?</h3>
+          <div style="display:grid;gap:8px">${set.length?set.map(s=>`<div class="settle">${av(T(s.from),"xs")}<span>${esc(T(s.from).name)}</span><span class="arrow">→</span>${av(T(s.to),"xs")}<span>${esc(T(s.to).name)}</span><b class="num" style="margin-left:auto">${eur2(s.amt)}</b></div>`).join(""):'<p class="muted" style="margin:0">Tout le monde est à l\'équilibre.</p>'}</div>
+          <p class="muted" style="font-size:13px;margin:14px 0 0">Le nombre de virements est réduit au minimum. Les dépenses en yens sont converties au taux de l'onglet Budget.</p>
+        </div>
+      </div>
+    </div></div>`;
+}
+
+/* ---------- Conserver la saisie entre deux rendus ---------- */
+function captureForms(){const o={};document.querySelectorAll("form[data-form]").forEach(f=>{o[f.dataset.form]={};[...f.elements].forEach(el=>{if(!el.name)return;if(el.type==="checkbox")(o[f.dataset.form]["cb:"+el.value]=el.checked);else o[f.dataset.form][el.name]=el.value})});const a=document.activeElement;o._focus=a&&a.id?a.id:(a&&a.name&&a.form?a.form.dataset.form+"|"+a.name:null);return o}
+function restoreForms(o){document.querySelectorAll("form[data-form]").forEach(f=>{const v=o[f.dataset.form];if(!v)return;[...f.elements].forEach(el=>{if(!el.name)return;if(el.type==="checkbox"){const k="cb:"+el.value;if(k in v)el.checked=v[k]}else if(el.name in v)el.value=v[el.name]})});
+  if(o._focus){const el=o._focus.includes("|")?document.querySelector(`form[data-form="${o._focus.split("|")[0]}"] [name="${o._focus.split("|")[1]}"]`):document.getElementById(o._focus);if(el)el.focus()}}
+
+/* ---------- Événements ---------- */
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-act],[data-tab]"); if(!b) return;
+  if(b.dataset.tab){tab=b.dataset.tab;render();window.scrollTo(0,0);return}
+  const id=b.dataset.id, a=b.dataset.act;
+  if(a==="login"){me=T(id);ls.set("japon-me",id);render();toast("Bienvenue "+me.name);return}
+  if(a==="pickIcon"){iconSel=b.dataset.k;ls.set("japon-icon",iconSel);applyIcon(iconSel);render();toast("Icône choisie");return}
+  if(a==="install"){if(installEvt){installEvt.prompt();installEvt.userChoice.finally(()=>{installEvt=null;render()})}return}
+  if(a==="share"){const data={title:"Japon 2027",text:`Rejoins l'organisation de notre voyage au Japon ! Code du voyage : ${code}`,url:shareUrl()};
+    if(navigator.share){navigator.share(data).catch(()=>{})}else{copyText(data.text+"\n"+data.url)}return}
+  if(a==="copyLink"){copyText(shareUrl());return}
+  if(a==="leaveTrip"){ls.set("japon-code","");ls.set("japon-me","");location.hash="";location.reload();return}
+  if(a==="toggleTask"){if(!me)return;const t=S.tasks.find(x=>x.id===id);patch("tasks",id,{done:{[me.id]:!(t.done&&t.done[me.id])}});return}
+  if(a==="delTask"){if(b.dataset.c){remove("tasks",id);toast("Étape supprimée")}else{b.dataset.c="1";b.textContent="Supprimer ?";b.style.color="var(--bad)";b.style.fontSize="12px";setTimeout(()=>{b.dataset.c="";b.textContent="×";b.style.cssText=""},2500)}return}
+  if(a==="delAct"||a==="delExp"||a==="delLine"){const col={delAct:"activities",delExp:"expenses",delLine:"budget"}[a];if(b.dataset.c){remove(col,id);toast("Supprimé")}else{b.dataset.c="1";b.textContent="Supprimer ?";b.style.color="var(--bad)";b.style.fontSize="12px";setTimeout(()=>{b.dataset.c="";b.textContent="×";b.style.cssText=""},2500)}return}
+  if(a==="openf"){open[b.dataset.k]=true;render();const f=document.querySelector(`form[data-form="${b.dataset.k}"] input`);f&&f.focus();return}
+  if(a==="close"){open[b.dataset.k]=false;render();return}
+  if(a==="stage"){stageSel=id;daySel=null;render();return}
+  if(a==="toggleJoin"){if(!me)return;const x=S.activities.find(v=>v.id===id);patch("activities",id,{joined:{[me.id]:!(x.joined&&x.joined[me.id])}});return}
+  if(a==="toggleBooked"){const x=S.activities.find(v=>v.id===id);patch("activities",id,{booked:!x.booked});return}
+  if(a==="mapZoom"){zoomTo(b.dataset.k);return}
+  if(a==="mapUnlock"){mapTouch=true;render();return}
+  if(a==="mapLock"){mapTouch=false;hideTip();render();return}
+  if(a==="jump"){scrollToId(b.dataset.to);return}
+  if(a==="mapAct"){mapSel={t:"act",id:b.dataset.id};render();return}
+  if(a==="placeAct"){const x=S.activities.find(v=>v.id===b.dataset.id);if(!x)return;placing=x.id;mapSel=null;mapTouch=true;render();scrollToId("s-map");const g=actGeo(x);if(g)focusPoint(g[0],g[1]);else zoomTo(STAGE_VIEW[x.stage]||"parcours");return}
+  if(a==="placeCancel"){placing=null;render();return}
+  if(a==="showOnMap"){const x=S.activities.find(v=>v.id===b.dataset.id);const g=x&&actGeo(x);if(!g)return;mapSel=POI[x.title]&&x.lat==null?{t:"poi",n:x.title}:{t:"act",id:x.id};render();scrollToId("s-map");focusPoint(g[0],g[1]);return}
+  if(a==="mapStep"){zoomBy(Number(b.dataset.f),.5,.5,true);return}
+  if(a==="mapCity"){const ids=b.dataset.ids.split(",");const cur=mapSel&&mapSel.t==="stage"?ids.indexOf(mapSel.id):-1;const id=ids[(cur+1)%ids.length];mapSel={t:"stage",id};stageSel=id;daySel=null;render();zoomTo(STAGE_VIEW[id]||"parcours");return}
+  if(a==="mapPoi"){mapSel={t:"poi",n:b.dataset.n};render();return}
+  if(a==="mapGoStage"){stageSel=b.dataset.id;daySel=null;render();const d=document.getElementById("deroule");d&&d.scrollIntoView({behavior:"smooth",block:"start"});return}
+  if(a==="idea"){if(b.dataset.stage)stageSel=b.dataset.stage;const n=S.activities.filter(x=>x.stage===stageSel).length;put("activities",nid("a"),{title:b.dataset.t,stage:stageSel,price:null,note:"",url:"",date:daySel||null,booked:false,joined:me?{[me.id]:true}:{},order:n+1,createdBy:me?me.id:null,createdAt:new Date().toISOString()});toast("Activité ajoutée");return}
+  if(a==="calDay"){const d=b.dataset.d;
+    if(editingCal()){if(!calTmp){calTmp=d;render();return}let x=calTmp,y=d;if(y<x)[x,y]=[y,x];calTmp=null;calEdit=false;daySel=x;stageSel=stageForIndex(0)?.id||stageSel;setTrip({start:x,end:y}).then(render);toast("Dates enregistrées");return}
+    const st=stageForDate(d);if(!st)return;daySel=d;stageSel=st.id;scrollDay=true;render();return}
+  if(a==="calNav"){const n=Number(b.dataset.n);let [y,m]=calMonth||[new Date().getFullYear(),new Date().getMonth()];m+=n;if(m<0){m=11;y--}if(m>11){m=0;y++}calMonth=[y,m];render();return}
+  if(a==="calEditOn"){calEdit=true;calTmp=null;calMonth=null;render();return}
+  if(a==="calCancel"){calEdit=false;calTmp=null;render();return}
+  if(a==="pickDay"){daySel=b.dataset.d;render();const f=document.querySelector('form[data-form="act"] input[name="title"]');f&&f.focus();return}
+  if(a==="delAlert"){const v=Number(b.dataset.v);setTrip({alerts:alerts().filter(x=>x!==v)});return}
+  if(a==="addAlert"){const v=Math.round(Number($("#newAlert").value));if(!(v>0&&v<=200)){toast("Indique un pourcentage entre 1 et 200");return}if(alerts().includes(v))return;setTrip({alerts:alerts().concat(v)});toast("Palier ajouté");return}
+  if(a==="cur"){expCur=b.dataset.c;document.querySelectorAll('[data-act="cur"]').forEach(x=>x.setAttribute("aria-pressed",x.dataset.c===expCur));return}
+});
+$("#meBtn").addEventListener("click",()=>{me=null;ls.set("japon-me","");render()});
+
+document.addEventListener("change",e=>{
+  const el=e.target, a=el.dataset.act; if(!a) return;
+  if(a==="lineAmt"&&me){const v=el.value===""?null:Math.max(0,Number(el.value));patch("budget",el.dataset.id,{amounts:{[me.id]:v}})}
+  if(a==="dual"){const v=el.value===""?null:Math.max(0,Number(el.value));const val=v==null?null:{v,c:el.dataset.cur};const k=el.dataset.kind;
+    if(k==="line"&&me)patch("budget",el.dataset.id,{amounts:{[me.id]:val}});
+    if(k==="target"&&me)patch("travelers",me.id,{target:val});
+    if(k==="transport"){const s=stages().find(x=>x.id===el.dataset.id);if(local&&!S.stages.length)S.stages=JSON.parse(JSON.stringify(DEFAULTS.stages));if(S.stages.find(x=>x.id===s.id))patch("stages",s.id,{transport:val});else put("stages",s.id,{name:s.name,order:s.order,nights:s.nights,transport:val})}
+    return}
+  if(a==="actDate"){patch("activities",el.dataset.id,{date:el.value||null})}
+  if(a==="actUrl"){const u=safeUrl(el.value);if(u){patch("activities",el.dataset.id,{url:u});toast("Lien ajouté")}else if(el.value.trim())toast("Ce lien ne semble pas valide")}
+  if(a==="rate"){const v=Math.max(1,Number(el.value)||170);setTrip({rate:v})}
+  if(a==="nights"){const v=Math.max(0,Math.min(30,Number(el.value)||0));const s=stages().find(x=>x.id===el.dataset.id);if(local&&!S.stages.length)S.stages=JSON.parse(JSON.stringify(DEFAULTS.stages));if(S.stages.find(x=>x.id===el.dataset.id))patch("stages",el.dataset.id,{nights:v});else put("stages",s.id,{name:s.name,order:s.order,nights:v})}
+});
+
+document.addEventListener("input",e=>{
+  const el=e.target;if(!el.dataset||!el.dataset.base)return;
+  const other=document.getElementById(el.dataset.base+"-"+(el.dataset.cur==="JPY"?"EUR":"JPY"));if(!other)return;
+  if(el.value===""){other.value="";return}
+  const v=Number(el.value)||0;other.value=el.dataset.cur==="JPY"?num2(v/rate()):Math.round(v*rate());
+});
+document.addEventListener("submit",e=>{
+  const f=e.target; e.preventDefault();
+  if(f.id==="gateForm"){const btn=f.querySelector("button");btn.disabled=true;$("#gateMsg").textContent="";
+    tryCode($("#gateCode").value).then(ok=>{if(ok)return startTrip();$("#gateMsg").textContent="Code incorrect. Vérifie l'orthographe (lettres et chiffres)."}).catch(()=>{$("#gateMsg").textContent="Connexion impossible pour l'instant. Réessaie."}).finally(()=>{btn.disabled=false});return}
+  if(f.id==="addMeForm"){const n=$("#newName").value.trim();if(!n)return;
+    const exist=S.travelers.find(t=>t.name.toLowerCase()===n.toLowerCase());
+    if(exist){me=exist;ls.set("japon-me",exist.id);render();return}
+    const id=nid("p");const data={name:n,color:PALETTE[S.travelers.length%PALETTE.length],order:S.travelers.length+1,createdAt:new Date().toISOString()};
+    put("travelers",id,data).then(()=>{me={id,...data};ls.set("japon-me",id);$("#newName").value="";render();toast("Bienvenue "+n)});return}
+  const k=f.dataset.form, d=new FormData(f);
+  if(k==="task"){const t=String(d.get("title")).trim();if(!t)return;put("tasks",nid("t"),{title:t,cat:d.get("cat"),order:S.tasks.length+1,done:{},createdAt:new Date().toISOString()});open.task=false;f.reset();toast("Étape ajoutée")}
+  if(k==="act"){const t=String(d.get("title")).trim();if(!t)return;const p=d.get("price");put("activities",nid("a"),{title:t,stage:stageSel,price:p===""?null:Number(p),note:String(d.get("note")||"").trim(),url:safeUrl(d.get("url")),date:d.get("date")||null,booked:false,joined:me?{[me.id]:true}:{},order:S.activities.filter(x=>x.stage===stageSel).length+1,createdBy:me?me.id:null,createdAt:new Date().toISOString()});open.act=false;f.reset();toast(POI[t]?"Activité ajoutée, visible sur la carte":"Activité ajoutée. Utilise « Placer sur la carte » pour la situer")}
+  if(k==="line"){const l=String(d.get("label")).trim();if(!l)return;put("budget",nid("b"),{label:l,order:S.budget.length+1,amounts:{},createdAt:new Date().toISOString()});open.line=false;f.reset();toast("Poste ajouté")}
+  if(k==="exp"){const among=d.getAll("among");const amt=Number(d.get("amount"));if(!amt||!among.length){toast("Indique un montant et au moins une personne");return}
+    put("expenses",nid("e"),{title:String(d.get("title")).trim(),amount:amt,currency:expCur,payer:d.get("payer"),among,date:d.get("date")||"",createdBy:me?me.id:null,createdAt:new Date().toISOString()});f.reset();
+    f.querySelectorAll('[name="among"]').forEach(c=>c.checked=true);if(me)f.payer.value=me.id;toast("Dépense enregistrée")}
+});
+
+boot();
+})();
+</script>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}</script>
+</body>
+</html>
