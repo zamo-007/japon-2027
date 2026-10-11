@@ -305,6 +305,9 @@ main{position:relative;z-index:1}
 .placebar{position:absolute;left:8px;right:8px;bottom:36px;z-index:5;display:flex;gap:10px;align-items:center;justify-content:space-between;padding:8px 8px 8px 14px;border-radius:12px;background:color-mix(in srgb,var(--ink) 94%,transparent);border:1px solid var(--lantern);font-size:14px}
 .zpm .done{width:auto!important;padding:4px 12px!important;font-size:12px!important;border-color:var(--lantern)!important}
 .link-btn{border:0;background:none;padding:0;color:var(--lantern);font-size:13px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.stages,.cityview{position:relative;scroll-behavior:auto}
+.cityhead{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;letter-spacing:.04em;color:var(--mute);margin-bottom:-12px}
+.cityhead .swatch{width:10px;height:10px;border-radius:3px}
 .stage small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .city-mk.lbl-t,.city-mk.lbl-b{flex-direction:column;gap:3px;transform:translate(-50%,-11px)}
 .city-mk.lbl-t{flex-direction:column-reverse;transform:translate(-50%,calc(-100% + 11px))}
@@ -666,7 +669,11 @@ function render(){
   if(!ready){$("#app").innerHTML=`<div class="wrap" style="padding-top:40px"><p class="muted">Chargement du voyage…</p></div>`;return}
   const html = {prep:renderPrep,plan:renderPlan,budget:renderBudget,split:renderSplit,photos:renderPhotos}[tab]();
   const keep = captureForms();
+  const sx={};document.querySelectorAll("#app [data-keepx]").forEach(el=>sx[el.dataset.keepx]=el.scrollLeft);
   $("#app").innerHTML = html;
+  document.querySelectorAll("#app [data-keepx]").forEach(el=>{if(sx[el.dataset.keepx]!=null)el.scrollLeft=sx[el.dataset.keepx];
+    const sel=el.querySelector('[aria-pressed="true"],[aria-selected="true"]');
+    if(sel&&el.dataset.keepx!=="subnav"){const l=sel.offsetLeft,r=l+sel.offsetWidth;if(l<el.scrollLeft+8||r>el.scrollLeft+el.clientWidth-8)el.scrollLeft=Math.max(0,l-(el.clientWidth-sel.offsetWidth)/2)}});
   restoreForms(keep);
   const bgImg = tab==="prep"?"img/pont.jpg":tab==="plan"?(STAGE_IMG[stageSel]||"img/lanternes.jpg"):tab==="budget"?"img/rainbow.jpg":tab==="photos"?"img/lanternes.jpg":"img/ruelle.jpg";
   const bd=$("#bd"); bd.style.backgroundImage=`url("${bgImg}")`; bd.style.backgroundPosition=HERO_POS[bgImg]||"center";
@@ -1308,9 +1315,11 @@ function renderPlan(){
   const stageCost=acts.reduce((s,a)=>s+(Number(a.price)||0),0);
   const dayOpts=days.map(d=>`<option value="${d}" ${d===daySel?"selected":""}>${fmtD(d,{weekday:"short",day:"numeric",month:"short"})}</option>`).join("");
   return hero(STAGE_IMG[stageSel]||"img/lanternes-kyoto.jpg","旅程 · ryotei","Itinéraire & activités", hasDates?tripDatesLabel():`${st.length} étapes · ${totalNights()} nuits prévues`)
-  + `<div class="wrap">${notice()}<nav class="subnav" aria-label="Sections de la page">${[["s-cal","Calendrier",""],["s-map","Carte",""],["s-city","Activités","acts"]].concat(Object.entries(PLACE_KINDS).map(([k,K])=>["s-city",K.label,k])).map(([i,l,v])=>`<button data-act="jump" data-to="${i}" data-view="${v}">${l}</button>`).join("")}</nav>${renderCalendar()}${renderMap()}
-    <div class="stages" role="group" aria-label="Étapes">${st.map(s=>{const sd=stageDays(s.id);return `<button class="stage" data-act="stage" data-id="${s.id}" aria-pressed="${s.id===stageSel}" style="--c:${sc(s.id)}"><img src="${STAGE_IMG[s.id]||"img/lanternes.jpg"}" alt=""><span><b>${esc(s.name)}</b><small>${sd.length?`${fmtD(sd[0])} → ${fmtD(sd[sd.length-1])}`:`${Number(s.nights)||0} nuit${(Number(s.nights)||0)>1?"s":""}`}</small><small>${(n=>`${n} activité${n>1?"s":""}`)(S.activities.filter(a=>a.stage===s.id&&!isResto(a)).length)} · ${S.activities.filter(a=>a.stage===s.id&&isPlace(a)).length} adresses</small></span></button>`}).join("")}</div>
-    <div class="cityview" id="s-city" role="tablist" aria-label="Vue de la ville">
+  + `<div class="wrap">${notice()}<nav class="subnav" aria-label="Sections de la page" data-keepx="subnav">${[["s-cal","Calendrier",""],["s-map","Carte",""],["s-city","Activités","acts"]].concat(Object.entries(PLACE_KINDS).map(([k,K])=>["s-city",K.label,k])).map(([i,l,v])=>`<button data-act="jump" data-to="${i}" data-view="${v}">${l}</button>`).join("")}</nav>${renderCalendar()}${renderMap()}
+    <div class="cityhead">Choisis une ville</div>
+    <div class="stages" role="group" aria-label="Villes" data-keepx="stages">${st.map(s=>{const sd=stageDays(s.id);return `<button class="stage" data-act="stage" data-id="${s.id}" aria-pressed="${s.id===stageSel}" style="--c:${sc(s.id)}"><img src="${STAGE_IMG[s.id]||"img/lanternes.jpg"}" alt=""><span><b>${esc(s.name)}</b><small>${sd.length?`${fmtD(sd[0])} → ${fmtD(sd[sd.length-1])}`:`${Number(s.nights)||0} nuit${(Number(s.nights)||0)>1?"s":""}`}</small><small>${(n=>`${n} activité${n>1?"s":""}`)(S.activities.filter(a=>a.stage===s.id&&!isResto(a)).length)} · ${S.activities.filter(a=>a.stage===s.id&&isPlace(a)).length} adresses</small></span></button>`}).join("")}</div>
+    <div class="cityhead" style="--c:${sc(cur.id)}"><i class="swatch" style="background:${sc(cur.id)}"></i>À ${esc(cur.name||"")}, que veux-tu voir ?</div>
+    <div class="cityview" id="s-city" role="tablist" aria-label="Rubriques de la ville" data-keepx="cityview">
       <button role="tab" data-act="planView" data-k="acts" aria-selected="${planView==="acts"}"><b>Activités</b><small>${acts.filter(a=>!isPlace(a)).length} · jour par jour</small></button>
       ${Object.entries(PLACE_KINDS).map(([k,K])=>{const n=acts.filter(a=>a.kind===k).length;return `<button role="tab" data-act="planView" data-k="${k}" aria-selected="${planView===k}" style="--kc:${K.color}"><b>${K.label}</b><small>${n} adresse${n>1?"s":""}</small></button>`}).join("")}
     </div>
