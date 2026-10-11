@@ -561,6 +561,20 @@ body{min-height:100vh;min-height:100dvh}
 #ptr[data-state="busy"] i{animation:ptrspin .8s linear infinite}
 #ptr[data-state="done"] i{border-color:var(--good)}
 @keyframes ptrspin{to{transform:rotate(360deg)}}
+/* ---- Cartes des villes : texte toujours lisible ---- */
+.stage img{opacity:.92}
+.stage::after{background:linear-gradient(180deg,rgba(10,12,22,0) 10%,rgba(10,12,22,.35) 45%,rgba(10,12,22,.88) 100%)}
+.stage b{color:#fff;font-weight:800;text-shadow:0 1px 4px rgba(0,0,0,.65)}
+.stage small{color:rgba(255,255,255,.9);text-shadow:0 1px 3px rgba(0,0,0,.6)}
+/* ---- Sakura : rose et accents assortis à la place du doré ---- */
+html[data-theme="sakura"]{--seg3:#D44C7A;--sakura:#EE8FAD;--seg5:#9B6BD0;--seg6:#2A9D9D;--seg7:#8C6371}
+html[data-theme="sakura"] .avatar{color:#fff}
+html[data-theme="sakura"] .hero{--lantern:#FFB3C8}
+html[data-theme="sakura"] .hero h2 .k{color:#FFC2D3;text-shadow:0 1px 6px rgba(0,0,0,.45)}
+html[data-theme="sakura"] .join[aria-pressed="true"]{background:var(--lantern);border-color:var(--lantern);color:#fff}
+html[data-theme="sakura"] .upring{background:conic-gradient(#EE7FA2 calc(var(--p)*1%),rgba(255,255,255,.18) 0)}
+html[data-theme="sakura"] .check input:checked{background:var(--lantern);border-color:var(--lantern)}
+html[data-theme="sakura"] .check input:checked::after{border-color:#fff}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -663,7 +677,10 @@ const yen = n => "¥" + Math.round(n).toLocaleString("fr-FR");
 const toEur = (amt,cur) => cur === "JPY" ? amt / rate() : amt;
 const byOrder = (a,b) => (a.order ?? 0) - (b.order ?? 0) || String(a.createdAt||"").localeCompare(String(b.createdAt||""));
 const T = id => S.travelers.find(t => t.id === id);
-const av = (t,cls="") => t ? `<span class="avatar ${cls}" style="--c:${t.color}" title="${esc(t.name)}">${esc((t.name||"?")[0].toUpperCase())}</span>` : "";
+const isSak = () => document.documentElement.getAttribute("data-theme")==="sakura";
+const SAK_AV={"#E9A93F":"#D44C7A","#E58AA8":"#9B6BD0","#7FC8A0":"#3FA37A","#8FB3E8":"#4D8FD6","#C9A6E8":"#B36FC4","#E8806F":"#E07068","#D9CF7A":"#2A9D9D","#6FD0D0":"#5C7FBF"};
+const avc = c => isSak()?(SAK_AV[String(c||"").toUpperCase()]||c):c;
+const av = (t,cls="") => t ? `<span class="avatar ${cls}" style="--c:${avc(t.color)}" title="${esc(t.name)}">${esc((t.name||"?")[0].toUpperCase())}</span>` : "";
 function copyText(t){(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("Lien copié"),()=>toast("Copie impossible sur cet appareil"))}
 function toast(m){const el=$("#toast");el.textContent=m;el.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove("on"),1800)}
 
@@ -1100,7 +1117,8 @@ async function refreshAll(){
 
 /* ----- Itinéraire & activités ----- */
 const STAGE_COLOR={tokyo:"#E9A93F",kyoto:"#E58AA8",osaka:"#8FB3E8",fuji:"#7FC8A0",retour:"#C9A6E8"};
-const sc = id => STAGE_COLOR[id] || "#D9CF7A";
+const SAK_STAGE={tokyo:"#D44C7A",kyoto:"#9B6BD0",osaka:"#4D8FD6",fuji:"#3FA37A",retour:"#2A9D9D"};
+const sc = id => (isSak()?SAK_STAGE:STAGE_COLOR)[id] || "#B36FC4";
 const pd = s => new Date(s+"T00:00:00Z");
 const iso = d => d.toISOString().slice(0,10);
 const addD = (s,n) => {const d=pd(s);d.setUTCDate(d.getUTCDate()+n);return iso(d)};
@@ -1668,7 +1686,7 @@ document.addEventListener("click",e=>{
   if(a==="pushOn"){enablePush();return}
   if(a==="pushOff"){disablePush();return}
   if(a==="closeSettings"||(a==="closeSettingsBg"&&e.target===b)){closeSettings();return}
-  if(a==="theme"){ls.set("japon-theme",b.dataset.k);applyTheme();renderSettings();return}
+  if(a==="theme"){ls.set("japon-theme",b.dataset.k);applyTheme();if(ready)render();renderSettings();return}
   if(a==="switchUser"){closeSettings();me=null;ls.set("japon-me","");render();return}
   if(a==="reloadPhotos"){loadPhotos();return}
   if(a==="openPhoto"){viewIdx=Number(b.dataset.i);renderViewer();return}
