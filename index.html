@@ -464,6 +464,23 @@ html[data-theme="light"]{--seg5:#8B5CC7;--seg6:#1F9A9A;--seg7:#A08A12}
 .ibody{padding:0 14px 12px;display:grid;gap:8px;font-size:14px}
 .ibody p{margin:0;overflow-wrap:anywhere}
 textarea{resize:vertical;line-height:1.5}
+.upbox{display:grid;gap:10px;margin-top:14px}
+.upsum{display:grid;gap:6px;font-size:13px}
+.upbar{height:6px;border-radius:99px;background:color-mix(in srgb,var(--paper) 12%,transparent);overflow:hidden}
+.upbar i{display:block;height:100%;width:0;background:var(--lantern);border-radius:99px;transition:width .25s}
+.upgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px}
+.uptile{--p:0;position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--ink-3)}
+.uptile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.upov{position:absolute;inset:0;display:grid;place-items:center;background:rgba(5,7,14,.5);transition:background .3s}
+.upring{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#E9A93F calc(var(--p)*1%),rgba(255,255,255,.18) 0);position:relative}
+.upring::before{content:"";position:absolute;inset:5px;border-radius:50%;background:rgba(10,13,24,.85)}
+.uppct{position:relative;font-size:12px;font-weight:700;color:#fff;font-variant-numeric:tabular-nums;text-align:center;line-height:1.1;padding:0 4px}
+.uptile[data-st="wait"] .upring{opacity:.6}
+.uptile[data-st="up"] .upring{animation:uppulse 1.6s ease-in-out infinite}
+@keyframes uppulse{50%{box-shadow:0 0 0 6px rgba(233,169,63,.18)}}
+.uptile[data-st="ok"] .upov{background:rgba(5,7,14,.15)}
+.uptile[data-st="ok"] .upring{background:#2E8B5E}
+.uptile[data-st="err"] .upring,.uptile[data-st="big"] .upring{background:#C2412D}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -656,6 +673,7 @@ function render(){
   if(tab==="plan") mountMap();
   renderSettings();
   updateBadges();
+  if(tab==="photos"&&uploads.length)uploads.forEach((_,i)=>paintUpload(i));
   if(tab==="split")updateShare();
   if(scrollDay&&daySel){scrollDay=false;const g=document.getElementById("day-"+daySel);g&&g.scrollIntoView({behavior:"smooth",block:"start"})}
 }
@@ -801,28 +819,52 @@ function makeThumb(file){return new Promise(res=>{
   img.onload=()=>{try{const M=640,s=Math.min(1,M/Math.max(img.naturalWidth,img.naturalHeight));const c=document.createElement("canvas");c.width=Math.round(img.naturalWidth*s);c.height=Math.round(img.naturalHeight*s);
     c.getContext("2d").drawImage(img,0,0,c.width,c.height);c.toBlob(b=>{URL.revokeObjectURL(url);res(b)},"image/jpeg",.8)}catch(e){URL.revokeObjectURL(url);res(null)}};
   img.onerror=()=>{URL.revokeObjectURL(url);res(null)};img.src=url})}
+function putWithProgress(path,token,body,contentType,onPct){
+  return new Promise((res,rej)=>{
+    const url=`${SB_URL}/storage/v1/object/upload/sign/photos/${path.split("/").map(encodeURIComponent).join("/")}?token=${encodeURIComponent(token)}`;
+    const fd=new FormData();fd.append("cacheControl","3600");fd.append("",body);
+    const x=new XMLHttpRequest();x.open("PUT",url);x.setRequestHeader("x-upsert","false");
+    x.upload.onprogress=e=>{if(e.lengthComputable)onPct(e.loaded/e.total)};
+    x.onload=()=>x.status>=200&&x.status<300?res():rej(new Error("http "+x.status));
+    x.onerror=()=>rej(new Error("network"));x.send(fd);
+  });
+}
+function paintUpload(i){
+  const u=uploads[i],el=document.getElementById("up-"+i);if(!u||!el)return;
+  const p=Math.round(u.pct*100);el.style.setProperty("--p",p);
+  const t=el.querySelector(".uppct");if(t)t.textContent=u.status==="ok"?"✓":u.status==="err"?"Échec":u.status==="big"?"Trop lourde":u.status==="wait"?"En attente":p+" %";
+  el.dataset.st=u.status;
+  const done=uploads.filter(x=>x.status==="ok").length,tot=uploads.length,all=uploads.reduce((s,x)=>s+(x.status==="ok"?1:x.pct||0),0)/tot;
+  const sum=$("#upSum");if(sum)sum.textContent=done===tot?`${tot} photo${tot>1?"s":""} envoyée${tot>1?"s":""}, affichage en cours…`:`Envoi de ${tot} photo${tot>1?"s":""} · ${done}/${tot} terminée${done>1?"s":""} · ${Math.round(all*100)} %`;
+  const bar=$("#upBar");if(bar)bar.style.width=Math.round(all*100)+"%";
+}
 async function uploadFiles(files){
   if(!me){toast("Choisis d'abord ton prénom");return}
   const list=files.filter(f=>f.size>0);if(!list.length)return;
-  uploads=list.map(f=>({name:f.name,size:f.size,status:"wait"}));render();
+  uploads.forEach(u=>u.preview&&URL.revokeObjectURL(u.preview));
+  uploads=list.map(f=>({name:f.name,size:f.size,status:f.size>50*1024*1024?"big":"wait",pct:0,preview:URL.createObjectURL(f)}));
+  render();uploads.forEach((_,i)=>paintUpload(i));
+  const box=$("#upBox");if(box)box.scrollIntoView({behavior:"smooth",block:"nearest"});
   for(let i=0;i<list.length;i++){
-    const f=list[i],u=uploads[i];
-    if(f.size>50*1024*1024){u.status="big";render();continue}
-    u.status="up";render();
+    const f=list[i],u=uploads[i];if(u.status==="big"){paintUpload(i);continue}
+    u.status="up";u.pct=0.02;paintUpload(i);
     try{
       const s=await photosApi({action:"upload",name:f.name,size:f.size,who:me.id});
-      const {error}=await sb.storage.from("photos").uploadToSignedUrl(s.path,s.token,f,{contentType:f.type||"application/octet-stream"});
-      if(error)throw error;
-      const t=await makeThumb(f);if(t)await sb.storage.from("photos").uploadToSignedUrl(s.thumbPath,s.thumbToken,t,{contentType:"image/jpeg"});
-      u.status="ok";
+      await putWithProgress(s.path,s.token,f,f.type||"application/octet-stream",r=>{u.pct=0.02+r*0.9;paintUpload(i)});
+      u.pct=0.94;paintUpload(i);
+      const t=await makeThumb(f);if(t){try{await putWithProgress(s.thumbPath,s.thumbToken,t,"image/jpeg",r=>{u.pct=0.94+r*0.06;paintUpload(i)})}catch(e){}}
+      u.status="ok";u.pct=1;
     }catch(e){u.status="err"}
-    render();
+    paintUpload(i);
   }
-  const ok=uploads.filter(u=>u.status==="ok").length;if(ok)notifyGroup("photos",`${myName()} a partagé ${ok} photo${ok>1?"s":""}`);toast(ok?`${ok} photo${ok>1?"s":""} partagée${ok>1?"s":""}`:"Aucune photo n'a pu être envoyée");
+  const ok=uploads.filter(u=>u.status==="ok").length;if(ok)notifyGroup("photos",`${myName()} a partagé ${ok} photo${ok>1?"s":""}`);
   try{chan&&chan.send({type:"broadcast",event:"photos",payload:{}})}catch(e){}
-  await loadPhotos();setTimeout(()=>{uploads=uploads.filter(u=>u.status!=="ok");if(tab==="photos")render()},2500);
+  await loadPhotos();
+  uploads.filter(u=>u.status==="ok").forEach(u=>u.preview&&URL.revokeObjectURL(u.preview));
+  uploads=uploads.filter(u=>u.status!=="ok");render();
+  toast(ok?`${ok} photo${ok>1?"s":""} ajoutée${ok>1?"s":""}`:"Aucune photo n'a pu être envoyée");
 }
-const mb = n => n>=1048576?(n/1048576).toLocaleString("fr-FR",{maximumFractionDigits:1})+" Mo":Math.max(1,Math.round(n/1024))+" Ko";
+const mb = n => !n?"0 Mo":n>=1048576?(n/1048576).toLocaleString("fr-FR",{maximumFractionDigits:1})+" Mo":Math.max(1,Math.round(n/1024))+" Ko";
 function renderPhotos(){
   const total=(photos||[]).reduce((s,p)=>s+(p.size||0),0);
   const groups={};(photos||[]).forEach((p,i)=>{const d=(p.created||"").slice(0,10);(groups[d]=groups[d]||[]).push([p,i])});
@@ -830,7 +872,8 @@ function renderPhotos(){
     : !photos.length ? `<div class="empty">Aucune photo pour l'instant. Ajoute la première : elle sera visible par tout le groupe, en qualité d'origine.</div>`
     : Object.entries(groups).map(([d,arr])=>`<section class="pgroup"><div class="cat-title">${d?new Date(d+"T12:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"}):""}</div>
       <div class="pgrid">${arr.map(([p,i])=>{const t=T(p.who);return `<button class="ptile" data-act="openPhoto" data-i="${i}" aria-label="Ouvrir ${esc(p.name)}">${p.thumb?`<img src="${esc(p.thumb)}" alt="" loading="lazy" onerror="this.remove()">`:""}<span class="pname">${esc(p.name)}</span>${t?av(t,"xs"):""}</button>`}).join("")}</div></section>`).join("");
-  const up = uploads.length?`<div class="uplist">${uploads.map(u=>`<div class="upl"><span>${esc(u.name)}</span><small class="muted">${mb(u.size)}</small><b class="${u.status==="ok"?"pos":u.status==="err"||u.status==="big"?"neg":"muted"}">${{wait:"En attente",up:"Envoi…",ok:"Envoyée",err:"Échec",big:"Plus de 50 Mo"}[u.status]}</b></div>`).join("")}</div>`:"";
+  const up = uploads.length?`<div id="upBox" class="upbox"><div class="upsum"><span id="upSum">Préparation de l'envoi…</span><div class="upbar"><i id="upBar"></i></div></div>
+    <div class="upgrid">${uploads.map((u,i)=>`<div class="uptile" id="up-${i}" data-st="${u.status}" style="--p:${Math.round(u.pct*100)}"><img src="${u.preview}" alt="" onerror="this.remove()"><div class="upov"><div class="upring"><span class="uppct">${u.status==="ok"?"✓":u.status==="err"?"Échec":u.status==="big"?"Trop lourde":u.status==="wait"?"En attente":Math.round(u.pct*100)+" %"}</span></div></div></div>`).join("")}</div></div>`:"";
   return hero("img/lanternes.jpg","写真 · shashin","Photos du voyage",`${(photos||[]).length} photo${(photos||[]).length>1?"s":""} · ${mb(total)} sur 1 Go d'espace gratuit`)
   + `<div class="wrap">
     <div class="panel"><h3>Partager des photos<small>originaux, sans compression</small></h3>
