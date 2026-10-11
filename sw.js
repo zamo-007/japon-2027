@@ -1,6 +1,6 @@
 // Garde l'interface et les images en cache ; les données viennent toujours du réseau.
 // Reçoit aussi les notifications du groupe, même appli fermée.
-const CACHE="japon-2027-v21";
+const CACHE="japon-2027-v22";
 const SHELL=["./","index.html","vendor-supabase.js"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE&&k!=="japon-meta").map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
