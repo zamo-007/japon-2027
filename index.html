@@ -526,11 +526,19 @@ html[data-theme="sakura"] .brand{color:#5A1F37}
 html[data-theme="sakura"] .mebtn,html[data-theme="sakura"] .gearbtn{background:rgba(255,255,255,.65);border-color:rgba(212,76,122,.25)}
 html[data-theme="sakura"] .tab[aria-selected="true"]{background:rgba(212,76,122,.13)}
 @media (max-width:760px){html[data-theme="sakura"] .tabs{background:linear-gradient(0deg,#FFD6E3 0%,#FFEAF1 60%,#FFF3F7 100%);border-top:1px solid rgba(212,76,122,.2)}}
+#gate > canvas.petals,#login > canvas.petals{position:fixed}
+.login-card{position:relative;z-index:1}
 canvas.petals{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;display:none}
 html[data-theme="sakura"] canvas.petals{display:block}
 @media (min-width:761px){nav.tabs > canvas.petals{display:none!important}}
 .topbar-in{position:relative;z-index:1}
 .tabs > .tab{z-index:1}
+html[data-theme="sakura"] #gate,html[data-theme="sakura"] #login{--ink:#FFF4F7;--ink-2:#FFFFFF;--ink-3:#FCE3EB;--line:rgba(160,60,95,.18);--paper:#3B1E2A;--mute:#7E5866;--lantern:#D44C7A;--lantern-ink:#FFFFFF;color-scheme:light;color:var(--paper);
+  background:linear-gradient(180deg,rgba(255,236,242,0) 0%,rgba(255,236,242,.35) 30%,rgba(255,240,245,.88) 55%,#FFF4F7 75%),url("img/chureito.jpg") center 30%/cover no-repeat #FFF4F7}
+html[data-theme="sakura"] .login-card .eyebrow{color:#C2416F}
+html[data-theme="sakura"] .login-card h1{color:#4A1A30}
+html[data-theme="sakura"] .who button{background:rgba(255,255,255,.8);border-color:rgba(212,76,122,.25);box-shadow:0 2px 10px rgba(160,60,95,.08)}
+html[data-theme="sakura"] .who button:hover{border-color:#D44C7A}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -832,7 +840,7 @@ const Petals=(()=>{
   function spawn(w,h,init){return{x:Math.random()*w,y:init?Math.random()*h:-8-Math.random()*20,s:3.5+Math.random()*4.5,vy:9+Math.random()*14,vx:-4+Math.random()*10,r:Math.random()*6.28,vr:(-1+Math.random()*2)*1.4,sw:Math.random()*6.28,a:.55+Math.random()*.4,l:84+Math.random()*9}}
   function size(st){const d=Math.min(2,window.devicePixelRatio||1),w=st.host.clientWidth,h=st.host.clientHeight;if(!w||!h)return false;
     if(st.c.width!==Math.round(w*d)||st.c.height!==Math.round(h*d)){st.c.width=Math.round(w*d);st.c.height=Math.round(h*d);st.w=w;st.h=h;st.d=d;
-      const n=Math.max(6,Math.min(26,Math.round(w/26)));st.ps=Array.from({length:n},()=>spawn(w,h,true))}return true}
+      const n=Math.round(Math.max(6,Math.min(42,(w*h)/2300)));st.k=Math.max(1,h/200);st.ps=Array.from({length:n},()=>spawn(w,h,true))}return true}
   function petal(ctx,p){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.scale(1,.55+.45*Math.abs(Math.sin(p.sw)));const s=p.s;
     ctx.beginPath();ctx.moveTo(0,-s);ctx.bezierCurveTo(s*.95,-s*.7,s*.75,s*.75,0,s);ctx.bezierCurveTo(-s*.75,s*.75,-s*.95,-s*.7,0,-s);
     ctx.fillStyle=`hsla(342,85%,${p.l}%,${p.a})`;ctx.fill();
@@ -842,14 +850,14 @@ const Petals=(()=>{
     raf=0;if(!active()||document.visibilityState!=="visible"){sets.forEach(st=>{const x=st.c.getContext("2d");x.clearRect(0,0,st.c.width,st.c.height)});return}
     const dt=Math.min(.05,(ts-(last||ts))/1000);last=ts;
     sets.forEach(st=>{if(!size(st))return;const ctx=st.c.getContext("2d");ctx.setTransform(st.d,0,0,st.d,0,0);ctx.clearRect(0,0,st.w,st.h);
-      st.ps.forEach((p,i)=>{if(!reduce()){p.sw+=dt*1.6;p.y+=p.vy*dt;p.x+=p.vx*dt+Math.sin(p.sw)*.35;p.r+=p.vr*dt;
+      st.ps.forEach((p,i)=>{if(!reduce()){p.sw+=dt*1.6;p.y+=p.vy*dt*(st.k||1);p.x+=p.vx*dt+Math.sin(p.sw)*.35;p.r+=p.vr*dt;
         if(p.y>st.h+10||p.x<-12||p.x>st.w+12)st.ps[i]=spawn(st.w,st.h,false)}petal(ctx,st.ps[i])})});
     if(!reduce())raf=requestAnimationFrame(frame);
   }
   function kick(){if(!raf){last=0;raf=requestAnimationFrame(frame)}}
   function mount(host){if(!host||host.querySelector(":scope > canvas.petals"))return;const c=document.createElement("canvas");c.className="petals";c.setAttribute("aria-hidden","true");host.prepend(c);sets.push({host,c,ps:[],w:0,h:0,d:1})}
   document.addEventListener("visibilitychange",kick);window.addEventListener("resize",kick);
-  return{init(){mount(document.querySelector(".topbar"));mount(document.querySelector("nav.tabs"));kick()},update:kick};
+  return{init(){mount(document.querySelector(".topbar"));mount(document.querySelector("nav.tabs"));mount(document.getElementById("gate"));mount(document.getElementById("login"));kick()},update:kick};
 })();
 
 /* ----- Thème ----- */
