@@ -539,12 +539,20 @@ html[data-theme="sakura"] .login-card .eyebrow{color:#C2416F}
 html[data-theme="sakura"] .login-card h1{color:#4A1A30}
 html[data-theme="sakura"] .who button{background:rgba(255,255,255,.8);border-color:rgba(212,76,122,.25);box-shadow:0 2px 10px rgba(160,60,95,.08)}
 html[data-theme="sakura"] .who button:hover{border-color:#D44C7A}
+.themepick{display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-self:start;padding:4px;border-radius:99px;background:color-mix(in srgb,var(--ink-2) 70%,transparent);border:1px solid var(--line);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.themepick span{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);padding:0 6px 0 8px}
+.themepick button{border:0;background:none;color:var(--paper);font-size:13px;padding:6px 11px;border-radius:99px;cursor:pointer}
+.themepick button[aria-pressed="true"]{background:var(--lantern);color:var(--lantern-ink);font-weight:700}
+html[data-theme="light"] #gate,html[data-theme="light"] #login{--ink:#EEF1F6;--ink-2:#FFFFFF;--ink-3:#E2E6EF;--line:rgba(26,31,51,.14);--paper:#182036;--mute:#5B6276;--lantern:#B8730F;--lantern-ink:#FFFFFF;color-scheme:light;color:var(--paper);
+  background:linear-gradient(180deg,rgba(238,241,246,0) 0%,rgba(238,241,246,.4) 30%,rgba(238,241,246,.9) 55%,#EEF1F6 75%),url("img/chureito.jpg") center 30%/cover no-repeat #EEF1F6}
+html[data-theme="light"] .who button{background:rgba(255,255,255,.85)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
 <!-- ============ Code du voyage ============ -->
 <section id="gate" class="login-bg" hidden>
   <div class="login-card">
+    <div class="themepick" role="group" aria-label="Thème"><span>Thème</span><button type="button" data-act="theme" data-k="sakura">Sakura</button><button type="button" data-act="theme" data-k="dark">Sombre</button><button type="button" data-act="theme" data-k="light">Clair</button><button type="button" data-act="theme" data-k="auto">Auto</button></div>
     <div class="eyebrow">日本へ · Voyage entre amis</div>
     <h1>Japon 2027<span>Entre le code du voyage</span></h1>
     <form class="add-me" id="gateForm" autocomplete="off">
@@ -559,6 +567,7 @@ html[data-theme="sakura"] .who button:hover{border-color:#D44C7A}
 <!-- ============ Connexion ============ -->
 <section id="login" hidden>
   <div class="login-card">
+    <div class="themepick" role="group" aria-label="Thème"><span>Thème</span><button type="button" data-act="theme" data-k="sakura">Sakura</button><button type="button" data-act="theme" data-k="dark">Sombre</button><button type="button" data-act="theme" data-k="light">Clair</button><button type="button" data-act="theme" data-k="auto">Auto</button></div>
     <div class="eyebrow">日本へ · Voyage entre amis</div>
     <h1 id="loginTitle">Japon 2027<span>Qui se connecte ?</span></h1>
     <div class="who" id="whoList"></div>
@@ -863,7 +872,7 @@ const Petals=(()=>{
 /* ----- Thème ----- */
 function themePref(){return ls.get("japon-theme")||"sakura"}
 function applyTheme(){const p=themePref();const d=p==="auto"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):p;
-  document.documentElement.setAttribute("data-theme",d);const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=d==="sakura"?"#FFE1EA":d==="light"?"#EEF1F6":"#0E1220";try{Petals.update()}catch(e){}}
+  document.documentElement.setAttribute("data-theme",d);const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=d==="sakura"?"#FFE1EA":d==="light"?"#EEF1F6":"#0E1220";document.querySelectorAll(".themepick [data-act=theme]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.k===p));try{Petals.update()}catch(e){}}
 try{matchMedia("(prefers-color-scheme: light)").addEventListener("change",()=>{if(themePref()==="auto")applyTheme()})}catch(e){}
 applyTheme();
 
