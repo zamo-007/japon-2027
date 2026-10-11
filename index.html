@@ -528,8 +528,7 @@ html[data-theme="sakura"] .tab[aria-selected="true"]{background:rgba(212,76,122,
 @media (max-width:760px){html[data-theme="sakura"] .tabs{background:linear-gradient(0deg,#FFD6E3 0%,#FFEAF1 60%,#FFF3F7 100%);border-top:1px solid rgba(212,76,122,.2)}}
 #gate > canvas.petals,#login > canvas.petals{position:fixed}
 .login-card{position:relative;z-index:1}
-canvas.petals{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;display:none}
-html[data-theme="sakura"] canvas.petals{display:block}
+canvas.petals{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;display:block}
 @media (min-width:761px){nav.tabs > canvas.petals{display:none!important}}
 .topbar-in{position:relative;z-index:1}
 .tabs > .tab{z-index:1}
@@ -880,15 +879,19 @@ function installInner(compact){
 const Petals=(()=>{
   const sets=[];let raf=0,last=0;
   const reduce=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const active=()=>document.documentElement.getAttribute("data-theme")==="sakura";
+  const active=()=>!!document.documentElement.getAttribute("data-theme");
+  const mode=()=>document.documentElement.getAttribute("data-theme")||"sakura";
   function spawn(w,h,init){return{x:Math.random()*w,y:init?Math.random()*h:-8-Math.random()*20,s:3.5+Math.random()*4.5,vy:9+Math.random()*14,vx:-4+Math.random()*10,r:Math.random()*6.28,vr:(-1+Math.random()*2)*1.4,sw:Math.random()*6.28,a:.55+Math.random()*.4,l:84+Math.random()*9}}
   function size(st){const d=Math.min(2,window.devicePixelRatio||1),w=st.host.clientWidth,h=st.host.clientHeight;if(!w||!h)return false;
     if(st.c.width!==Math.round(w*d)||st.c.height!==Math.round(h*d)){st.c.width=Math.round(w*d);st.c.height=Math.round(h*d);st.w=w;st.h=h;st.d=d;
       const n=Math.round(Math.max(6,Math.min(42,(w*h)/2300)));st.k=Math.max(1,h/200);st.ps=Array.from({length:n},()=>spawn(w,h,true))}return true}
   function petal(ctx,p){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.scale(1,.55+.45*Math.abs(Math.sin(p.sw)));const s=p.s;
     ctx.beginPath();ctx.moveTo(0,-s);ctx.bezierCurveTo(s*.95,-s*.7,s*.75,s*.75,0,s);ctx.bezierCurveTo(-s*.75,s*.75,-s*.95,-s*.7,0,-s);
-    ctx.fillStyle=`hsla(342,85%,${p.l}%,${p.a})`;ctx.fill();
-    ctx.beginPath();ctx.moveTo(0,-s*.55);ctx.lineTo(-s*.18,-s);ctx.lineTo(s*.18,-s);ctx.closePath();ctx.fillStyle="rgba(255,240,245,.9)";ctx.fill();
+    const m=mode(),gold=m!=="sakura";
+    if(gold){const g=ctx.createLinearGradient(-s,-s,s,s);const L=m==="light"?p.l-36:p.l-28,A=Math.min(1,p.a+.15);g.addColorStop(0,`hsla(48,100%,${L+18}%,${A})`);g.addColorStop(.5,`hsla(42,95%,${L+4}%,${A})`);g.addColorStop(1,`hsla(36,90%,${L-8}%,${A})`);ctx.fillStyle=g}
+    else ctx.fillStyle=`hsla(342,85%,${p.l}%,${p.a})`;
+    ctx.fill();
+    ctx.beginPath();ctx.moveTo(0,-s*.55);ctx.lineTo(-s*.18,-s);ctx.lineTo(s*.18,-s);ctx.closePath();ctx.fillStyle=gold?(m==="light"?"rgba(255,255,255,.85)":"rgba(255,244,214,.85)"):"rgba(255,240,245,.9)";ctx.fill();
     ctx.restore()}
   function frame(ts){
     raf=0;if(!active()||document.visibilityState!=="visible"){sets.forEach(st=>{const x=st.c.getContext("2d");x.clearRect(0,0,st.c.width,st.c.height)});return}
