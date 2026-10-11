@@ -421,7 +421,10 @@ html[data-theme="light"] .panel{box-shadow:0 1px 3px rgba(24,32,54,.06)}
 .vthumb{filter:blur(2px)}
 .vnav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:64px;border:0;border-radius:10px;background:rgba(14,18,32,.6);color:#fff;font-size:30px;cursor:pointer}
 .vnav.prev{left:8px}.vnav.next{right:8px}
-.vfoot{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:12px 14px calc(14px + env(safe-area-inset-bottom,0px))}
+.vfoot{display:grid;gap:6px;padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px))}
+.vbtns{display:flex;gap:8px;align-items:center}
+.vhint{margin:0;font-size:11px;color:var(--mute)}
+.vbar{padding-top:calc(6px + env(safe-area-inset-top,0px));padding-bottom:6px}
 .tab .k{min-width:0}
 .tab{position:relative}
 .tbadge{position:absolute;top:2px;right:6px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#E5484D;color:#fff;font-size:11px;font-weight:700;font-style:normal;line-height:18px;text-align:center;box-shadow:0 0 0 2px var(--ink)}
@@ -500,6 +503,20 @@ textarea{resize:vertical;line-height:1.5}
 .paidrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 10px;align-items:center;font-size:13px;padding:8px 0;border-top:1px solid var(--line)}
 .paidrow small,.paidrow .link-btn{grid-column:2/4;justify-self:start}
 .paidrow small{grid-column:2/3}.paidrow .link-btn{grid-column:3/4;justify-self:end}
+/* ---- Champs date (iPhone) et barre d'onglets compacte ---- */
+label.f{min-width:0}
+input[type="date"],input[type="time"]{-webkit-appearance:none;appearance:none;display:block;width:100%;max-width:100%;min-width:0;min-height:42px;text-align:left}
+input[type="date"]::-webkit-date-and-time-value,input[type="time"]::-webkit-date-and-time-value{text-align:left;margin:0}
+input.mini[type="time"]{width:auto;min-height:0;display:inline-block}
+@media (max-width:760px){
+  .tabs{padding:4px 4px calc(2px + env(safe-area-inset-bottom,0px))}
+  .tab{padding:4px 2px;font-size:10.5px;line-height:1.25}
+  .tab .k{font-size:14px}
+  main{padding-bottom:68px}
+  .toast{bottom:calc(70px + env(safe-area-inset-bottom,0px))}
+  .updatebar{bottom:calc(70px + env(safe-area-inset-bottom,0px))}
+  .tbadge{top:0;right:4px}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -923,8 +940,8 @@ function renderViewer(){
     <button class="icon-btn vclose" data-act="closePhoto" aria-label="Fermer">×</button></div>
     <div class="vimg">${p.thumb?`<img class="vthumb" src="${esc(p.thumb)}" alt="">`:""}${p.url?`<img class="vfull" src="${esc(p.url)}" alt="${esc(p.name)}" onload="this.previousElementSibling&&this.previousElementSibling.remove()">`:""}
       ${viewIdx>0?`<button class="vnav prev" data-act="navPhoto" data-d="-1" aria-label="Photo précédente">‹</button>`:""}${viewIdx<photos.length-1?`<button class="vnav next" data-act="navPhoto" data-d="1" aria-label="Photo suivante">›</button>`:""}</div>
-    <div class="vfoot">${dl?`<a class="btn primary" href="${esc(dl)}" target="_blank" rel="noopener">Télécharger l'original</a>`:""}${mine?`<button class="btn ghost" data-act="delPhoto">Supprimer</button>`:""}
-      <p class="muted small" style="margin:0;flex-basis:100%">Sur iPhone : appuie longuement sur la photo puis « Ajouter à Photos » pour l'enregistrer en pleine qualité.</p></div>`;
+    <div class="vfoot"><div class="vbtns">${dl?`<a class="btn primary sm" href="${esc(dl)}" target="_blank" rel="noopener">Télécharger l'original</a>`:""}${mine?`<button class="btn ghost sm" data-act="delPhoto">Supprimer</button>`:""}</div>
+      <p class="vhint">iPhone : appui long sur la photo, puis « Ajouter à Photos ».</p></div>`;
 }
 
 /* ----- Pastilles « nouveau » & notifications ----- */
