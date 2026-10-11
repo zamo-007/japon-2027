@@ -484,6 +484,8 @@ textarea{resize:vertical;line-height:1.5}
 .uptile[data-st="ok"] .upov{background:rgba(5,7,14,.15)}
 .uptile[data-st="ok"] .upring{background:#2E8B5E}
 .uptile[data-st="err"] .upring,.uptile[data-st="big"] .upring{background:#C2412D}
+.updatebar{position:fixed;left:12px;right:12px;bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:65;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 10px 10px 16px;border-radius:14px;background:var(--ink-2);border:1px solid var(--lantern);box-shadow:0 10px 30px rgba(0,0,0,.45);font-size:14px}
+@media (min-width:761px){.updatebar{left:auto;right:20px;bottom:20px;max-width:420px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -535,6 +537,7 @@ textarea{resize:vertical;line-height:1.5}
 <div class="backdrop" id="bd" aria-hidden="true"></div>
 <main id="app"></main>
 <div class="toast" id="toast" role="status"></div>
+<div class="updatebar" id="updateBar" hidden><span>Une nouvelle version de l'appli est disponible.</span><button class="btn primary sm" onclick="location.reload()">Mettre à jour</button></div>
 <div class="sheet-bg" id="settings" hidden data-act="closeSettingsBg"><div class="sheet" role="dialog" aria-modal="true" aria-label="Paramètres"><div class="sheet-head"><h2>Paramètres</h2><button class="icon-btn" data-act="closeSettings" aria-label="Fermer" style="font-size:26px">×</button></div><div id="settingsBody" style="display:grid;gap:14px"></div></div></div>
 <div id="viewer" hidden role="dialog" aria-modal="true" aria-label="Photo"></div>
 
@@ -1653,6 +1656,16 @@ document.addEventListener("submit",e=>{
 boot();
 })();
 </script>
-<script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}</script>
+<script>
+if("serviceWorker" in navigator){
+  const hadController=!!navigator.serviceWorker.controller;
+  window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).then(reg=>{
+    const check=()=>reg.update().catch(()=>{});
+    document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")check()});
+    setInterval(check,15*60*1000);
+  }).catch(()=>{}));
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{if(hadController){const b=document.getElementById("updateBar");if(b)b.hidden=false}});
+}
+</script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 // Garde l'interface et les images en cache ; les données viennent toujours du réseau.
 // Reçoit aussi les notifications du groupe, même appli fermée.
-const CACHE="japon-2027-v8";
+const CACHE="japon-2027-v9";
 const SHELL=["./","index.html","vendor-supabase.js"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()))});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE&&k!=="japon-meta").map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
@@ -11,7 +11,9 @@ self.addEventListener("fetch",e=>{
     e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const c=res.clone();caches.open(CACHE).then(ca=>ca.put(e.request,c));return res})));
     return;
   }
-  e.respondWith(fetch(e.request).then(res=>{const c=res.clone();caches.open(CACHE).then(ca=>ca.put(e.request,c));return res}).catch(()=>caches.match(e.request).then(r=>r||caches.match("index.html"))));
+  // Toujours demander la version la plus récente au serveur (sans passer par la mémoire du navigateur).
+  const fresh=e.request.mode==="navigate"?fetch(e.request.url,{cache:"no-cache",credentials:"same-origin"}):fetch(e.request,{cache:"no-cache"});
+  e.respondWith(fresh.then(res=>{const c=res.clone();caches.open(CACHE).then(ca=>ca.put(e.request,c));return res}).catch(()=>caches.match(e.request,{ignoreSearch:true}).then(r=>r||caches.match("index.html"))));
 });
 self.addEventListener("push",e=>{
   let d={};try{d=e.data?e.data.json():{}}catch(_){d={body:e.data?e.data.text():""}}
