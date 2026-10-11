@@ -312,7 +312,7 @@ main{position:relative;z-index:1}
 .subnav{position:sticky;top:calc(env(safe-area-inset-top,0px) + 54px);z-index:15;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:8px 0}
 .subnav::-webkit-scrollbar{display:none}
 .subnav button{flex:0 0 auto;padding:7px 13px;border-radius:99px;border:1px solid var(--line);background:color-mix(in srgb,var(--ink-2) 92%,transparent);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:var(--paper);font-size:13px;cursor:pointer}
-#s-cal,#s-map,#deroule,#s-add{scroll-margin-top:118px}
+#s-cal,#s-map,#deroule,#s-add,#s-city{scroll-margin-top:118px}
 /* ---- Responsive ---- */
 .hero{height:auto;min-height:clamp(190px,30vw,300px);display:flex;align-items:flex-end}
 .hero-in{position:relative;width:100%;padding-top:64px}
@@ -425,6 +425,24 @@ html[data-theme="light"] .panel{box-shadow:0 1px 3px rgba(24,32,54,.06)}
 .subnav button{background:color-mix(in srgb,var(--lantern) 20%,var(--ink-2));border:1px solid color-mix(in srgb,var(--lantern) 60%,transparent);color:var(--paper);font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.28);transition:background .2s,color .2s,transform .1s}
 .subnav button:active{transform:scale(.96)}
 .subnav button[aria-current="true"]{background:var(--lantern);color:var(--lantern-ink);border-color:var(--lantern)}
+/* ---- Vue ville : activités / restaurants ---- */
+.cityview{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cityview button{display:grid;gap:2px;text-align:left;padding:14px 16px;border-radius:14px;border:1.5px solid var(--line);background:color-mix(in srgb,var(--ink-2) 85%,transparent);cursor:pointer;color:var(--paper)}
+.cityview button b{font-family:var(--display);font-size:18px}
+.cityview button small{color:var(--mute);font-size:12px}
+.cityview button[aria-selected="true"]{border-color:var(--lantern);background:color-mix(in srgb,var(--lantern) 16%,var(--ink-2))}
+.restos{display:grid;gap:10px}
+.resto{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 16px;padding:14px;border:1px solid var(--line);border-radius:12px;background:color-mix(in srgb,var(--ink) 55%,transparent)}
+.rmain{display:grid;gap:8px;min-width:0}
+.rhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rhead h4{margin:0;font-size:17px;font-family:var(--display)}
+.cuis{font-size:11px;letter-spacing:.06em;padding:2px 8px;border-radius:99px;background:color-mix(in srgb,var(--sakura) 20%,transparent);color:var(--sakura);font-family:var(--body);font-weight:700;white-space:nowrap}
+.resto .meta{display:flex;gap:6px 12px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--mute)}
+.rlinks{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.rside{display:grid;justify-items:end;gap:6px;align-content:start}
+.poi.rmk{border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 0 3px color-mix(in srgb,var(--sakura) 50%,transparent)}
+.poi.rmk .pl{transform:translateY(-50%)}
+@media (max-width:760px){.resto{grid-template-columns:minmax(0,1fr)}.rside{grid-auto-flow:column;justify-content:space-between;justify-items:start;align-items:center;border-top:1px solid var(--line);padding-top:10px}.cityview button{padding:12px}.cityview button b{font-size:16px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -874,12 +892,55 @@ function renderCalendar(){
   return `<div class="panel" id="s-cal"><h3 style="justify-content:space-between">Calendrier du séjour${nav}</h3>
     <div class="cal"><div class="months">${monthsToShow().map(([y,m])=>monthHTML(y,m)).join("")}</div>${side}</div></div>`;
 }
+/* ----- Restaurants (carnet d'adresses par ville) ----- */
+const CUISINES=["Ramen","Sushi","Izakaya","Yakitori","Wagyu / yakiniku","Tempura","Okonomiyaki","Street food","Kaiseki","Café / dessert","Autre"];
+let planView="acts", restoFilter="all", restoOpen=false;
+const isResto = a => a.kind==="resto";
+function daySelect(a,days){return days.length?`<select class="mini" data-act="actDate" data-id="${a.id}" id="ad-${a.id}" aria-label="Jour"><option value="">Jour à choisir</option>${days.map(d=>`<option value="${d}" ${a.date===d?"selected":""}>${fmtD(d,{weekday:"short",day:"numeric",month:"short"})}</option>`).join("")}</select>`:""}
+function restoCard(a,days){
+  const r=rate(),j=!!(me&&a.joined&&a.joined[me.id]),who=S.travelers.filter(t=>a.joined&&a.joined[t.id]),p=Number(a.price)||0;
+  return `<article class="resto"><div class="rmain">
+    <div class="rhead"><h4>${esc(a.title)}</h4>${a.cuisine?`<span class="cuis">${esc(a.cuisine)}</span>`:""}</div>
+    <div class="meta">${a.area?`<span>${esc(a.area)}</span>`:""}<span class="num">${p?`${yen(p)} ≈ ${eur(p/r)} / pers.`:"Prix moyen à définir"}</span></div>
+    ${a.note?`<div class="muted" style="font-size:14px;overflow-wrap:anywhere">${esc(a.note)}</div>`:""}
+    <div class="rlinks">${a.resaUrl?`<a class="btn primary sm" href="${esc(a.resaUrl)}" target="_blank" rel="noopener noreferrer">Réserver ↗</a>`:`<input class="mini" type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Coller le lien de réservation" id="rr-${a.id}" data-act="restoResa" data-id="${a.id}" aria-label="Lien de réservation">`}
+      ${a.url?`<a class="btn sm" href="${esc(a.url)}" target="_blank" rel="noopener noreferrer">${esc(host(a.url))} ↗</a>`:""}
+      ${actGeo(a)?`<button class="link-btn" data-act="showOnMap" data-id="${a.id}">Voir sur la carte</button>`:`<button class="link-btn" data-act="placeAct" data-id="${a.id}">Placer sur la carte</button>`}</div>
+    <div class="meta"><button class="pill ${a.booked?"ok":""}" style="background:none;cursor:pointer" data-act="toggleBooked" data-id="${a.id}">${a.booked?"✓ Réservé":"À réserver"}</button>${daySelect(a,days)}
+      <input class="mini" type="time" value="${esc(a.time||"")}" id="rt-${a.id}" data-act="restoTime" data-id="${a.id}" aria-label="Heure de la réservation">
+      <button class="icon-btn" data-act="delAct" data-id="${a.id}" aria-label="Supprimer le restaurant">×</button></div></div>
+    <div class="rside"><span class="stack">${who.map(t=>av(t,"xs")).join("")}</span><small class="muted">${who.length} tenté${who.length>1?"s":""}</small>
+      <button class="join" aria-pressed="${j}" data-act="toggleJoin" data-id="${a.id}" ${me?"":"disabled"}>${j?"✓ Je viens":"Ça me tente"}</button></div></article>`;
+}
+function renderResto(cur,days){
+  const all=S.activities.filter(a=>a.stage===cur.id&&isResto(a));
+  const list=all.filter(a=>restoFilter==="all"||(restoFilter==="mine"?!!(me&&a.joined&&a.joined[me.id]):!!a.booked)).sort((x,y)=>(y.booked?1:0)-(x.booked?1:0)||byOrder(x,y));
+  const dayOpts=days.map(d=>`<option value="${d}">${fmtD(d,{weekday:"short",day:"numeric",month:"short"})}</option>`).join("");
+  const form=`<form class="form" data-form="resto" style="border-style:solid">
+      <div class="row"><label class="f">Nom du restaurant<input type="text" name="title" required maxlength="80" placeholder="Ex. Ichiran Shibuya"></label>
+      <label class="f">Cuisine<select name="cuisine"><option value="">—</option>${CUISINES.map(c=>`<option>${c}</option>`).join("")}</select></label></div>
+      <div class="row"><label class="f">Quartier ou adresse<input type="text" name="area" maxlength="80" placeholder="Ex. Shibuya, 1-22-7 Jinnan"></label>
+      <label class="f">Prix moyen / pers. (¥)<input type="number" name="price" id="rp-JPY" data-base="rp" data-cur="JPY" min="0" step="any" placeholder="0"></label><label class="f">soit (€)<input type="number" id="rp-EUR" data-base="rp" data-cur="EUR" min="0" step="any" placeholder="0"></label></div>
+      <div class="row"><label class="f">Lien de réservation<input type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" name="resaUrl" maxlength="500" placeholder="TableCheck, Tabelog, site officiel…"></label>
+      <label class="f">Lien Google Maps ou site<input type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" name="url" maxlength="500" placeholder="https://…"></label></div>
+      <div class="row">${days.length?`<label class="f">Jour (si réservé)<select name="date"><option value="">Pas encore</option>${dayOpts}</select></label>`:""}<label class="f">Note<input type="text" name="note" maxlength="160" placeholder="Spécialité, à réserver longtemps à l'avance…"></label></div>
+      <div class="row"><button class="btn primary" type="submit">Ajouter le restaurant</button><button class="btn ghost" type="button" data-act="close" data-k="resto">Annuler</button></div></form>`;
+  return `<div class="panel"><h3><span class="swatch" style="background:${sc(cur.id)}"></span>Restaurants à ${esc(cur.name||"")}<small>${all.length} adresse${all.length>1?"s":""} · ${all.filter(a=>a.booked).length} réservée${all.filter(a=>a.booked).length>1?"s":""}</small></h3>
+    <div class="row" style="align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="seg" style="flex:0 1 auto">${[["all","Tous"],["mine","Ça me tente"],["booked","Réservés"]].map(([k,l])=>`<button data-act="restoFilter" data-k="${k}" aria-pressed="${restoFilter===k}">${l}</button>`).join("")}</div>
+      ${restoOpen?"":`<button class="btn primary sm" data-act="restoForm" style="flex:0 0 auto">+ Ajouter un restaurant</button>`}</div>
+    ${restoOpen?form:""}
+    <div class="restos" style="margin-top:${restoOpen?14:0}px">${list.length?list.map(a=>restoCard(a,days)).join(""):`<div class="empty">${all.length?"Aucun restaurant dans ce filtre.":`Aucun restaurant noté à ${esc(cur.name||"")} pour l'instant. Ajoute vos adresses avec leur lien de réservation : tout le monde les retrouvera ici.`}</div>`}</div>
+    <p class="muted small" style="margin-top:12px">Un restaurant réservé avec un jour apparaît aussi dans le programme de la journée, et son prix entre dans le budget de ceux qui ont coché « Ça me tente ».</p></div>`;
+}
+
 function actCard(a,days){
   const r=rate(),j=!!(me&&a.joined&&a.joined[me.id]),who=S.travelers.filter(t=>a.joined&&a.joined[t.id]),p=Number(a.price)||0;
   const dateSel = days.length ? `<select class="mini" data-act="actDate" data-id="${a.id}" id="ad-${a.id}" aria-label="Jour de l'activité"><option value="">Jour à choisir</option>${days.map((d,)=>`<option value="${d}" ${a.date===d?"selected":""}>${fmtD(d,{weekday:"short",day:"numeric",month:"short"})}</option>`).join("")}</select>` : (a.day?`<span>${esc(a.day)}</span>`:"");
-  return `<article class="act"><div style="display:grid;gap:6px;min-width:0"><h4>${esc(a.title)}</h4>
+  return `<article class="act"><div style="display:grid;gap:6px;min-width:0"><h4>${isResto(a)?`<span class="cuis">Restaurant${a.time?" · "+esc(a.time):""}</span> `:""}${esc(a.title)}</h4>
+    ${isResto(a)&&a.resaUrl?`<div><a class="link" href="${esc(a.resaUrl)}" target="_blank" rel="noopener noreferrer">Voir la réservation ↗</a></div>`:""}
     ${a.note?`<div class="muted" style="font-size:14px;overflow-wrap:anywhere">${esc(a.note)}</div>`:""}
-    <div class="meta">${a.url?`<a class="link" href="${esc(a.url)}" target="_blank" rel="noopener noreferrer">${esc(host(a.url))} ↗</a>`:`<input class="mini" type="url" placeholder="Coller un lien" id="au-${a.id}" data-act="actUrl" data-id="${a.id}" aria-label="Lien de l'activité">`}${dateSel}${actGeo(a)?`<button class="link-btn" data-act="showOnMap" data-id="${a.id}">Voir sur la carte</button>`:`<button class="link-btn" data-act="placeAct" data-id="${a.id}">Placer sur la carte</button>`}</div>
+    <div class="meta">${a.url?`<a class="link" href="${esc(a.url)}" target="_blank" rel="noopener noreferrer">${esc(host(a.url))} ↗</a>`:`<input class="mini" type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Coller un lien" id="au-${a.id}" data-act="actUrl" data-id="${a.id}" aria-label="Lien de l'activité">`}${dateSel}${actGeo(a)?`<button class="link-btn" data-act="showOnMap" data-id="${a.id}">Voir sur la carte</button>`:`<button class="link-btn" data-act="placeAct" data-id="${a.id}">Placer sur la carte</button>`}</div>
     <div class="meta"><span class="stack">${who.map(t=>av(t,"xs")).join("")}</span><span>${who.length} participant${who.length>1?"s":""}</span>
     <button class="pill ${a.booked?"ok":""}" style="background:none;cursor:pointer" data-act="toggleBooked" data-id="${a.id}">${a.booked?"✓ Réservé":"À réserver"}</button>
     <button class="icon-btn" data-act="delAct" data-id="${a.id}" aria-label="Supprimer l'activité">×</button></div></div>
@@ -950,7 +1011,7 @@ function renderMap(){
   const pois=Object.entries(POI).map(([n,[st,la,lo]])=>{const on=S.activities.some(a=>a.title===n);const sel=mapSel&&mapSel.t==="poi"&&mapSel.n===n;
     return `<button class="ov poi ${on?"on":""} ${sel?"sel":""}" ${xy([la,lo])} data-maxw="90" data-act="mapPoi" data-n="${esc(n)}" style="--c:${sc(st)}" aria-label="${esc(n)}"><span class="pl">${esc(n)}</span></button>`}).join("");
   const custom=S.activities.filter(a=>a.lat!=null&&a.lon!=null&&!POI[a.title]).map(a=>{const sel=mapSel&&mapSel.t==="act"&&mapSel.id===a.id;
-    return `<button class="ov poi on mine ${sel?"sel":""}" ${xy([a.lat,a.lon])} data-maxw="120" data-act="mapAct" data-id="${a.id}" style="--c:${sc(a.stage)}" aria-label="${esc(a.title)}"><span class="pl">${esc(a.title)}</span></button>`}).join("");
+    return `<button class="ov poi on mine ${isResto(a)?"rmk":""} ${sel?"sel":""}" ${xy([a.lat,a.lon])} data-maxw="120" data-act="mapAct" data-id="${a.id}" style="--c:${sc(a.stage)}" aria-label="${esc(a.title)}"><span class="pl">${esc(a.title)}</span></button>`}).join("");
   const peak=`<span class="ov peak" ${xy([35.3606,138.7274])} data-maxw="260">▲ Mont Fuji · 3 776 m</span>`;
   const info = mapSel ? (mapSel.t==="stage"?stageCard(mapSel.id):mapSel.t==="act"?actMapCard(mapSel.id):poiCard(mapSel.n)) : `<p class="muted" style="margin:0;font-size:14px">Glisse la carte pour te déplacer, molette ou +/− pour zoomer. Clique sur une ville pour voir ses activités. En zoomant, les lieux à visiter apparaissent : les points pleins sont déjà au programme.</p>`;
   return `<div class="panel" id="s-map"><h3>Carte du parcours<small>≈ ${Math.round(total).toLocaleString("fr-FR")} km à vol d'oiseau</small></h3>
@@ -1065,21 +1126,27 @@ function renderPlan(){
     const planned = days.map(d=>{const i=diffD(S.trip.start,d)+1;const list=acts.filter(a=>a.date===d);
       return `<section class="daygroup ${d===daySel?"sel":""}" id="day-${d}"><div class="dayhead"><b>Jour ${i}</b><span class="muted">${fmtD(d,{weekday:"long",day:"numeric",month:"long"})}</span><button class="btn sm ghost" data-act="pickDay" data-d="${d}" style="margin-left:auto">${d===daySel?"Jour sélectionné":"Ajouter ici"}</button></div>
         ${list.length?`<div class="acts">${list.map(a=>actCard(a,days)).join("")}</div>`:`<p class="muted" style="margin:0;font-size:14px">Rien de prévu pour l'instant.</p>`}</section>`}).join("");
-    const rest=acts.filter(a=>!a.date||!days.includes(a.date));
+    const rest=acts.filter(a=>!isResto(a)&&(!a.date||!days.includes(a.date)));
     flow = planned + `<section class="daygroup"><div class="dayhead"><b>À planifier</b><span class="muted">${rest.length} activité${rest.length>1?"s":""} sans jour</span></div>
       ${rest.length?`<div class="acts">${rest.map(a=>actCard(a,days)).join("")}</div>`:`<p class="muted" style="margin:0;font-size:14px">Toutes les activités ont un jour.</p>`}</section>`;
   } else {
-    flow = acts.length ? `<div class="acts">${acts.map(a=>actCard(a,[])).join("")}</div>`
+    const nonR=acts.filter(a=>!isResto(a));
+    flow = nonR.length ? `<div class="acts">${nonR.map(a=>actCard(a,[])).join("")}</div>`
       : `<div class="empty">Aucune activité prévue à ${esc(cur.name||"")} pour l'instant.</div>`;
     if(!hasDates) flow = `<p class="muted" style="margin:0 0 12px;font-size:14px">Choisis les dates dans le calendrier pour répartir les activités jour par jour.</p>` + flow;
   }
   const ideas=(IDEAS[stageSel]||[]).filter(i=>!acts.some(a=>a.title===i));
+  const stageResto=acts.filter(isResto).length;
   const stageCost=acts.reduce((s,a)=>s+(Number(a.price)||0),0);
   const dayOpts=days.map(d=>`<option value="${d}" ${d===daySel?"selected":""}>${fmtD(d,{weekday:"short",day:"numeric",month:"short"})}</option>`).join("");
   return hero(STAGE_IMG[stageSel]||"img/lanternes-kyoto.jpg","旅程 · ryotei","Itinéraire & activités", hasDates?tripDatesLabel():`${st.length} étapes · ${totalNights()} nuits prévues`)
-  + `<div class="wrap">${notice()}<nav class="subnav" aria-label="Sections de la page">${[["s-cal","Calendrier"],["s-map","Carte"],["deroule","Déroulé"],["s-add","Ajouter une activité"]].map(([i,l])=>`<button data-act="jump" data-to="${i}">${l}</button>`).join("")}</nav>${renderCalendar()}${renderMap()}
-    <div class="stages" role="group" aria-label="Étapes">${st.map(s=>{const sd=stageDays(s.id);return `<button class="stage" data-act="stage" data-id="${s.id}" aria-pressed="${s.id===stageSel}" style="--c:${sc(s.id)}"><img src="${STAGE_IMG[s.id]||"img/lanternes.jpg"}" alt=""><span><b>${esc(s.name)}</b><small>${sd.length?`${fmtD(sd[0])} → ${fmtD(sd[sd.length-1])}`:`${Number(s.nights)||0} nuit${(Number(s.nights)||0)>1?"s":""}`}</small><small>${S.activities.filter(a=>a.stage===s.id).length} activité${S.activities.filter(a=>a.stage===s.id).length>1?"s":""}</small></span></button>`}).join("")}</div>
-    <div class="grid2">
+  + `<div class="wrap">${notice()}<nav class="subnav" aria-label="Sections de la page">${[["s-cal","Calendrier",""],["s-map","Carte",""],["s-city","Activités","acts"],["s-city","Restaurants","resto"]].map(([i,l,v])=>`<button data-act="jump" data-to="${i}" data-view="${v}">${l}</button>`).join("")}</nav>${renderCalendar()}${renderMap()}
+    <div class="stages" role="group" aria-label="Étapes">${st.map(s=>{const sd=stageDays(s.id);return `<button class="stage" data-act="stage" data-id="${s.id}" aria-pressed="${s.id===stageSel}" style="--c:${sc(s.id)}"><img src="${STAGE_IMG[s.id]||"img/lanternes.jpg"}" alt=""><span><b>${esc(s.name)}</b><small>${sd.length?`${fmtD(sd[0])} → ${fmtD(sd[sd.length-1])}`:`${Number(s.nights)||0} nuit${(Number(s.nights)||0)>1?"s":""}`}</small><small>${(n=>`${n} activité${n>1?"s":""}`)(S.activities.filter(a=>a.stage===s.id&&!isResto(a)).length)} · ${S.activities.filter(a=>a.stage===s.id&&isResto(a)).length} resto</small></span></button>`}).join("")}</div>
+    <div class="cityview" id="s-city" role="tablist" aria-label="Vue de la ville">
+      <button role="tab" data-act="planView" data-k="acts" aria-selected="${planView==="acts"}"><b>Activités</b><small>${acts.filter(a=>!isResto(a)).length} · programme jour par jour</small></button>
+      <button role="tab" data-act="planView" data-k="resto" aria-selected="${planView==="resto"}"><b>Restaurants</b><small>${acts.filter(isResto).length} adresse${acts.filter(isResto).length>1?"s":""} à ${esc(cur.name||"")}</small></button>
+    </div>
+    ${planView==="resto"?renderResto(cur,days):`<div class="grid2">
       <div class="panel" id="deroule"><h3><span class="swatch" style="background:${sc(cur.id)}"></span>${esc(cur.name||"")}<small>Déroulé · ${yen(stageCost)} ≈ ${eur(stageCost/r)} / pers.</small></h3>
         <div class="transport"><span>Trajet pour arriver à ${esc(cur.name||"")} <span class="muted">(train, bus… par personne)</span></span>${dual("tr-"+cur.id,cur.transport,`data-act="dual" data-kind="transport" data-id="${cur.id}"`)}</div>
         <div style="display:grid;gap:14px;margin-top:14px">${flow}</div>
@@ -1088,9 +1155,9 @@ function renderPlan(){
         <div class="panel" id="s-add"><h3>Ajouter une activité<small>${esc(cur.name||"")}${daySel?" · "+fmtD(daySel,{weekday:"short",day:"numeric",month:"short"}):""}</small></h3>
           <form class="form" data-form="act" style="border-style:solid">
             <label class="f">Activité<input type="text" name="title" required maxlength="80" placeholder="Ex. Dîner à Gion"></label>
-            <div class="row"><label class="f">Prix / pers. (¥)<input type="number" name="price" id="fp-JPY" data-base="fp" data-cur="JPY" data-sync="1" min="0" step="100" placeholder="0"></label><label class="f">soit (€)<input type="number" name="priceEur" id="fp-EUR" data-base="fp" data-cur="EUR" data-sync="1" min="0" step="0.5" placeholder="0"></label>
+            <div class="row"><label class="f">Prix / pers. (¥)<input type="number" name="price" id="fp-JPY" data-base="fp" data-cur="JPY" data-sync="1" min="0" step="any" placeholder="0"></label><label class="f">soit (€)<input type="number" name="priceEur" id="fp-EUR" data-base="fp" data-cur="EUR" data-sync="1" min="0" step="any" placeholder="0"></label>
             ${days.length?`<label class="f">Jour<select name="date"><option value="">À choisir plus tard</option>${dayOpts}</select></label>`:""}</div>
-            <label class="f">Lien (site, réservation, vidéo…)<input type="url" name="url" maxlength="500" placeholder="https://…"></label>
+            <label class="f">Lien (site, réservation, vidéo…)<input type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" name="url" maxlength="500" placeholder="https://…"></label>
             <label class="f">Note<input type="text" name="note" maxlength="160" placeholder="Adresse, horaires, conseil…"></label>
             <div><button class="btn primary" type="submit">Ajouter l'activité</button></div></form>
         </div>
@@ -1099,7 +1166,7 @@ function renderPlan(){
           <p class="muted" style="font-size:13px;margin:14px 0 0">Coche « Je participe » sur ce qui te tente : ton budget se calcule tout seul dans l'onglet Budget.</p>
         </div>
       </div>
-    </div></div>`;
+    </div>`}</div>`;
 }
 
 /* ----- Budget ----- */
@@ -1112,18 +1179,19 @@ function dual(base,val,attrs){
     else if(val.c==="JPY"){j=Math.round(Number(val.v)||0);e=num2((Number(val.v)||0)/rate())}
     else {e=num2(Number(val.v)||0);j=Math.round((Number(val.v)||0)*rate())}
   }
-  return `<div class="dual"><label><input type="number" min="0" step="100" id="${base}-JPY" data-base="${base}" data-cur="JPY" value="${j}" placeholder="0" ${attrs}><span>¥</span></label><label><input type="number" min="0" step="1" id="${base}-EUR" data-base="${base}" data-cur="EUR" value="${e}" placeholder="0" ${attrs}><span>€</span></label></div>`;
+  return `<div class="dual"><label><input type="number" min="0" step="any" id="${base}-JPY" data-base="${base}" data-cur="JPY" value="${j}" placeholder="0" ${attrs}><span>¥</span></label><label><input type="number" min="0" step="any" id="${base}-EUR" data-base="${base}" data-cur="EUR" value="${e}" placeholder="0" ${attrs}><span>€</span></label></div>`;
 }
 const DEFAULT_ALERTS=[50,75,90,100];
 const alerts = () => (Array.isArray(S.trip.alerts)&&S.trip.alerts.length?S.trip.alerts:DEFAULT_ALERTS).map(Number).filter(n=>n>0).sort((a,b)=>a-b);
 function personBudget(t){
   const fixed=S.budget.reduce((s,b)=>s+amtEur(b.amounts&&b.amounts[t.id]),0);
   const travel=stages().reduce((s,x)=>s+amtEur(x.transport),0);
-  const list=S.activities.filter(a=>a.joined&&a.joined[t.id]);
+  const all=S.activities.filter(a=>a.joined&&a.joined[t.id]);const list=all.filter(a=>!isResto(a)),rl=all.filter(isResto);
   const acts=list.reduce((s,a)=>s+(Number(a.price)||0),0)/rate();
+  const resto=rl.reduce((s,a)=>s+(Number(a.price)||0),0)/rate();
   const booked=list.filter(a=>a.booked).reduce((s,a)=>s+(Number(a.price)||0),0)/rate();
-  const target=amtEur(t.target), total=fixed+travel+acts;
-  return {fixed,travel,acts,booked,total,target,count:list.length,pct:target?100*total/target:null};
+  const target=amtEur(t.target), total=fixed+travel+acts+resto;
+  return {fixed,travel,acts,resto,rcount:rl.length,booked,total,target,count:list.length,pct:target?100*total/target:null};
 }
 function level(pct){
   if(pct==null) return null;
@@ -1138,7 +1206,7 @@ function spentBy(t){
 const bothCur = v => `${eur(v)} <span class="muted">· ${yen(v*rate())}</span>`;
 function stackChart(b){
   const max=Math.max(b.target,b.total,1)*1.1, w=v=>(100*v/max).toFixed(2);
-  const segs=[["Postes fixes",b.fixed,"var(--seg1)"],["Trajets",b.travel,"var(--seg2)"],["Activités",b.acts,"var(--seg3)"]];
+  const segs=[["Postes fixes",b.fixed,"var(--seg1)"],["Trajets",b.travel,"var(--seg2)"],["Activités",b.acts,"var(--seg3)"],["Restaurants",b.resto||0,"var(--sakura)"]];
   const ticks = b.target ? alerts().filter(a=>a<=110).map(a=>{const x=w(b.target*a/100);return `<span class="tick ${a===100?"full":""}" style="left:${x}%"><em style="${x>88?"transform:translateX(-100%)":x<6?"transform:none":""}">${a===100?"Prévisionnel":a+" %"}</em></span>`}).join("") : "";
   return `<div class="chart" role="img" aria-label="Budget prévu ${eur(b.total)} sur un prévisionnel de ${eur(b.target)}">
     <div class="track">${segs.map(([l,v,c])=>v>0?`<i style="width:${w(v)}%;background:${c}" title="${l} : ${eur(v)}"></i>`:"").join("")}${ticks}</div>
@@ -1193,6 +1261,7 @@ function renderBudget(){
         ${lines.map(b=>`<tr><td>${esc(b.label)}</td><td>${dual("bl-"+b.id,me&&b.amounts?b.amounts[me.id]:null,`data-act="dual" data-kind="line" data-id="${b.id}" ${me?"":"disabled"}`)}</td><td class="r"><button class="icon-btn" data-act="delLine" data-id="${b.id}" aria-label="Supprimer le poste">×</button></td></tr>`).join("")}
         <tr><td>Trajets entre les villes<br><small class="muted">saisis dans Itinéraire & activités</small></td><td class="num">${bothCur(mb.travel)}</td><td></td></tr>
         <tr><td>Activités choisies <span class="muted">(${mb.count})</span><br><small class="muted">dont ${eur(mb.booked)} déjà réservés</small></td><td class="num">${bothCur(mb.acts)}</td><td></td></tr>
+        <tr><td>Restaurants choisis <span class="muted">(${mb.rcount})</span><br><small class="muted">ceux où tu as coché « Ça me tente »</small></td><td class="num">${bothCur(mb.resto)}</td><td></td></tr>
         <tr><td><b>Total prévu</b></td><td class="num"><b>${eur(mb.total)}</b> <span class="muted">· ${yen(mb.total*r)}</span></td><td></td></tr>
         </tbody></table></div>
         <div style="margin-top:14px">${open.line?`<form class="form" data-form="line"><div class="row"><label class="f">Nouveau poste<input type="text" name="label" required maxlength="40" placeholder="Ex. Assurance voyage"></label><button class="btn primary" type="submit">Ajouter</button><button class="btn ghost" type="button" data-act="close" data-k="line">Annuler</button></div></form>`
@@ -1295,14 +1364,17 @@ document.addEventListener("click",e=>{
   if(a==="delTask"){if(b.dataset.c){remove("tasks",id);toast("Étape supprimée")}else{b.dataset.c="1";b.textContent="Supprimer ?";b.style.color="var(--bad)";b.style.fontSize="12px";setTimeout(()=>{b.dataset.c="";b.textContent="×";b.style.cssText=""},2500)}return}
   if(a==="delAct"||a==="delExp"||a==="delLine"){const col={delAct:"activities",delExp:"expenses",delLine:"budget"}[a];if(b.dataset.c){remove(col,id);toast("Supprimé")}else{b.dataset.c="1";b.textContent="Supprimer ?";b.style.color="var(--bad)";b.style.fontSize="12px";setTimeout(()=>{b.dataset.c="";b.textContent="×";b.style.cssText=""},2500)}return}
   if(a==="openf"){open[b.dataset.k]=true;render();const f=document.querySelector(`form[data-form="${b.dataset.k}"] input`);f&&f.focus();return}
-  if(a==="close"){open[b.dataset.k]=false;render();return}
+  if(a==="close"){if(b.dataset.k==="resto")restoOpen=false;open[b.dataset.k]=false;render();return}
   if(a==="stage"){stageSel=id;daySel=null;render();return}
   if(a==="toggleJoin"){if(!me)return;const x=S.activities.find(v=>v.id===id);patch("activities",id,{joined:{[me.id]:!(x.joined&&x.joined[me.id])}});return}
   if(a==="toggleBooked"){const x=S.activities.find(v=>v.id===id);patch("activities",id,{booked:!x.booked});return}
   if(a==="mapZoom"){zoomTo(b.dataset.k);return}
   if(a==="mapUnlock"){mapTouch=true;render();return}
   if(a==="mapLock"){mapTouch=false;hideTip();render();return}
-  if(a==="jump"){scrollToId(b.dataset.to);return}
+  if(a==="jump"){if(b.dataset.view){planView=b.dataset.view;render()}scrollToId(b.dataset.to);return}
+  if(a==="planView"){planView=b.dataset.k;render();return}
+  if(a==="restoFilter"){restoFilter=b.dataset.k;render();return}
+  if(a==="restoForm"){restoOpen=true;render();const i=document.querySelector('form[data-form="resto"] input[name="title"]');i&&i.focus();return}
   if(a==="mapAct"){mapSel={t:"act",id:b.dataset.id};render();return}
   if(a==="placeAct"){const x=S.activities.find(v=>v.id===b.dataset.id);if(!x)return;placing=x.id;mapSel=null;mapTouch=true;render();scrollToId("s-map");const g=actGeo(x);if(g)focusPoint(g[0],g[1]);else zoomTo(STAGE_VIEW[x.stage]||"parcours");return}
   if(a==="placeCancel"){placing=null;render();return}
@@ -1325,10 +1397,10 @@ document.addEventListener("click",e=>{
 });
 let spyRaf=0;
 window.addEventListener("scroll",()=>{if(tab!=="plan"||spyRaf)return;spyRaf=requestAnimationFrame(()=>{spyRaf=0;
-  const ids=["s-cal","s-map","deroule","s-add"];let cur=ids[0];
+  const ids=["s-cal","s-map","s-city"];let cur=ids[0];
   ids.forEach(i=>{const el=document.getElementById(i);if(el&&el.getBoundingClientRect().top<=140)cur=i});
-  if(window.innerHeight+window.scrollY>=document.documentElement.scrollHeight-4)cur="s-add";
-  document.querySelectorAll('.subnav button').forEach(b=>b.setAttribute("aria-current",b.dataset.to===cur))})},{passive:true});
+  if(window.innerHeight+window.scrollY>=document.documentElement.scrollHeight-4)cur="s-city";
+  document.querySelectorAll('.subnav button').forEach(b=>b.setAttribute("aria-current",b.dataset.to===cur&&(cur!=="s-city"||b.dataset.view===planView)))})},{passive:true});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(viewIdx>=0){viewIdx=-1;renderViewer()}else if(settingsOpen)closeSettings()}if(viewIdx>=0&&(e.key==="ArrowLeft"||e.key==="ArrowRight")){viewIdx=Math.max(0,Math.min(photos.length-1,viewIdx+(e.key==="ArrowLeft"?-1:1)));renderViewer()}});
 $("#meBtn").addEventListener("click",()=>{me=null;ls.set("japon-me","");render()});
 
@@ -1341,6 +1413,8 @@ document.addEventListener("change",e=>{
     if(k==="target"&&me)patch("travelers",me.id,{target:val});
     if(k==="transport"){const s=stages().find(x=>x.id===el.dataset.id);if(local&&!S.stages.length)S.stages=JSON.parse(JSON.stringify(DEFAULTS.stages));if(S.stages.find(x=>x.id===s.id))patch("stages",s.id,{transport:val});else put("stages",s.id,{name:s.name,order:s.order,nights:s.nights,transport:val})}
     return}
+  if(a==="restoResa"){const u=safeUrl(el.value);if(u){patch("activities",el.dataset.id,{resaUrl:u});toast("Lien de réservation ajouté")}else if(el.value.trim())toast("Ce lien ne semble pas valide")}
+  if(a==="restoTime"){patch("activities",el.dataset.id,{time:el.value||""})}
   if(a==="actDate"){patch("activities",el.dataset.id,{date:el.value||null})}
   if(a==="actUrl"){const u=safeUrl(el.value);if(u){patch("activities",el.dataset.id,{url:u});toast("Lien ajouté")}else if(el.value.trim())toast("Ce lien ne semble pas valide")}
   if(a==="rate"){const v=Math.max(1,Number(el.value)||170);setTrip({rate:v})}
@@ -1365,6 +1439,9 @@ document.addEventListener("submit",e=>{
     put("travelers",id,data).then(()=>{me={id,...data};ls.set("japon-me",id);$("#newName").value="";render();toast("Bienvenue "+n)});return}
   const k=f.dataset.form, d=new FormData(f);
   if(k==="task"){const t=String(d.get("title")).trim();if(!t)return;put("tasks",nid("t"),{title:t,cat:d.get("cat"),order:S.tasks.length+1,done:{},createdAt:new Date().toISOString()});open.task=false;f.reset();toast("Étape ajoutée")}
+  if(k==="resto"){const t=String(d.get("title")).trim();if(!t)return;const p=d.get("price");restoOpen=false;f.reset();
+    put("activities",nid("r"),{kind:"resto",title:t,stage:stageSel,cuisine:String(d.get("cuisine")||""),area:String(d.get("area")||"").trim(),price:p===""||p==null?null:Number(p),resaUrl:safeUrl(d.get("resaUrl")),url:safeUrl(d.get("url")),date:d.get("date")||null,time:"",note:String(d.get("note")||"").trim(),booked:false,joined:me?{[me.id]:true}:{},order:S.activities.filter(x=>x.stage===stageSel&&isResto(x)).length+1,createdBy:me?me.id:null,createdAt:new Date().toISOString()});
+    toast("Restaurant ajouté");return}
   if(k==="act"){const t=String(d.get("title")).trim();if(!t)return;const p=d.get("price");put("activities",nid("a"),{title:t,stage:stageSel,price:p===""?null:Number(p),note:String(d.get("note")||"").trim(),url:safeUrl(d.get("url")),date:d.get("date")||null,booked:false,joined:me?{[me.id]:true}:{},order:S.activities.filter(x=>x.stage===stageSel).length+1,createdBy:me?me.id:null,createdAt:new Date().toISOString()});open.act=false;f.reset();toast(POI[t]?"Activité ajoutée, visible sur la carte":"Activité ajoutée. Utilise « Placer sur la carte » pour la situer")}
   if(k==="line"){const l=String(d.get("label")).trim();if(!l)return;put("budget",nid("b"),{label:l,order:S.budget.length+1,amounts:{},createdAt:new Date().toISOString()});open.line=false;f.reset();toast("Poste ajouté")}
   if(k==="exp"){const among=d.getAll("among");const amt=Number(d.get("amount"));if(!amt||!among.length){toast("Indique un montant et au moins une personne");return}
