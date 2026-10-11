@@ -420,6 +420,13 @@ html[data-theme="light"] .panel{box-shadow:0 1px 3px rgba(24,32,54,.06)}
 .vnav.prev{left:8px}.vnav.next{right:8px}
 .vfoot{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:12px 14px calc(14px + env(safe-area-inset-bottom,0px))}
 .tab .k{min-width:0}
+.tab{position:relative}
+.tbadge{position:absolute;top:2px;right:6px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#E5484D;color:#fff;font-size:11px;font-weight:700;font-style:normal;line-height:18px;text-align:center;box-shadow:0 0 0 2px var(--ink)}
+@media (min-width:761px){.tbadge{position:static;margin-left:4px}}
+table.stack tr.eedit{padding:10px 0}
+table.stack .eedit td,table.stack .eedit td:last-child{position:static;width:100%}
+.eedit .f{display:grid;gap:10px}
+.eedit td{background:color-mix(in srgb,var(--lantern) 8%,transparent)}
 @media (max-width:760px){.tab{padding:6px 4px;font-size:11px}.tabs{gap:0}}
 /* ---- Raccourcis de section : de vrais boutons ---- */
 .subnav button{background:color-mix(in srgb,var(--lantern) 20%,var(--ink-2));border:1px solid color-mix(in srgb,var(--lantern) 60%,transparent);color:var(--paper);font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.28);transition:background .2s,color .2s,transform .1s}
@@ -493,11 +500,11 @@ textarea{resize:vertical;line-height:1.5}
   <div class="topbar-in">
     <div class="brand" id="brand">Japon 2027</div>
     <nav class="tabs" role="tablist" aria-label="Sections">
-      <button class="tab" role="tab" data-tab="prep" aria-selected="true"><span class="k">準備</span>Préparation</button>
-      <button class="tab" role="tab" data-tab="plan"><span class="k">旅程</span><span class="long">Itinéraire & activités</span><span class="short">Activités</span></button>
-      <button class="tab" role="tab" data-tab="budget"><span class="k">予算</span>Budget <i class="tabdot" id="budgetDot" hidden></i></button>
-      <button class="tab" role="tab" data-tab="split"><span class="k">割勘</span>Dépenses</button>
-      <button class="tab" role="tab" data-tab="photos"><span class="k">写真</span>Photos</button>
+      <button class="tab" role="tab" data-tab="prep" aria-selected="true"><span class="k">準備</span>Préparation<i class="tbadge" data-badge="prep" hidden></i></button>
+      <button class="tab" role="tab" data-tab="plan"><span class="k">旅程</span><span class="long">Itinéraire & activités</span><span class="short">Activités</span><i class="tbadge" data-badge="plan" hidden></i></button>
+      <button class="tab" role="tab" data-tab="budget"><span class="k">予算</span>Budget <i class="tabdot" id="budgetDot" hidden></i><i class="tbadge" data-badge="budget" hidden></i></button>
+      <button class="tab" role="tab" data-tab="split"><span class="k">割勘</span>Dépenses<i class="tbadge" data-badge="split" hidden></i></button>
+      <button class="tab" role="tab" data-tab="photos"><span class="k">写真</span>Photos<i class="tbadge" data-badge="photos" hidden></i></button>
     </nav>
     <button class="mebtn" id="meBtn" title="Changer de voyageur"></button>
     <button class="gearbtn" data-act="openSettings" aria-label="Paramètres" title="Paramètres"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
@@ -609,10 +616,11 @@ async function tryCode(c){
 }
 async function startTrip(){
   $("#gate").hidden=true;
-  await loadAll();ready=true;pickMe();render();
+  try{const qt=new URLSearchParams(location.search).get("tab");if(qt&&["prep","plan","budget","split","photos"].includes(qt))tab=qt}catch(e){}
+  await loadAll();ready=true;pickMe();if(me)initSeen();render();loadPhotos();refreshPushState();
   try{chan&&sb.removeChannel(chan)}catch(e){}
   chan=sb.channel("trip-"+tripInfo.id,{config:{broadcast:{self:false}}});
-  chan.on("broadcast",{event:"changed"},()=>scheduleRefetch()).on("broadcast",{event:"photos"},()=>{if(photos!==null)loadPhotos()}).subscribe();
+  chan.on("broadcast",{event:"changed"},()=>scheduleRefetch()).on("broadcast",{event:"photos"},()=>loadPhotos()).subscribe();
   setInterval(()=>{if(document.visibilityState==="visible")scheduleRefetch(0)},45000);
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")scheduleRefetch(0)});
 }
@@ -647,6 +655,8 @@ function render(){
   const bd=$("#bd"); bd.style.backgroundImage=`url("${bgImg}")`; bd.style.backgroundPosition=HERO_POS[bgImg]||"center";
   if(tab==="plan") mountMap();
   renderSettings();
+  updateBadges();
+  if(tab==="split")updateShare();
   if(scrollDay&&daySel){scrollDay=false;const g=document.getElementById("day-"+daySel);g&&g.scrollIntoView({behavior:"smooth",block:"start"})}
 }
 function renderLogin(){
@@ -750,7 +760,7 @@ applyTheme();
 
 /* ----- Paramètres ----- */
 let settingsOpen=false;
-function openSettings(){settingsOpen=true;$("#settings").hidden=false;renderSettings();document.body.style.overflow="hidden"}
+function openSettings(){settingsOpen=true;$("#settings").hidden=false;renderSettings();refreshPushState().then(renderSettings);document.body.style.overflow="hidden"}
 function closeSettings(){settingsOpen=false;$("#settings").hidden=true;document.body.style.overflow=""}
 function renderSettings(){
   if(!settingsOpen)return;const p=themePref();
@@ -762,6 +772,7 @@ function renderSettings(){
     <section class="set"><h3>Mon prénom</h3>
       ${me?`<form class="add-me" id="renameForm"><input type="text" id="renameInput" maxlength="24" value="${esc(me.name)}" aria-label="Mon prénom"><button class="btn primary" type="submit">Enregistrer</button></form>
       <p class="muted small">Le nouveau prénom s'affiche aussitôt chez tout le monde.</p>`:`<p class="muted small">Choisis d'abord ton prénom sur l'écran de connexion.</p>`}</section>
+    <section class="set"><h3>Notifications</h3>${pushBlock()}</section>
     <section class="set"><h3>Inviter un ami</h3>
       <p class="small" style="margin:0">Code du voyage : <b class="codechip">${esc(code||"")}</b></p>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" data-act="share">Partager le lien</button><button class="btn" data-act="copyLink">Copier le lien</button></div>
@@ -783,7 +794,7 @@ async function photosApi(body){
 async function loadPhotos(){
   if(!code)return;photosLoading=true;photosErr="";if(tab==="photos")render();
   try{const j=await photosApi({action:"list"});photos=j.items||[]}catch(e){photosErr="Impossible de charger les photos pour l'instant."}
-  photosLoading=false;if(tab==="photos")render();renderViewer();
+  photosLoading=false;if(tab==="photos")render();else updateBadges();renderViewer();
 }
 function makeThumb(file){return new Promise(res=>{
   const url=URL.createObjectURL(file),img=new Image();
@@ -807,7 +818,7 @@ async function uploadFiles(files){
     }catch(e){u.status="err"}
     render();
   }
-  const ok=uploads.filter(u=>u.status==="ok").length;toast(ok?`${ok} photo${ok>1?"s":""} partagée${ok>1?"s":""}`:"Aucune photo n'a pu être envoyée");
+  const ok=uploads.filter(u=>u.status==="ok").length;if(ok)notifyGroup("photos",`${myName()} a partagé ${ok} photo${ok>1?"s":""}`);toast(ok?`${ok} photo${ok>1?"s":""} partagée${ok>1?"s":""}`:"Aucune photo n'a pu être envoyée");
   try{chan&&chan.send({type:"broadcast",event:"photos",payload:{}})}catch(e){}
   await loadPhotos();setTimeout(()=>{uploads=uploads.filter(u=>u.status!=="ok");if(tab==="photos")render()},2500);
 }
@@ -848,6 +859,64 @@ function renderViewer(){
     <div class="vfoot">${dl?`<a class="btn primary" href="${esc(dl)}" target="_blank" rel="noopener">Télécharger l'original</a>`:""}${mine?`<button class="btn ghost" data-act="delPhoto">Supprimer</button>`:""}
       <p class="muted small" style="margin:0;flex-basis:100%">Sur iPhone : appuie longuement sur la photo puis « Ajouter à Photos » pour l'enregistrer en pleine qualité.</p></div>`;
 }
+
+/* ----- Pastilles « nouveau » & notifications ----- */
+const TAB_KEYS=["prep","plan","budget","split","photos"];
+const seenAt = t => ls.get("japon-seen-"+t)||"";
+const markSeen = t => ls.set("japon-seen-"+t,new Date().toISOString());
+const after = (a,b) => !!a && Date.parse(a) > (Date.parse(b)||0);
+function initSeen(){TAB_KEYS.forEach(t=>{if(!seenAt(t))markSeen(t)})}
+function unseenCounts(){
+  const mine=me&&me.id, nw=(x,t)=>after(x.createdAt,seenAt(t))&&x.createdBy!==mine;
+  return {prep:S.tasks.filter(x=>nw(x,"prep")).length+S.activities.filter(x=>isInfo(x)&&nw(x,"prep")).length+S.travelers.filter(x=>x.id!==mine&&after(x.createdAt,seenAt("prep"))).length,
+    plan:S.activities.filter(x=>!isInfo(x)&&nw(x,"plan")).length,
+    budget:S.budget.filter(x=>nw(x,"budget")).length,
+    split:S.expenses.filter(x=>nw(x,"split")).length,
+    photos:(photos||[]).filter(p=>p.who!==mine&&after(p.created,seenAt("photos"))).length};
+}
+function updateBadges(){
+  if(!ready||!me)return;
+  if(document.visibilityState==="visible")markSeen(tab);
+  const c=unseenCounts();let total=0;
+  TAB_KEYS.forEach(t=>{const n=t===tab&&document.visibilityState==="visible"?0:c[t];total+=n;const el=document.querySelector(`.tbadge[data-badge="${t}"]`);if(el){el.hidden=!n;el.textContent=n>99?"99+":String(n)}});
+  try{if(navigator.setAppBadge){total?navigator.setAppBadge(total):navigator.clearAppBadge()}}catch(e){}
+  try{caches.open("japon-meta").then(ca=>ca.put("badge",new Response(String(total))))}catch(e){}
+}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")updateBadges()});
+
+const pushSupported = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+let pushState="unknown";
+async function pushApi(body){const r=await fetch(SB_URL+"/functions/v1/push",{method:"POST",headers:{"Content-Type":"application/json","apikey":SB_KEY},body:JSON.stringify({code,...body})});const j=await r.json().catch(()=>({}));if(!r.ok)throw j;return j}
+function b64u(s){const p="=".repeat((4-s.length%4)%4);const b=atob((s+p).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from(b,c=>c.charCodeAt(0))}
+async function refreshPushState(){
+  if(!pushSupported()){pushState=platform()==="ios"&&!isStandalone()?"needs-install":"unsupported";return}
+  if(Notification.permission==="denied"){pushState="denied";return}
+  try{const reg=await navigator.serviceWorker.ready;const s=await reg.pushManager.getSubscription();pushState=s?"on":"off"}catch(e){pushState="off"}
+}
+async function syncPush(){try{if(!pushSupported()||Notification.permission!=="granted")return;const reg=await navigator.serviceWorker.ready;const s=await reg.pushManager.getSubscription();if(s)await pushApi({action:"subscribe",sub:s.toJSON(),who:me&&me.id,icon:iconSel})}catch(e){}}
+async function enablePush(){
+  try{
+    const perm=await Notification.requestPermission();
+    if(perm!=="granted"){pushState=perm==="denied"?"denied":"off";renderSettings();toast("Notifications non autorisées");return}
+    const reg=await navigator.serviceWorker.ready;const {publicKey}=await pushApi({action:"key"});
+    let s=await reg.pushManager.getSubscription();if(!s)s=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(publicKey)});
+    await pushApi({action:"subscribe",sub:s.toJSON(),who:me&&me.id,icon:iconSel});pushState="on";renderSettings();toast("Notifications activées");updateBadges();
+  }catch(e){toast("Activation impossible sur cet appareil");await refreshPushState();renderSettings()}
+}
+async function disablePush(){
+  try{const reg=await navigator.serviceWorker.ready;const s=await reg.pushManager.getSubscription();if(s){await pushApi({action:"unsubscribe",endpoint:s.endpoint}).catch(()=>{});await s.unsubscribe()}}catch(e){}
+  pushState="off";renderSettings();toast("Notifications désactivées");
+}
+function pushBlock(){
+  return pushState==="on"?`<p class="small"><span class="pos">Activées sur cet appareil.</span> Tu es prévenu dès que quelqu'un ajoute une activité, une dépense, une photo…</p><div><button class="btn" data-act="pushOff">Désactiver</button></div>`
+  :pushState==="off"?`<p class="small">Reçois une notification quand quelqu'un du groupe ajoute quelque chose, même appli fermée. Le nombre de nouveautés s'affiche aussi sur l'icône.</p><div><button class="btn primary" data-act="pushOn">Activer les notifications</button></div>`
+  :pushState==="denied"?`<p class="small">Les notifications ont été refusées. Pour les réactiver : Réglages du téléphone, puis Notifications, puis Japon 2027.</p>`
+  :pushState==="needs-install"?`<p class="small">Sur iPhone, les notifications ne marchent que dans l'appli installée : ajoute-la d'abord à l'écran d'accueil (voir plus bas), puis ouvre-la depuis l'icône et reviens ici.</p>`
+  :pushState==="unsupported"?`<p class="small">Ce navigateur ne gère pas les notifications. Sur iPhone, il faut iOS 16.4 ou plus récent et l'appli installée.</p>`:`<p class="muted small">Vérification…</p>`;
+}
+const myName = () => me?me.name:"Quelqu'un";
+function notifyGroup(tabKey,body){if(code)pushApi({action:"notify",who:me&&me.id,tab:tabKey,title:"Japon 2027",body}).catch(()=>{})}
+if("serviceWorker" in navigator){navigator.serviceWorker.addEventListener("message",e=>{const d=e.data||{};if(d.type==="openTab"&&TAB_KEYS.includes(d.tab)){tab=d.tab;if(tab==="photos")loadPhotos();render();window.scrollTo(0,0)}})}
 
 /* ----- Itinéraire & activités ----- */
 const STAGE_COLOR={tokyo:"#E9A93F",kyoto:"#E58AA8",osaka:"#8FB3E8",fuji:"#7FC8A0",retour:"#C9A6E8"};
@@ -1352,7 +1421,9 @@ function settlements(bal){
   while(i<debt.length&&j<cred.length){const m=Math.min(debt[i][1],cred[j][1]);out.push({from:debt[i][0],to:cred[j][0],amt:m});debt[i][1]-=m;cred[j][1]-=m;if(debt[i][1]<0.005)i++;if(cred[j][1]<0.005)j++}
   return out;
 }
-let expCur="EUR";
+let expCur="EUR", expEditId=null;
+function updateShare(){const f=document.querySelector('form[data-form="exp"]'),o=$("#shareTxt");if(!f||!o)return;const n=f.querySelectorAll('input[name="among"]:checked').length,amt=Number(f.amount.value)||0;
+  o.textContent=!n?"Coche au moins une personne.":amt?`${n} personne${n>1?"s":""} · ${expCur==="JPY"?yen(amt/n)+" ≈ "+eur2(amt/n/rate()):eur2(amt/n)} chacun`:`${n} personne${n>1?"s":""} cochée${n>1?"s":""}`}
 function renderSplit(){
   const trav=S.travelers.slice().sort(byOrder);
   const bal=balances(), set=settlements(bal);
@@ -1370,11 +1441,14 @@ function renderSplit(){
             <div class="f" style="flex:0 0 auto"><span>Devise</span><div class="seg"><button type="button" data-act="cur" data-c="EUR" aria-pressed="${expCur==="EUR"}">€</button><button type="button" data-act="cur" data-c="JPY" aria-pressed="${expCur==="JPY"}">¥</button></div></div></div>
             <div class="row"><label class="f">Payé par<select name="payer">${trav.map(t=>`<option value="${t.id}" ${me&&t.id===me.id?"selected":""}>${esc(t.name)}</option>`).join("")}</select></label>
             <label class="f">Date<input type="date" name="date" value="${today}"></label></div>
-            <div class="f"><span>Pour qui ?</span><div class="chips">${trav.map(t=>`<label class="chip"><input type="checkbox" name="among" value="${t.id}" checked>${av(t,"xs")}${esc(t.name)}</label>`).join("")}</div></div>
+            <div class="f"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span>Partagée entre</span><button type="button" class="link-btn" data-act="amongAll">Tout le monde / personne</button></div>
+              <div class="chips">${trav.map(t=>`<label class="chip"><input type="checkbox" name="among" value="${t.id}" checked>${av(t,"xs")}${esc(t.name)}</label>`).join("")}</div>
+              <span id="shareTxt" class="small" style="color:var(--paper)"></span></div>
             <div><button class="btn primary" type="submit">Enregistrer la dépense</button></div></form>`:`<div class="empty">Ajoute des voyageurs pour partager des dépenses.</div>`}
         </div>
         <div class="panel"><h3>Historique</h3>
-          ${exps.length?`<div class="scroll"><table class="stack"><thead><tr><th>Dépense</th><th>Payé par</th><th class="r">Montant</th><th></th></tr></thead><tbody>${exps.map(e=>{const p=T(e.payer);const among=(e.among||[]).map(T).filter(Boolean);return `<tr><td><div>${esc(e.title)}</div><small class="muted">${e.date?new Date(e.date+"T12:00").toLocaleDateString("fr-FR",{day:"numeric",month:"short"}):""} · pour ${among.length===trav.length?"tout le monde":among.map(x=>esc(x.name)).join(", ")}</small></td><td>${p?av(p,"xs")+" "+esc(p.name):"?"}</td><td class="r num">${e.currency==="JPY"?yen(e.amount)+`<br><small class="muted">${eur2(toEur(e.amount,"JPY"))}</small>`:eur2(Number(e.amount)||0)}</td><td class="r"><button class="icon-btn" data-act="delExp" data-id="${e.id}" aria-label="Supprimer la dépense">×</button></td></tr>`}).join("")}</tbody></table></div>`
+          ${exps.length?`<div class="scroll"><table class="stack"><thead><tr><th>Dépense</th><th>Payé par</th><th class="r">Montant</th><th></th></tr></thead><tbody>${exps.map(e=>{const p=T(e.payer);const among=(e.among||[]).map(T).filter(Boolean);return `<tr><td><div>${esc(e.title)}</div><small class="muted">${e.date?new Date(e.date+"T12:00").toLocaleDateString("fr-FR",{day:"numeric",month:"short"}):""} · pour ${among.length===trav.length?"tout le monde":among.map(x=>esc(x.name)).join(", ")}</small></td><td>${p?av(p,"xs")+" "+esc(p.name):"?"}</td><td class="r num">${e.currency==="JPY"?yen(e.amount)+`<br><small class="muted">${eur2(toEur(e.amount,"JPY"))}</small>`:eur2(Number(e.amount)||0)}</td><td class="r"><button class="link-btn" data-act="expEdit" data-id="${e.id}" style="margin-right:8px">Partage</button><button class="icon-btn" data-act="delExp" data-id="${e.id}" aria-label="Supprimer la dépense">×</button></td></tr>${expEditId===e.id?`<tr class="eedit"><td colspan="4"><div class="f"><span>Partager « ${esc(e.title)} » entre :</span><div class="chips">${trav.map(t=>`<label class="chip"><input type="checkbox" class="eamong" value="${t.id}" ${(e.among||[]).includes(t.id)?"checked":""}>${av(t,"xs")}${esc(t.name)}</label>`).join("")}</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm primary" data-act="expSave" data-id="${e.id}">Enregistrer</button><button class="btn sm ghost" data-act="expCancel">Annuler</button></div></div></td></tr>`:""}`}).join("")}</tbody></table></div>`
           :`<div class="empty">Aucune dépense pour l'instant. La première note de restaurant ira ici.</div>`}
         </div>
       </div>
@@ -1400,8 +1474,10 @@ document.addEventListener("click",e=>{
   const b=e.target.closest("[data-act],[data-tab]"); if(!b) return;
   if(b.dataset.tab){tab=b.dataset.tab;if(tab==="photos"&&photos===null)loadPhotos();render();window.scrollTo(0,0);return}
   const id=b.dataset.id, a=b.dataset.act;
-  if(a==="login"){me=T(id);ls.set("japon-me",id);render();toast("Bienvenue "+me.name);return}
+  if(a==="login"){me=T(id);ls.set("japon-me",id);initSeen();syncPush();render();toast("Bienvenue "+me.name);return}
   if(a==="openSettings"){openSettings();return}
+  if(a==="pushOn"){enablePush();return}
+  if(a==="pushOff"){disablePush();return}
   if(a==="closeSettings"||(a==="closeSettingsBg"&&e.target===b)){closeSettings();return}
   if(a==="theme"){ls.set("japon-theme",b.dataset.k);applyTheme();renderSettings();return}
   if(a==="switchUser"){closeSettings();me=null;ls.set("japon-me","");render();return}
@@ -1411,7 +1487,7 @@ document.addEventListener("click",e=>{
   if(a==="navPhoto"){viewIdx=Math.max(0,Math.min(photos.length-1,viewIdx+Number(b.dataset.d)));renderViewer();return}
   if(a==="delPhoto"){if(!b.dataset.c){b.dataset.c="1";b.textContent="Confirmer la suppression";b.style.color="var(--bad)";return}
     const ph=photos[viewIdx];viewIdx=-1;renderViewer();photosApi({action:"delete",path:ph.path,who:me&&me.id}).then(()=>{toast("Photo supprimée");loadPhotos()}).catch(()=>toast("Suppression impossible"));return}
-  if(a==="pickIcon"){iconSel=b.dataset.k;ls.set("japon-icon",iconSel);applyIcon(iconSel);render();renderSettings();toast("Icône choisie");return}
+  if(a==="pickIcon"){iconSel=b.dataset.k;ls.set("japon-icon",iconSel);applyIcon(iconSel);syncPush();render();renderSettings();toast("Icône choisie");return}
   if(a==="install"){if(installEvt){installEvt.prompt();installEvt.userChoice.finally(()=>{installEvt=null;render()})}return}
   if(a==="share"){const data={title:"Japon 2027",text:`Rejoins l'organisation de notre voyage au Japon ! Code du voyage : ${code}`,url:shareUrl()};
     if(navigator.share){navigator.share(data).catch(()=>{})}else{copyText(data.text+"\n"+data.url)}return}
@@ -1444,7 +1520,7 @@ document.addEventListener("click",e=>{
   if(a==="mapCity"){const ids=b.dataset.ids.split(",");const cur=mapSel&&mapSel.t==="stage"?ids.indexOf(mapSel.id):-1;const id=ids[(cur+1)%ids.length];mapSel={t:"stage",id};stageSel=id;daySel=null;render();zoomTo(STAGE_VIEW[id]||"parcours");return}
   if(a==="mapPoi"){mapSel={t:"poi",n:b.dataset.n};render();return}
   if(a==="mapGoStage"){stageSel=b.dataset.id;daySel=null;render();const d=document.getElementById("deroule");d&&d.scrollIntoView({behavior:"smooth",block:"start"});return}
-  if(a==="idea"){if(b.dataset.stage)stageSel=b.dataset.stage;const n=S.activities.filter(x=>x.stage===stageSel).length;put("activities",nid("a"),{title:b.dataset.t,stage:stageSel,price:null,note:"",url:"",date:daySel||null,booked:false,joined:me?{[me.id]:true}:{},order:n+1,createdBy:me?me.id:null,createdAt:new Date().toISOString()});toast("Activité ajoutée");return}
+  if(a==="idea"){if(b.dataset.stage)stageSel=b.dataset.stage;const n=S.activities.filter(x=>x.stage===stageSel).length;put("activities",nid("a"),{title:b.dataset.t,stage:stageSel,price:null,note:"",url:"",date:daySel||null,booked:false,joined:me?{[me.id]:true}:{},order:n+1,createdBy:me?me.id:null,createdAt:new Date().toISOString()});notifyGroup("plan",`${myName()} a ajouté une activité : ${b.dataset.t}`);toast("Activité ajoutée");return}
   if(a==="calDay"){const d=b.dataset.d;
     if(editingCal()){if(!calTmp){calTmp=d;render();return}let x=calTmp,y=d;if(y<x)[x,y]=[y,x];calTmp=null;calEdit=false;daySel=x;stageSel=stageForIndex(0)?.id||stageSel;setTrip({start:x,end:y}).then(render);toast("Dates enregistrées");return}
     const st=stageForDate(d);if(!st)return;daySel=d;stageSel=st.id;scrollDay=true;render();return}
@@ -1454,7 +1530,11 @@ document.addEventListener("click",e=>{
   if(a==="pickDay"){daySel=b.dataset.d;render();const f=document.querySelector('form[data-form="act"] input[name="title"]');f&&f.focus();return}
   if(a==="delAlert"){const v=Number(b.dataset.v);setTrip({alerts:alerts().filter(x=>x!==v)});return}
   if(a==="addAlert"){const v=Math.round(Number($("#newAlert").value));if(!(v>0&&v<=200)){toast("Indique un pourcentage entre 1 et 200");return}if(alerts().includes(v))return;setTrip({alerts:alerts().concat(v)});toast("Palier ajouté");return}
-  if(a==="cur"){expCur=b.dataset.c;document.querySelectorAll('[data-act="cur"]').forEach(x=>x.setAttribute("aria-pressed",x.dataset.c===expCur));return}
+  if(a==="amongAll"){const cbs=[...document.querySelectorAll('form[data-form="exp"] input[name="among"]')];const all=cbs.every(c=>c.checked);cbs.forEach(c=>c.checked=!all);updateShare();return}
+  if(a==="expEdit"){expEditId=expEditId===b.dataset.id?null:b.dataset.id;render();return}
+  if(a==="expCancel"){expEditId=null;render();return}
+  if(a==="expSave"){const ids=[...document.querySelectorAll(".eamong:checked")].map(c=>c.value);if(!ids.length){toast("Coche au moins une personne");return}expEditId=null;patch("expenses",b.dataset.id,{among:ids});toast("Partage mis à jour");return}
+  if(a==="cur"){expCur=b.dataset.c;document.querySelectorAll('[data-act="cur"]').forEach(x=>x.setAttribute("aria-pressed",x.dataset.c===expCur));updateShare();return}
 });
 let spyRaf=0;
 window.addEventListener("scroll",()=>{if(tab!=="plan"||spyRaf)return;spyRaf=requestAnimationFrame(()=>{spyRaf=0;
@@ -1467,6 +1547,7 @@ $("#meBtn").addEventListener("click",()=>{me=null;ls.set("japon-me","");render()
 
 document.addEventListener("change",e=>{
   const el=e.target, a=el.dataset.act; if(!a) return;
+  if(el.closest&&el.closest('form[data-form="exp"]')){updateShare()}
   if(a==="photoFiles"){const f=[...el.files];el.value="";uploadFiles(f);return}
   if(a==="lineAmt"&&me){const v=el.value===""?null:Math.max(0,Number(el.value));patch("budget",el.dataset.id,{amounts:{[me.id]:v}})}
   if(a==="dual"){const v=el.value===""?null:Math.max(0,Number(el.value));const val=v==null?null:{v,c:el.dataset.cur};const k=el.dataset.kind;
@@ -1484,6 +1565,7 @@ document.addEventListener("change",e=>{
 });
 
 document.addEventListener("input",e=>{
+  if(e.target.closest&&e.target.closest('form[data-form="exp"]'))updateShare();
   const el=e.target;if(!el.dataset||!el.dataset.base)return;
   const other=document.getElementById(el.dataset.base+"-"+(el.dataset.cur==="JPY"?"EUR":"JPY"));if(!other)return;
   if(el.value===""){other.value="";return}
@@ -1498,19 +1580,21 @@ document.addEventListener("submit",e=>{
     const exist=S.travelers.find(t=>t.name.toLowerCase()===n.toLowerCase());
     if(exist){me=exist;ls.set("japon-me",exist.id);render();return}
     const id=nid("p");const data={name:n,color:PALETTE[S.travelers.length%PALETTE.length],order:S.travelers.length+1,createdAt:new Date().toISOString()};
-    put("travelers",id,data).then(()=>{me={id,...data};ls.set("japon-me",id);$("#newName").value="";render();toast("Bienvenue "+n)});return}
+    put("travelers",id,data).then(()=>{me={id,...data};ls.set("japon-me",id);initSeen();$("#newName").value="";render();toast("Bienvenue "+n);notifyGroup("prep",`${n} a rejoint le voyage !`)});return}
   const k=f.dataset.form, d=new FormData(f);
-  if(k==="task"){const t=String(d.get("title")).trim();if(!t)return;put("tasks",nid("t"),{title:t,cat:d.get("cat"),order:S.tasks.length+1,done:{},createdAt:new Date().toISOString()});open.task=false;f.reset();toast("Étape ajoutée")}
+  if(k==="task"){const t=String(d.get("title")).trim();if(!t)return;put("tasks",nid("t"),{title:t,cat:d.get("cat"),order:S.tasks.length+1,done:{},createdBy:me?me.id:null,createdAt:new Date().toISOString()});notifyGroup("prep",`${myName()} a ajouté une étape : ${t}`);open.task=false;f.reset();toast("Étape ajoutée")}
   if(k==="place"){const t=String(d.get("title")).trim();if(!t)return;const p=d.get("price"),kind=String(d.get("kind"));if(!PLACE_KINDS[kind])return;placeOpen=null;f.reset();
     put("activities",nid("r"),{kind,title:t,stage:stageSel,cuisine:String(d.get("cuisine")||""),area:String(d.get("area")||"").trim(),price:p===""||p==null?null:Number(p),resaUrl:safeUrl(d.get("resaUrl")),url:safeUrl(d.get("url")),date:d.get("date")||null,checkout:d.get("checkout")||null,time:"",note:String(d.get("note")||"").trim(),booked:false,joined:me?{[me.id]:true}:{},order:S.activities.filter(x=>x.stage===stageSel&&x.kind===kind).length+1,createdBy:me?me.id:null,createdAt:new Date().toISOString()});
+    notifyGroup("plan",`${myName()} a ajouté ${kind==="hotel"?"un hébergement":kind==="shop"?"une adresse shopping":kind==="bar"?"une sortie":"un restaurant"} à ${(stages().find(x=>x.id===stageSel)||{}).name||""} : ${t}`);
     toast(PLACE_KINDS[kind].one.charAt(0).toUpperCase()+PLACE_KINDS[kind].one.slice(1)+" ajouté");return}
   if(k==="info"){const t=String(d.get("title")).trim();if(!t)return;const data={title:t,cat:String(d.get("cat")),body:String(d.get("body")||"").trim(),url:safeUrl(d.get("url"))};const id=d.get("id");
     infoOpen=false;infoEdit=null;infoPrefill=null;
-    if(id){patch("activities",String(id),data);toast("Fiche mise à jour")}else{put("activities",nid("i"),{kind:"info",...data,stage:null,order:S.activities.filter(isInfo).length+1,createdBy:me?me.id:null,createdAt:new Date().toISOString()});toast("Fiche ajoutée")}return}
-  if(k==="act"){const t=String(d.get("title")).trim();if(!t)return;const p=d.get("price");put("activities",nid("a"),{title:t,stage:stageSel,price:p===""?null:Number(p),note:String(d.get("note")||"").trim(),url:safeUrl(d.get("url")),date:d.get("date")||null,booked:false,joined:me?{[me.id]:true}:{},order:S.activities.filter(x=>x.stage===stageSel).length+1,createdBy:me?me.id:null,createdAt:new Date().toISOString()});open.act=false;f.reset();toast(POI[t]?"Activité ajoutée, visible sur la carte":"Activité ajoutée. Utilise « Placer sur la carte » pour la situer")}
-  if(k==="line"){const l=String(d.get("label")).trim();if(!l)return;put("budget",nid("b"),{label:l,order:S.budget.length+1,amounts:{},createdAt:new Date().toISOString()});open.line=false;f.reset();toast("Poste ajouté")}
+    if(id){patch("activities",String(id),data);toast("Fiche mise à jour")}else{put("activities",nid("i"),{kind:"info",...data,stage:null,order:S.activities.filter(isInfo).length+1,createdBy:me?me.id:null,createdAt:new Date().toISOString()});notifyGroup("prep",`${myName()} a ajouté une fiche pratique : ${t}`);toast("Fiche ajoutée")}return}
+  if(k==="act"){const t=String(d.get("title")).trim();if(!t)return;const p=d.get("price");f.reset();put("activities",nid("a"),{title:t,stage:stageSel,price:p===""?null:Number(p),note:String(d.get("note")||"").trim(),url:safeUrl(d.get("url")),date:d.get("date")||null,booked:false,joined:me?{[me.id]:true}:{},order:S.activities.filter(x=>x.stage===stageSel).length+1,createdBy:me?me.id:null,createdAt:new Date().toISOString()});notifyGroup("plan",`${myName()} a ajouté une activité à ${(stages().find(x=>x.id===stageSel)||{}).name||""} : ${t}`);open.act=false;f.reset();toast(POI[t]?"Activité ajoutée, visible sur la carte":"Activité ajoutée. Utilise « Placer sur la carte » pour la situer")}
+  if(k==="line"){const l=String(d.get("label")).trim();if(!l)return;put("budget",nid("b"),{label:l,order:S.budget.length+1,amounts:{},createdBy:me?me.id:null,createdAt:new Date().toISOString()});notifyGroup("budget",`${myName()} a ajouté un poste au budget : ${l}`);open.line=false;f.reset();toast("Poste ajouté")}
   if(k==="exp"){const among=d.getAll("among");const amt=Number(d.get("amount"));if(!amt||!among.length){toast("Indique un montant et au moins une personne");return}
-    put("expenses",nid("e"),{title:String(d.get("title")).trim(),amount:amt,currency:expCur,payer:d.get("payer"),among,date:d.get("date")||"",createdBy:me?me.id:null,createdAt:new Date().toISOString()});f.reset();
+    f.reset();put("expenses",nid("e"),{title:String(d.get("title")).trim(),amount:amt,currency:expCur,payer:d.get("payer"),among,date:d.get("date")||"",createdBy:me?me.id:null,createdAt:new Date().toISOString()});
+    notifyGroup("split",`${myName()} a ajouté une dépense : ${String(d.get("title")).trim()} (${expCur==="JPY"?yen(amt):eur2(amt)}${among.length<S.travelers.length?`, partagée entre ${among.length}`:""})`);f.reset();
     f.querySelectorAll('[name="among"]').forEach(c=>c.checked=true);if(me)f.payer.value=me.id;toast("Dépense enregistrée")}
 });
 
