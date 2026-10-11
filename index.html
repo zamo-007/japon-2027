@@ -486,6 +486,20 @@ textarea{resize:vertical;line-height:1.5}
 .uptile[data-st="err"] .upring,.uptile[data-st="big"] .upring{background:#C2412D}
 .updatebar{position:fixed;left:12px;right:12px;bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:65;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 10px 10px 16px;border-radius:14px;background:var(--ink-2);border:1px solid var(--lantern);box-shadow:0 10px 30px rgba(0,0,0,.45);font-size:14px}
 @media (min-width:761px){.updatebar{left:auto;right:20px;bottom:20px;max-width:420px}}
+.mybal{display:grid;gap:12px;border-width:1.5px}
+.mybal.plus{border-color:color-mix(in srgb,var(--good) 60%,transparent);background:color-mix(in srgb,var(--good) 10%,var(--ink-2))}
+.mybal.minus{border-color:color-mix(in srgb,var(--bad) 60%,transparent);background:color-mix(in srgb,var(--bad) 10%,var(--ink-2))}
+.mbtop{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.mbtop small{display:block;font-size:11px;letter-spacing:.14em;color:var(--mute)}
+.mbtop b{font-family:var(--display);font-size:34px;line-height:1.1}
+.mybal.plus .mbtop b{color:var(--good)}.mybal.minus .mbtop b{color:var(--bad)}
+.mbtop p{margin:0;flex:1 1 200px;font-size:14px}
+.mylines{display:grid;gap:8px}
+.sbtn{flex-basis:100%;display:flex;justify-content:flex-end}
+.paid{display:grid;gap:4px}
+.paidrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 10px;align-items:center;font-size:13px;padding:8px 0;border-top:1px solid var(--line)}
+.paidrow small,.paidrow .link-btn{grid-column:2/4;justify-self:start}
+.paidrow small{grid-column:2/3}.paidrow .link-btn{grid-column:3/4;justify-self:end}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -1382,7 +1396,7 @@ function level(pct){
   return {lvl:pct>=100?"crit":step>=75?"warn":"info",step};
 }
 function spentBy(t){
-  return S.expenses.reduce((s,e)=>{const among=(e.among||[]).filter(id=>T(id));if(!among.includes(t.id))return s;return s+toEur(Number(e.amount)||0,e.currency)/among.length},0);
+  return S.expenses.reduce((s,e)=>{if(e.kind==="settle")return s;const among=(e.among||[]).filter(id=>T(id));if(!among.includes(t.id))return s;return s+toEur(Number(e.amount)||0,e.currency)/among.length},0);
 }
 const bothCur = v => `${eur(v)} <span class="muted">· ${yen(v*rate())}</span>`;
 function stackChart(b){
@@ -1482,11 +1496,17 @@ function updateShare(){const f=document.querySelector('form[data-form="exp"]'),o
 function renderSplit(){
   const trav=S.travelers.slice().sort(byOrder);
   const bal=balances(), set=settlements(bal);
-  const total=S.expenses.reduce((s,e)=>s+toEur(Number(e.amount)||0,e.currency),0);
-  const exps=S.expenses.slice().sort((a,b)=>String(b.date||b.createdAt).localeCompare(String(a.date||a.createdAt)));
+  const real=S.expenses.filter(e=>e.kind!=="settle"), paid=S.expenses.filter(e=>e.kind==="settle").sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt)));
+  const total=real.reduce((s,e)=>s+toEur(Number(e.amount)||0,e.currency),0);
+  const exps=real.slice().sort((a,b)=>String(b.date||b.createdAt).localeCompare(String(a.date||a.createdAt)));
+  const myBal=me?(bal[me.id]||0):0, myOut=me?set.filter(x=>x.from===me.id):[], myIn=me?set.filter(x=>x.to===me.id):[];
+  const settleBtn=x=>{const lbl=me&&x.from===me.id?"J'ai remboursé":me&&x.to===me.id?"J'ai été remboursé":"Marquer comme remboursé";return `<button class="btn sm ${me&&(x.from===me.id||x.to===me.id)?"primary":""}" data-act="settle" data-from="${x.from}" data-to="${x.to}" data-amt="${x.amt.toFixed(2)}">${lbl}</button>`};
+  const mine = me ? `<div class="panel mybal ${myBal>0.005?"plus":myBal<-0.005?"minus":"even"}"><div class="mbtop"><div><small>MON SOLDE</small><b class="num">${myBal>0.005?"+":""}${eur2(myBal)}</b></div>
+      <p>${myBal>0.005?"Tu es en positif : on te doit de l'argent.":myBal<-0.005?"Tu es en négatif : tu dois de l'argent.":"Tu es à l'équilibre, personne ne te doit rien et tu ne dois rien."}</p></div>
+      ${myOut.length||myIn.length?`<div class="mylines">${myOut.map(x=>`<div class="settle">${av(T(x.to),"xs")}<span>Tu dois <b class="num">${eur2(x.amt)}</b> à ${esc(T(x.to).name)}</span><span style="margin-left:auto">${settleBtn(x)}</span></div>`).join("")}${myIn.map(x=>`<div class="settle">${av(T(x.from),"xs")}<span>${esc(T(x.from).name)} te doit <b class="num">${eur2(x.amt)}</b></span><span style="margin-left:auto">${settleBtn(x)}</span></div>`).join("")}</div>`:""}</div>` : "";
   const today=new Date().toISOString().slice(0,10);
-  return hero("img/ruelle.jpg","割り勘 · warikan","Dépenses partagées",`${S.expenses.length} dépense${S.expenses.length>1?"s":""} · ${eur2(total)} au total`)
-  + `<div class="wrap">${notice()}
+  return hero("img/ruelle.jpg","割り勘 · warikan","Dépenses partagées",`${real.length} dépense${real.length>1?"s":""} · ${eur2(total)} au total`)
+  + `<div class="wrap">${notice()}${mine}
     <div class="grid2">
       <div style="display:grid;gap:22px;min-width:0">
         <div class="panel"><h3>Ajouter une dépense</h3>
@@ -1512,8 +1532,9 @@ function renderSplit(){
           ${trav.map(t=>{const v=bal[t.id]||0;return `<div class="bal">${av(t)}<span>${esc(t.name)}${me&&t.id===me.id?' <span class="muted">(toi)</span>':""}</span><b class="num ${v>0.005?"pos":v<-0.005?"neg":"muted"}">${v>0.005?"+":""}${eur2(v)}</b></div>`}).join("")||'<p class="muted">Personne pour l\'instant.</p>'}
         </div>
         <div class="panel"><h3>Qui rembourse qui ?</h3>
-          <div style="display:grid;gap:8px">${set.length?set.map(s=>`<div class="settle">${av(T(s.from),"xs")}<span>${esc(T(s.from).name)}</span><span class="arrow">→</span>${av(T(s.to),"xs")}<span>${esc(T(s.to).name)}</span><b class="num" style="margin-left:auto">${eur2(s.amt)}</b></div>`).join(""):'<p class="muted" style="margin:0">Tout le monde est à l\'équilibre.</p>'}</div>
-          <p class="muted" style="font-size:13px;margin:14px 0 0">Le nombre de virements est réduit au minimum. Les dépenses en yens sont converties au taux de l'onglet Budget.</p>
+          <div style="display:grid;gap:8px">${set.length?set.map(x=>`<div class="settle">${av(T(x.from),"xs")}<span>${esc(T(x.from).name)}</span><span class="arrow">→</span>${av(T(x.to),"xs")}<span>${esc(T(x.to).name)}</span><b class="num" style="margin-left:auto">${eur2(x.amt)}</b><span class="sbtn">${settleBtn(x)}</span></div>`).join(""):'<p class="muted" style="margin:0">Tout le monde est à l\'équilibre.</p>'}</div>
+          <p class="muted" style="font-size:13px;margin:14px 0 0">Une fois le virement fait, touche « J'ai remboursé » : la ligne passe dans les remboursements effectués et les soldes se mettent à jour. Les dépenses en yens sont converties au taux de l'onglet Budget.</p>
+          ${paid.length?`<div class="cat-title">Remboursements effectués</div><div class="paid">${paid.map(x=>`<div class="paidrow"><span class="pos">✓</span><span>${esc((T(x.payer)||{}).name||"?")} a remboursé ${esc((T((x.among||[])[0])||{}).name||"?")}</span><b class="num">${eur2(Number(x.amount)||0)}</b><small class="muted">${x.createdAt?new Date(x.createdAt).toLocaleDateString("fr-FR",{day:"numeric",month:"short"}):""}</small><button class="link-btn" data-act="unsettle" data-id="${x.id}">Annuler</button></div>`).join("")}</div>`:""}
         </div>
       </div>
     </div></div>`;
@@ -1585,6 +1606,11 @@ document.addEventListener("click",e=>{
   if(a==="pickDay"){daySel=b.dataset.d;render();const f=document.querySelector('form[data-form="act"] input[name="title"]');f&&f.focus();return}
   if(a==="delAlert"){const v=Number(b.dataset.v);setTrip({alerts:alerts().filter(x=>x!==v)});return}
   if(a==="addAlert"){const v=Math.round(Number($("#newAlert").value));if(!(v>0&&v<=200)){toast("Indique un pourcentage entre 1 et 200");return}if(alerts().includes(v))return;setTrip({alerts:alerts().concat(v)});toast("Palier ajouté");return}
+  if(a==="settle"){if(!b.dataset.c){document.querySelectorAll('[data-act="settle"][data-c]').forEach(x=>{x.dataset.c="";});b.dataset.c="1";b.textContent="Confirmer "+eur2(Number(b.dataset.amt));b.classList.add("primary");return}
+    const from=b.dataset.from,to=b.dataset.to,amt=Number(b.dataset.amt);
+    put("expenses",nid("s"),{kind:"settle",title:"Remboursement",amount:amt,currency:"EUR",payer:from,among:[to],date:new Date().toISOString().slice(0,10),createdBy:me?me.id:null,createdAt:new Date().toISOString()});
+    notifyGroup("split",`${(T(from)||{}).name||"?"} a remboursé ${(T(to)||{}).name||"?"} : ${eur2(amt)}`);toast("Remboursement enregistré");return}
+  if(a==="unsettle"){if(!b.dataset.c){b.dataset.c="1";b.textContent="Confirmer l'annulation";b.style.color="var(--bad)";return}remove("expenses",b.dataset.id);toast("Remboursement annulé");return}
   if(a==="amongAll"){const cbs=[...document.querySelectorAll('form[data-form="exp"] input[name="among"]')];const all=cbs.every(c=>c.checked);cbs.forEach(c=>c.checked=!all);updateShare();return}
   if(a==="expEdit"){expEditId=expEditId===b.dataset.id?null:b.dataset.id;render();return}
   if(a==="expCancel"){expEditId=null;render();return}
