@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Japon 2027</title>
 <meta name="description" content="Organisation collaborative de notre voyage au Japon : préparation, itinéraire, budget et dépenses.">
-<meta name="theme-color" content="#0E1220">
+<meta name="theme-color" content="#FFE1EA">
 <meta name="robots" content="noindex,nofollow">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -14,7 +14,7 @@
 <link rel="manifest" id="manifestLink" href="manifest-torii.webmanifest">
 <link rel="apple-touch-icon" id="appleIcon" href="icons/torii-180.png">
 <link rel="icon" id="favIcon" type="image/png" href="icons/torii-96.png">
-<script>try{var t=localStorage.getItem("japon-theme")||"dark";if(t==="auto")t=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";document.documentElement.setAttribute("data-theme",t)}catch(e){document.documentElement.setAttribute("data-theme","dark")}</script>
+<script>try{var t=localStorage.getItem("japon-theme")||"sakura";if(t==="auto")t=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";document.documentElement.setAttribute("data-theme",t)}catch(e){document.documentElement.setAttribute("data-theme","sakura")}</script>
 <script src="vendor-supabase.js"></script>
 </head>
 <body>
@@ -517,6 +517,21 @@ input.mini[type="time"]{width:auto;min-height:0;display:inline-block}
   .updatebar{bottom:calc(70px + env(safe-area-inset-bottom,0px))}
   .tbadge{top:0;right:4px}
 }
+/* ---- Thème Sakura (par défaut) ---- */
+html[data-theme="sakura"]{--ink:#FFF4F7;--ink-2:#FFFFFF;--ink-3:#FCE3EB;--line:rgba(160,60,95,.15);--paper:#3B1E2A;--mute:#8C6371;--lantern:#D44C7A;--lantern-ink:#FFFFFF;--sakura:#E0779C;--good:#2E8B5E;--bad:#C2412D;--seg1:#6B8FD6;--seg2:#3FA37A;--seg3:#E39A3B;--seg5:#9B6BD0;--seg6:#2A9D9D;--seg7:#B39A1C;color-scheme:light}
+html[data-theme="sakura"] .join[aria-pressed="true"]{color:#fff}
+html[data-theme="sakura"] .panel{box-shadow:0 2px 10px rgba(160,60,95,.07)}
+html[data-theme="sakura"] .topbar{background:linear-gradient(180deg,#FFD6E3 0%,#FFE9F0 70%,#FFF1F5 100%);border-bottom:1px solid rgba(212,76,122,.2);-webkit-backdrop-filter:none;backdrop-filter:none}
+html[data-theme="sakura"] .brand{color:#5A1F37}
+html[data-theme="sakura"] .mebtn,html[data-theme="sakura"] .gearbtn{background:rgba(255,255,255,.65);border-color:rgba(212,76,122,.25)}
+html[data-theme="sakura"] .tab[aria-selected="true"]{background:rgba(212,76,122,.13)}
+@media (max-width:760px){html[data-theme="sakura"] .tabs{background:linear-gradient(0deg,#FFD6E3 0%,#FFEAF1 60%,#FFF3F7 100%);border-top:1px solid rgba(212,76,122,.2)}}
+canvas.petals{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;display:none}
+html[data-theme="sakura"] canvas.petals{display:block}
+@media (min-width:761px){nav.tabs > canvas.petals{display:none!important}}
+.topbar{overflow:hidden}
+.topbar-in{position:relative;z-index:1}
+.tabs > .tab{z-index:1}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -810,10 +825,38 @@ function installInner(compact){
     </div>`;
 }
 
+/* ----- Pétales de cerisier dans le bandeau du haut et la barre du bas (thème Sakura) ----- */
+const Petals=(()=>{
+  const sets=[];let raf=0,last=0;
+  const reduce=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const active=()=>document.documentElement.getAttribute("data-theme")==="sakura";
+  function spawn(w,h,init){return{x:Math.random()*w,y:init?Math.random()*h:-8-Math.random()*20,s:3.5+Math.random()*4.5,vy:9+Math.random()*14,vx:-4+Math.random()*10,r:Math.random()*6.28,vr:(-1+Math.random()*2)*1.4,sw:Math.random()*6.28,a:.55+Math.random()*.4,l:84+Math.random()*9}}
+  function size(st){const d=Math.min(2,window.devicePixelRatio||1),w=st.host.clientWidth,h=st.host.clientHeight;if(!w||!h)return false;
+    if(st.c.width!==Math.round(w*d)||st.c.height!==Math.round(h*d)){st.c.width=Math.round(w*d);st.c.height=Math.round(h*d);st.w=w;st.h=h;st.d=d;
+      const n=Math.max(6,Math.min(26,Math.round(w/26)));st.ps=Array.from({length:n},()=>spawn(w,h,true))}return true}
+  function petal(ctx,p){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.scale(1,.55+.45*Math.abs(Math.sin(p.sw)));const s=p.s;
+    ctx.beginPath();ctx.moveTo(0,-s);ctx.bezierCurveTo(s*.95,-s*.7,s*.75,s*.75,0,s);ctx.bezierCurveTo(-s*.75,s*.75,-s*.95,-s*.7,0,-s);
+    ctx.fillStyle=`hsla(342,85%,${p.l}%,${p.a})`;ctx.fill();
+    ctx.beginPath();ctx.moveTo(0,-s*.55);ctx.lineTo(-s*.18,-s);ctx.lineTo(s*.18,-s);ctx.closePath();ctx.fillStyle="rgba(255,240,245,.9)";ctx.fill();
+    ctx.restore()}
+  function frame(ts){
+    raf=0;if(!active()||document.visibilityState!=="visible"){sets.forEach(st=>{const x=st.c.getContext("2d");x.clearRect(0,0,st.c.width,st.c.height)});return}
+    const dt=Math.min(.05,(ts-(last||ts))/1000);last=ts;
+    sets.forEach(st=>{if(!size(st))return;const ctx=st.c.getContext("2d");ctx.setTransform(st.d,0,0,st.d,0,0);ctx.clearRect(0,0,st.w,st.h);
+      st.ps.forEach((p,i)=>{if(!reduce()){p.sw+=dt*1.6;p.y+=p.vy*dt;p.x+=p.vx*dt+Math.sin(p.sw)*.35;p.r+=p.vr*dt;
+        if(p.y>st.h+10||p.x<-12||p.x>st.w+12)st.ps[i]=spawn(st.w,st.h,false)}petal(ctx,st.ps[i])})});
+    if(!reduce())raf=requestAnimationFrame(frame);
+  }
+  function kick(){if(!raf){last=0;raf=requestAnimationFrame(frame)}}
+  function mount(host){if(!host||host.querySelector(":scope > canvas.petals"))return;const c=document.createElement("canvas");c.className="petals";c.setAttribute("aria-hidden","true");host.prepend(c);sets.push({host,c,ps:[],w:0,h:0,d:1})}
+  document.addEventListener("visibilitychange",kick);window.addEventListener("resize",kick);
+  return{init(){mount(document.querySelector(".topbar"));mount(document.querySelector("nav.tabs"));kick()},update:kick};
+})();
+
 /* ----- Thème ----- */
-function themePref(){return ls.get("japon-theme")||"dark"}
+function themePref(){return ls.get("japon-theme")||"sakura"}
 function applyTheme(){const p=themePref();const d=p==="auto"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):p;
-  document.documentElement.setAttribute("data-theme",d);const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=d==="light"?"#EEF1F6":"#0E1220"}
+  document.documentElement.setAttribute("data-theme",d);const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=d==="sakura"?"#FFE1EA":d==="light"?"#EEF1F6":"#0E1220";try{Petals.update()}catch(e){}}
 try{matchMedia("(prefers-color-scheme: light)").addEventListener("change",()=>{if(themePref()==="auto")applyTheme()})}catch(e){}
 applyTheme();
 
@@ -826,8 +869,8 @@ function renderSettings(){
   const keep=$("#renameInput")?$("#renameInput").value:null;
   $("#settingsBody").innerHTML=`
     <section class="set"><h3>Thème</h3>
-      <div class="seg wide">${[["dark","Sombre"],["light","Clair"],["auto","Automatique"]].map(([k,l])=>`<button data-act="theme" data-k="${k}" aria-pressed="${p===k}">${l}</button>`).join("")}</div>
-      <p class="muted small">Automatique suit le réglage clair ou sombre de ton téléphone.</p></section>
+      <div class="seg wide">${[["sakura","Sakura"],["dark","Sombre"],["light","Clair"],["auto","Auto"]].map(([k,l])=>`<button data-act="theme" data-k="${k}" aria-pressed="${p===k}">${l}</button>`).join("")}</div>
+      <p class="muted small">Sakura est le thème par défaut, avec ses pétales de cerisier. Auto suit le réglage clair ou sombre de ton téléphone.</p></section>
     <section class="set"><h3>Mon prénom</h3>
       ${me?`<form class="add-me" id="renameForm"><input type="text" id="renameInput" maxlength="24" value="${esc(me.name)}" aria-label="Mon prénom"><button class="btn primary" type="submit">Enregistrer</button></form>
       <p class="muted small">Le nouveau prénom s'affiche aussitôt chez tout le monde.</p>`:`<p class="muted small">Choisis d'abord ton prénom sur l'écran de connexion.</p>`}</section>
@@ -1697,6 +1740,7 @@ document.addEventListener("submit",e=>{
 });
 
 boot();
+Petals.init();
 })();
 </script>
 <script>
