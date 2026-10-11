@@ -14,7 +14,7 @@
 <link rel="manifest" id="manifestLink" href="manifest-torii.webmanifest">
 <link rel="apple-touch-icon" id="appleIcon" href="icons/torii-180.png">
 <link rel="icon" id="favIcon" type="image/png" href="icons/torii-96.png">
-<script>try{var t=localStorage.getItem("japon-theme")||"sakura";if(t==="auto")t=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";document.documentElement.setAttribute("data-theme",t)}catch(e){document.documentElement.setAttribute("data-theme","sakura")}</script>
+<script>try{var t=localStorage.getItem("japon-theme");if(t!=="dark"&&t!=="light")t="sakura";document.documentElement.setAttribute("data-theme",t)}catch(e){document.documentElement.setAttribute("data-theme","sakura")}</script>
 <script src="vendor-supabase.js"></script>
 </head>
 <body>
@@ -560,7 +560,7 @@ body{min-height:100vh;min-height:100dvh}
 <!-- ============ Code du voyage ============ -->
 <section id="gate" class="login-bg" hidden>
   <div class="login-card">
-    <div class="themepick" role="group" aria-label="Thème"><span>Thème</span><button type="button" data-act="theme" data-k="sakura">Sakura</button><button type="button" data-act="theme" data-k="dark">Sombre</button><button type="button" data-act="theme" data-k="light">Clair</button><button type="button" data-act="theme" data-k="auto">Auto</button></div>
+    <div class="themepick" role="group" aria-label="Thème"><span>Thème</span><button type="button" data-act="theme" data-k="sakura">Sakura</button><button type="button" data-act="theme" data-k="dark">Sombre</button><button type="button" data-act="theme" data-k="light">Clair</button></div>
     <div class="eyebrow">日本へ · Voyage entre amis</div>
     <h1>Japon 2027<span>Entre le code du voyage</span></h1>
     <form class="add-me" id="gateForm" autocomplete="off">
@@ -575,7 +575,7 @@ body{min-height:100vh;min-height:100dvh}
 <!-- ============ Connexion ============ -->
 <section id="login" hidden>
   <div class="login-card">
-    <div class="themepick" role="group" aria-label="Thème"><span>Thème</span><button type="button" data-act="theme" data-k="sakura">Sakura</button><button type="button" data-act="theme" data-k="dark">Sombre</button><button type="button" data-act="theme" data-k="light">Clair</button><button type="button" data-act="theme" data-k="auto">Auto</button></div>
+    <div class="themepick" role="group" aria-label="Thème"><span>Thème</span><button type="button" data-act="theme" data-k="sakura">Sakura</button><button type="button" data-act="theme" data-k="dark">Sombre</button><button type="button" data-act="theme" data-k="light">Clair</button></div>
     <div class="eyebrow">日本へ · Voyage entre amis</div>
     <h1 id="loginTitle">Japon 2027<span>Qui se connecte ?</span></h1>
     <div class="who" id="whoList"></div>
@@ -878,7 +878,7 @@ const Petals=(()=>{
 })();
 
 /* ----- Thème ----- */
-function themePref(){return ls.get("japon-theme")||"sakura"}
+function themePref(){const t=ls.get("japon-theme");return t==="dark"||t==="light"?t:"sakura"}
 function applyTheme(){const p=themePref();const d=p==="auto"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):p;
   document.documentElement.setAttribute("data-theme",d);const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=d==="sakura"?"#FFE1EA":d==="light"?"#EEF1F6":"#0E1220";document.querySelectorAll(".themepick [data-act=theme]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.k===p));try{Petals.update()}catch(e){}}
 try{matchMedia("(prefers-color-scheme: light)").addEventListener("change",()=>{if(themePref()==="auto")applyTheme()})}catch(e){}
@@ -893,8 +893,8 @@ function renderSettings(){
   const keep=$("#renameInput")?$("#renameInput").value:null;
   $("#settingsBody").innerHTML=`
     <section class="set"><h3>Thème</h3>
-      <div class="seg wide">${[["sakura","Sakura"],["dark","Sombre"],["light","Clair"],["auto","Auto"]].map(([k,l])=>`<button data-act="theme" data-k="${k}" aria-pressed="${p===k}">${l}</button>`).join("")}</div>
-      <p class="muted small">Sakura est le thème par défaut, avec ses pétales de cerisier. Auto suit le réglage clair ou sombre de ton téléphone.</p></section>
+      <div class="seg wide">${[["sakura","Sakura"],["dark","Sombre"],["light","Clair"]].map(([k,l])=>`<button data-act="theme" data-k="${k}" aria-pressed="${p===k}">${l}</button>`).join("")}</div>
+      <p class="muted small">Sakura est le thème par défaut, avec ses pétales de cerisier.</p></section>
     <section class="set"><h3>Mon prénom</h3>
       ${me?`<form class="add-me" id="renameForm"><input type="text" id="renameInput" maxlength="24" value="${esc(me.name)}" aria-label="Mon prénom"><button class="btn primary" type="submit">Enregistrer</button></form>
       <p class="muted small">Le nouveau prénom s'affiche aussitôt chez tout le monde.</p>`:`<p class="muted small">Choisis d'abord ton prénom sur l'écran de connexion.</p>`}</section>
