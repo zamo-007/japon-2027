@@ -275,3 +275,13 @@ grant execute on function public.list_travelers(text), public.set_first_pin(text
   public.whoami(text,text), public.logout(text,text), public.change_pin(text,text,text,text), public.get_items(text,text),
   public.put_item(text,text,text,text,jsonb), public.patch_item(text,text,text,text,jsonb), public.admin_reset_pin(text,text,text),
   public.admin_remove_traveler(text,text,text) to anon, authenticated;
+
+-- Fonctions historiques sans session : neutralisées (les anciennes versions de l'appli reçoivent « session expirée »).
+create or replace function public.get_items(p_code text) returns json language plpgsql security definer set search_path=public as $$
+begin raise exception 'session expiree' using errcode = '28P01'; end $$;
+create or replace function public.put_item(p_code text, p_col text, p_id text, p_data jsonb) returns void language plpgsql security definer set search_path=public as $$
+begin raise exception 'session expiree' using errcode = '28P01'; end $$;
+create or replace function public.patch_item(p_code text, p_col text, p_id text, p_patch jsonb) returns void language plpgsql security definer set search_path=public as $$
+begin raise exception 'session expiree' using errcode = '28P01'; end $$;
+alter function public._pin_ok(text) set search_path = public;
+alter function public._guard(text,text,jsonb,jsonb) set search_path = public;
