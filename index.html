@@ -375,6 +375,8 @@ main{position:relative;z-index:1}
 .iconpick img{width:58px;height:58px;border-radius:14px;box-shadow:0 4px 12px rgba(0,0,0,.4)}
 .iconpick button[aria-pressed="true"]{border-color:var(--lantern);color:var(--paper)}
 .guide{display:grid;gap:12px}
+.perso{display:inline-block;vertical-align:middle;font-size:10px;font-weight:600;line-height:1;letter-spacing:.06em;text-transform:uppercase;padding:3px 6px;border-radius:999px;color:var(--lantern);border:1px solid color-mix(in srgb,var(--lantern) 55%,transparent);margin-left:4px}
+.addscope{flex-wrap:wrap}
 .steps{margin:0;padding-left:20px;display:grid;gap:6px;font-size:14px}
 .codechip{font-family:ui-monospace,Menlo,monospace;letter-spacing:.06em;padding:2px 8px;border-radius:6px;background:rgba(233,169,63,.14);color:var(--lantern)}
 :root{padding-top:0}
@@ -812,18 +814,21 @@ function hero(img,k,title,sub,right=""){
 const notice = () => "";
 
 /* ----- Préparation ----- */
-function pct(t){const n=S.tasks.length;if(!n)return 0;return Math.round(100*S.tasks.filter(x=>x.done&&x.done[t.id]).length/n)}
+const visTo=(x,p)=>!x.owner||!!(p&&x.owner===p.id);
+const tasksOf=p=>S.tasks.filter(x=>visTo(x,p));
+function pct(t){const L=tasksOf(t),n=L.length;if(!n)return 0;return Math.round(100*L.filter(x=>x.done&&x.done[t.id]).length/n)}
 function renderPrep(){
   const trav=S.travelers.slice().sort(byOrder);
   const global = trav.length ? Math.round(trav.reduce((s,t)=>s+pct(t),0)/trav.length) : 0;
   const mine = me ? pct(me) : 0;
-  const cats=[...new Set(S.tasks.slice().sort(byOrder).map(t=>t.cat||"Autre"))];
-  const list = S.tasks.length ? cats.map(c=>`<div class="cat"><div class="cat-title">${esc(c)}</div>${
-    S.tasks.filter(t=>(t.cat||"Autre")===c).sort(byOrder).map(t=>{
+  const MT=tasksOf(me);
+  const cats=[...new Set(MT.slice().sort(byOrder).map(t=>t.cat||"Autre"))];
+  const list = MT.length ? cats.map(c=>`<div class="cat"><div class="cat-title">${esc(c)}</div>${
+    MT.filter(t=>(t.cat||"Autre")===c).sort(byOrder).map(t=>{
       const d=!!(me&&t.done&&t.done[me.id]);
       const who=trav.filter(p=>t.done&&t.done[p.id]);
       return `<div class="check ${d?"done":""}"><input type="checkbox" id="c-${t.id}" data-act="toggleTask" data-id="${t.id}" ${d?"checked":""} ${me?"":"disabled"}>
-      <label class="t" for="c-${t.id}">${esc(t.title)}</label>
+      <label class="t" for="c-${t.id}">${esc(t.title)}${t.owner?' <span class="perso">perso</span>':""}</label>
       <span class="stack" title="${who.length}/${trav.length} ont terminé">${who.map(p=>av(p,"xs")).join("")}</span>
       <button class="icon-btn" data-act="delTask" data-id="${t.id}" aria-label="Supprimer l'étape">×</button></div>`}).join("")}</div>`).join("")
     : `<div class="empty">Aucune étape pour l'instant. Ajoute la première ci-dessous.</div>`;
@@ -831,17 +836,17 @@ function renderPrep(){
   return hero("img/pont.jpg","準備 · junbi","Préparation du voyage", (me?`${esc(me.name)}, tu es prêt·e à ${mine} %.`:"") + (S.trip.start?` · ${tripDatesLabel()}`:` · <button class="link-btn" data-tab="plan">Choisir les dates du voyage</button>`),
     `<div class="ring" style="--p:${global}" aria-label="Préparation globale ${global} %"><div><span><b class="num">${global}%</b><br><small class="muted">du groupe</small></span></div></div>`)
   + `<div class="wrap">${notice()}${renderCheer(groupPct())}<div class="grid2">
-    <div class="panel"><h3>Ma liste<small>${me?esc(me.name):""} · ${S.tasks.filter(t=>me&&t.done&&t.done[me.id]).length}/${S.tasks.length} étapes</small></h3>
+    <div class="panel"><h3>Ma liste<small>${me?esc(me.name):""} · ${MT.filter(t=>me&&t.done&&t.done[me.id]).length}/${MT.length} étapes</small></h3>
       ${list}
       <div style="margin-top:14px">${open.task?`<form class="form" data-form="task">
         <div class="row"><label class="f">Étape<input type="text" name="title" required maxlength="80" placeholder="Ex. Vérifier la validité du passeport"></label>
         <label class="f">Catégorie<select name="cat">${catOpts}</select></label></div>
-        <div class="row"><button class="btn primary" type="submit">Ajouter pour tout le monde</button><button class="btn ghost" type="button" data-act="close" data-k="task">Annuler</button></div></form>`
+        <div class="row addscope"><button class="btn primary" type="submit" name="scope" value="all">Ajouter pour tout le monde</button><button class="btn" type="submit" name="scope" value="me" ${me?"":"disabled"}>Ajouter pour moi</button><button class="btn ghost" type="button" data-act="close" data-k="task">Annuler</button></div></form>`
         :`<button class="btn" data-act="openf" data-k="task">+ Ajouter une étape</button>`}</div>
     </div>
     <div class="panel"><h3>Le groupe<small>${trav.length} voyageur${trav.length>1?"s":""}</small></h3>
       <div class="people">${trav.map(t=>`<div class="person">${av(t)}<div><div style="display:flex;justify-content:space-between;gap:8px"><span>${esc(t.name)}${me&&t.id===me.id?' <span class="muted">(toi)</span>':""}</span><span class="num muted">${pct(t)} %</span></div><div class="bar" style="margin-top:6px"><i style="width:${pct(t)}%"></i></div></div></div>`).join("")||'<p class="muted">Personne pour l\'instant.</p>'}</div>
-      <p class="muted" style="font-size:13px;margin:16px 0 0">Chaque étape cochée fait avancer ton pourcentage. Celui du groupe est la moyenne de tout le monde.</p>
+      <p class="muted" style="font-size:13px;margin:16px 0 0">Chaque étape cochée fait avancer ton pourcentage. Celui du groupe est la moyenne de tout le monde. Les étapes « perso » ne sont visibles que par toi et ne comptent que dans ton pourcentage.</p>
     </div></div>${renderInfos()}${isStandalone()?"":renderInstall()}</div>`;
 }
 
@@ -1081,7 +1086,7 @@ const markSeen = t => ls.set("japon-seen-"+t,new Date().toISOString());
 const after = (a,b) => !!a && Date.parse(a) > (Date.parse(b)||0);
 function initSeen(){TAB_KEYS.forEach(t=>{if(!seenAt(t))markSeen(t)})}
 function unseenCounts(){
-  const mine=me&&me.id, nw=(x,t)=>after(x.createdAt,seenAt(t))&&x.createdBy!==mine;
+  const mine=me&&me.id, nw=(x,t)=>after(x.createdAt,seenAt(t))&&x.createdBy!==mine&&visTo(x,me);
   return {prep:S.tasks.filter(x=>nw(x,"prep")).length+S.activities.filter(x=>isInfo(x)&&nw(x,"prep")).length+S.travelers.filter(x=>x.id!==mine&&after(x.createdAt,seenAt("prep"))).length,
     plan:S.activities.filter(x=>!isInfo(x)&&nw(x,"plan")).length,
     budget:S.budget.filter(x=>nw(x,"budget")).length,
@@ -1322,14 +1327,14 @@ function infoForm(x){
     <label class="f">Rubrique<select name="cat">${INFO_CATS.map(c=>`<option ${v.cat===c?"selected":""}>${c}</option>`).join("")}</select></label></div>
     <label class="f">Contenu<textarea name="body" rows="4" maxlength="1500" placeholder="Ce qu'il faut savoir, en quelques lignes">${esc(v.body||"")}</textarea></label>
     <label class="f">Lien utile<input type="text" inputmode="url" autocapitalize="off" name="url" maxlength="500" value="${esc(v.url||"")}" placeholder="https://…"></label>
-    <div class="row"><button class="btn primary" type="submit">${x?"Enregistrer":"Ajouter la fiche"}</button><button class="btn ghost" type="button" data-act="infoCancel">Annuler</button></div></form>`;
+    <div class="row">${x?`<button class="btn primary" type="submit">Enregistrer</button>`:`<button class="btn primary" type="submit" name="scope" value="all">Ajouter pour tout le monde</button><button class="btn" type="submit" name="scope" value="me" ${me?"":"disabled"}>Ajouter pour moi</button>`}<button class="btn ghost" type="button" data-act="infoCancel">Annuler</button></div></form>`;
 }
 function renderInfos(){
-  const infos=S.activities.filter(isInfo).sort(byOrder);
+  const infos=S.activities.filter(i=>isInfo(i)&&visTo(i,me)).sort(byOrder);
   const cats=INFO_CATS.filter(c=>infos.some(i=>i.cat===c)).concat([...new Set(infos.map(i=>i.cat))].filter(c=>!INFO_CATS.includes(c)));
   const ideas=INFO_IDEAS.filter(([,t])=>!infos.some(i=>i.title===t));
-  return `<div class="panel" id="infos"><h3>Infos pratiques<small>pour tout le groupe</small></h3>
-    ${infos.length?cats.map(c=>`<div class="cat-title">${esc(c)}</div><div class="infos">${infos.filter(i=>i.cat===c).map(i=>infoEdit===i.id?infoForm(i):`<details class="info"><summary><b>${esc(i.title)}</b>${T(i.createdBy)?av(T(i.createdBy),"xs"):""}</summary>
+  return `<div class="panel" id="infos"><h3>Infos pratiques<small>pour le groupe, ou rien que pour toi</small></h3>
+    ${infos.length?cats.map(c=>`<div class="cat-title">${esc(c)}</div><div class="infos">${infos.filter(i=>i.cat===c).map(i=>infoEdit===i.id?infoForm(i):`<details class="info"><summary><b>${esc(i.title)}${i.owner?' <span class="perso">perso</span>':""}</b>${T(i.createdBy)?av(T(i.createdBy),"xs"):""}</summary>
       <div class="ibody">${i.body?`<p>${esc(i.body).replace(/\n/g,"<br>")}</p>`:""}${i.url?`<a class="link" href="${esc(i.url)}" target="_blank" rel="noopener noreferrer">${esc(host(i.url))} ↗</a>`:""}
       <div class="row" style="justify-content:flex-end"><button class="btn sm ghost" data-act="infoEdit" data-id="${i.id}" style="flex:0 0 auto">Modifier</button><button class="icon-btn" data-act="delAct" data-id="${i.id}" aria-label="Supprimer la fiche" style="flex:0 0 auto">×</button></div></div></details>`).join("")}</div>`).join("")
       :`<div class="empty">Aucune fiche pour l'instant. Rassemblez ici tout ce qui sert pendant le voyage : transports, internet, argent, urgences…</div>`}
@@ -1877,14 +1882,15 @@ document.addEventListener("submit",e=>{
     const id=nid("p");const data={name:n,color:PALETTE[S.travelers.length%PALETTE.length],order:S.travelers.length+1,createdAt:new Date().toISOString()};
     put("travelers",id,data).then(()=>{me={id,...data};ls.set("japon-me",id);initSeen();$("#newName").value="";render();toast("Bienvenue "+n);notifyGroup("prep",`${n} a rejoint le voyage !`)});return}
   const k=f.dataset.form, d=new FormData(f);
-  if(k==="task"){const t=String(d.get("title")).trim();if(!t)return;put("tasks",nid("t"),{title:t,cat:d.get("cat"),order:S.tasks.length+1,done:{},createdBy:me?me.id:null,createdAt:new Date().toISOString()});notifyGroup("prep",`${myName()} a ajouté une étape : ${t}`);open.task=false;f.reset();toast("Étape ajoutée")}
+  const solo=!!(e.submitter&&e.submitter.value==="me"&&me);
+  if(k==="task"){const t=String(d.get("title")).trim();if(!t)return;open.task=false;f.reset();put("tasks",nid("t"),{title:t,cat:d.get("cat"),order:S.tasks.length+1,done:{},owner:solo?me.id:null,createdBy:me?me.id:null,createdAt:new Date().toISOString()});if(!solo)notifyGroup("prep",`${myName()} a ajouté une étape : ${t}`);toast(solo?"Étape ajoutée à ta liste":"Étape ajoutée pour tout le monde")}
   if(k==="place"){const t=String(d.get("title")).trim();if(!t)return;const p=d.get("price"),kind=String(d.get("kind"));if(!PLACE_KINDS[kind])return;placeOpen=null;f.reset();
     put("activities",nid("r"),{kind,title:t,stage:stageSel,cuisine:String(d.get("cuisine")||""),area:String(d.get("area")||"").trim(),price:p===""||p==null?null:Number(p),resaUrl:safeUrl(d.get("resaUrl")),url:safeUrl(d.get("url")),date:d.get("date")||null,checkout:d.get("checkout")||null,time:"",note:String(d.get("note")||"").trim(),booked:false,joined:me?{[me.id]:true}:{},order:S.activities.filter(x=>x.stage===stageSel&&x.kind===kind).length+1,createdBy:me?me.id:null,createdAt:new Date().toISOString()});
     notifyGroup("plan",`${myName()} a ajouté ${kind==="hotel"?"un hébergement":kind==="shop"?"une adresse shopping":kind==="bar"?"une sortie":"un restaurant"} à ${(stages().find(x=>x.id===stageSel)||{}).name||""} : ${t}`);
     toast(PLACE_KINDS[kind].one.charAt(0).toUpperCase()+PLACE_KINDS[kind].one.slice(1)+" ajouté");return}
   if(k==="info"){const t=String(d.get("title")).trim();if(!t)return;const data={title:t,cat:String(d.get("cat")),body:String(d.get("body")||"").trim(),url:safeUrl(d.get("url"))};const id=d.get("id");
     infoOpen=false;infoEdit=null;infoPrefill=null;
-    if(id){patch("activities",String(id),data);toast("Fiche mise à jour")}else{put("activities",nid("i"),{kind:"info",...data,stage:null,order:S.activities.filter(isInfo).length+1,createdBy:me?me.id:null,createdAt:new Date().toISOString()});notifyGroup("prep",`${myName()} a ajouté une fiche pratique : ${t}`);toast("Fiche ajoutée")}return}
+    if(id){patch("activities",String(id),data);toast("Fiche mise à jour")}else{put("activities",nid("i"),{kind:"info",...data,stage:null,owner:solo?me.id:null,order:S.activities.filter(isInfo).length+1,createdBy:me?me.id:null,createdAt:new Date().toISOString()});if(!solo)notifyGroup("prep",`${myName()} a ajouté une fiche pratique : ${t}`);toast(solo?"Fiche ajoutée, visible par toi seul":"Fiche ajoutée pour tout le monde")}return}
   if(k==="act"){const t=String(d.get("title")).trim();if(!t)return;const p=d.get("price");f.reset();put("activities",nid("a"),{title:t,stage:stageSel,price:p===""?null:Number(p),note:String(d.get("note")||"").trim(),url:safeUrl(d.get("url")),date:d.get("date")||null,booked:false,joined:me?{[me.id]:true}:{},order:S.activities.filter(x=>x.stage===stageSel).length+1,createdBy:me?me.id:null,createdAt:new Date().toISOString()});notifyGroup("plan",`${myName()} a ajouté une activité à ${(stages().find(x=>x.id===stageSel)||{}).name||""} : ${t}`);open.act=false;f.reset();toast(POI[t]?"Activité ajoutée, visible sur la carte":"Activité ajoutée. Utilise « Placer sur la carte » pour la situer")}
   if(k==="line"){const l=String(d.get("label")).trim();if(!l)return;put("budget",nid("b"),{label:l,order:S.budget.length+1,amounts:{},createdBy:me?me.id:null,createdAt:new Date().toISOString()});notifyGroup("budget",`${myName()} a ajouté un poste au budget : ${l}`);open.line=false;f.reset();toast("Poste ajouté")}
   if(k==="exp"){const among=d.getAll("among");const amt=Number(d.get("amount"));if(!amt||!among.length){toast("Indique un montant et au moins une personne");return}
