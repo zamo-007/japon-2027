@@ -374,6 +374,7 @@ main{position:relative;z-index:1}
 .iconpick button{display:grid;justify-items:center;gap:6px;padding:10px 4px;border-radius:14px;border:1.5px solid transparent;background:color-mix(in srgb,var(--ink) 45%,transparent);cursor:pointer;font-size:12px;color:var(--mute)}
 .iconpick img{width:58px;height:58px;border-radius:14px;box-shadow:0 4px 12px rgba(0,0,0,.4)}
 .iconpick button[aria-pressed="true"]{border-color:var(--lantern);color:var(--paper)}
+.guide{display:grid;gap:12px}
 .steps{margin:0;padding-left:20px;display:grid;gap:6px;font-size:14px}
 .codechip{font-family:ui-monospace,Menlo,monospace;letter-spacing:.06em;padding:2px 8px;border-radius:6px;background:rgba(233,169,63,.14);color:var(--lantern)}
 :root{padding-top:0}
@@ -864,12 +865,31 @@ function renderInstall(){
     : `${installEvt?`<button class="btn primary" data-act="install">Installer sur cet ordinateur</button>`:""}<p class="muted" style="margin:0;font-size:14px">Sur téléphone, ouvre ce lien puis ajoute-le à l'écran d'accueil depuis le menu du navigateur.</p>`;
   return `<div class="panel" id="install"><h3>L'outil sur ton téléphone<small>comme une appli, sans rien télécharger</small></h3>${installInner(false)}</div>`;
 }
+let guideOs=null;
+function installGuide(){
+  const p=platform();const os=guideOs||(p==="android"?"android":"ios");
+  const ios=`<ol class="steps">
+      <li>Ouvre le lien du voyage dans <b>Safari</b> (ça marche aussi dans Chrome sur iPhone).</li>
+      <li>Touche le bouton <b>Partager</b>, le carré avec une flèche vers le haut. Sur les iPhone récents, il se trouve parfois dans le menu <b>⋯</b> en bas à droite.</li>
+      <li>Fais défiler et choisis <b>Sur l'écran d'accueil</b>.</li>
+      <li>Laisse <b>Ouvrir comme app web</b> activé s'il apparaît, puis touche <b>Ajouter</b> en haut à droite.</li>
+    </ol>`;
+  const and=`${installEvt&&p==="android"?`<button class="btn primary" data-act="install">Installer l'appli</button>`:""}<ol class="steps">
+      <li>Ouvre le lien du voyage dans <b>Chrome</b>.</li>
+      <li>Touche le menu <b>⋮</b> en haut à droite.</li>
+      <li>Choisis <b>Ajouter à l'écran d'accueil</b>, puis <b>Installer</b> (selon la version, l'option s'appelle directement <b>Installer l'application</b>).</li>
+      <li>Confirme : l'icône apparaît avec tes autres applis. Sur Samsung Internet, passe par le menu <b>≡</b> puis <b>Ajouter la page à</b> › <b>Écran d'accueil</b>.</li>
+    </ol>`;
+  return `<div class="guide">
+    ${isStandalone()?`<p class="small" style="margin:0"><span class="pos">L'appli est installée sur cet appareil.</span> Voici la marche à suivre pour un ami ou un autre téléphone.</p>`:""}
+    <div class="seg wide" role="tablist" aria-label="Type de téléphone">${[["ios","iPhone / iPad"],["android","Android"]].map(([k,l])=>`<button data-act="guideOs" data-k="${k}" aria-pressed="${os===k}">${l}</button>`).join("")}</div>
+    ${os==="ios"?ios:and}
+    ${p==="other"&&installEvt?`<button class="btn" data-act="install">Installer sur cet ordinateur</button>`:""}
+    ${isStandalone()?`<p class="muted small" style="margin:0">Pour changer l'icône de ton appli : supprime le raccourci de l'écran d'accueil, choisis une autre icône ici depuis le navigateur, puis ajoute-le de nouveau.</p>`:`<p class="muted small" style="margin:0">L'icône est figée au moment de l'ajout : choisis-la avant.</p>`}
+  </div>`;
+}
 function installInner(compact){
-  const p=platform();
-  const steps = isStandalone() ? `<p class="small" style="margin:0"><span class="pos">L'appli est installée sur cet appareil.</span> Pour changer son icône : supprime le raccourci de l'écran d'accueil, choisis une autre icône ici depuis le navigateur, puis ajoute-le de nouveau.</p>`
-    : p==="ios" ? `<ol class="steps"><li>Ouvre cette page dans <b>Safari</b>.</li><li>Touche le bouton <b>Partager</b> (le carré avec une flèche vers le haut).</li><li>Choisis <b>Sur l'écran d'accueil</b>, puis <b>Ajouter</b>.</li></ol>`
-    : p==="android" ? `${installEvt?`<button class="btn primary" data-act="install">Installer l'appli</button>`:""}<ol class="steps"><li>Dans Chrome, touche le menu <b>⋮</b> en haut à droite.</li><li>Choisis <b>Ajouter à l'écran d'accueil</b> ou <b>Installer l'application</b>.</li><li>Confirme : l'icône apparaît avec tes autres applis.</li></ol>`
-    : `${installEvt?`<button class="btn primary" data-act="install">Installer sur cet ordinateur</button>`:""}<p class="muted" style="margin:0;font-size:14px">Sur téléphone, ouvre ce lien puis ajoute-le à l'écran d'accueil depuis le menu du navigateur.</p>`;
+  const steps=installGuide();
   if(compact) return `<div class="iconpick">${ICONS.map(([k,l])=>`<button data-act="pickIcon" data-k="${k}" aria-pressed="${k===iconSel}"><img src="icons/${k}-192.png" alt="" width="48" height="48"><span>${l}</span></button>`).join("")}</div>${steps}`;
   return `<div class="install">
       <div style="display:grid;gap:12px;min-width:0">
@@ -946,7 +966,7 @@ function renderSettings(){
       <p class="small" style="margin:0">Code du voyage : <b class="codechip">${esc(code||"")}</b></p>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" data-act="share">Partager le lien</button><button class="btn" data-act="copyLink">Copier le lien</button></div>
       <p class="muted small">Le lien contient déjà le code : ton ami arrive directement dans le voyage.</p></section>
-    <section class="set"><h3>Appli sur le téléphone</h3>${installInner(true)}</section>
+    <section class="set"><h3>Ajouter l'appli à l'écran d'accueil</h3><p class="muted small" style="margin:0">Choisis une icône, puis suis les étapes pour ton téléphone.</p>${installInner(true)}</section>
     <section class="set"><h3>Compte</h3>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="switchUser">Changer de voyageur</button><button class="btn ghost" data-act="leaveTrip">Quitter le voyage sur cet appareil</button></div>
       <p class="muted small">Quitter efface seulement le code et ton prénom de cet appareil. Les données du groupe ne bougent pas.</p></section>`;
@@ -1745,6 +1765,7 @@ document.addEventListener("click",e=>{
   if(a==="login"){me=T(id);ls.set("japon-me",id);initSeen();syncPush();render();toast("Bienvenue "+me.name);return}
   if(a==="openSettings"){openSettings();return}
   if(a==="confetti"){confetti();return}
+  if(a==="guideOs"){guideOs=b.dataset.k;if(settingsOpen)renderSettings();if($("#install"))render();return}
   if(a==="pushOn"){enablePush();return}
   if(a==="pushOff"){disablePush();return}
   if(a==="closeSettings"||(a==="closeSettingsBg"&&e.target===b)){closeSettings();return}
