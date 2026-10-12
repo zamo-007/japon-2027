@@ -51,6 +51,12 @@ h1,h2,h3{font-family:var(--display);font-weight:700;margin:0;text-wrap:balance;l
 .who button{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:color-mix(in srgb,var(--ink-2) 72%,transparent);backdrop-filter:blur(8px);cursor:pointer;text-align:left;transition:border-color .15s,transform .15s}
 .who button:hover{border-color:var(--lantern);transform:translateY(-1px)}
 .add-me{display:flex;gap:8px;flex-wrap:wrap}
+.who-new{display:block;font-size:11px;color:var(--lantern);margin-top:2px}
+.pinwho{display:flex;align-items:center;gap:12px}.pinwho b{display:block;font-size:20px}.pinwho small{display:block;font-size:13px;margin-top:2px}
+.pinform{display:grid;gap:12px}
+.pinf input{font-size:28px;letter-spacing:.5em;text-align:center;padding:12px 10px;font-variant-numeric:tabular-nums}
+.adm{display:grid;gap:8px}.adm-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--line)}
+.adm-row .nm{flex:1 1 140px;min-width:0;display:flex;align-items:center;gap:8px}.adm-row .nm small{display:block}
 .add-me input{flex:1 1 180px;min-width:0}
 
 /* ---------- Shell ---------- */
@@ -613,12 +619,7 @@ canvas.confetti{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:n
     <div class="themepick" role="group" aria-label="Thème"><span>Thème</span><button type="button" data-act="theme" data-k="sakura">Sakura</button><button type="button" data-act="theme" data-k="dark">Sombre</button><button type="button" data-act="theme" data-k="light">Clair</button></div>
     <div class="eyebrow">日本へ · Voyage entre amis</div>
     <h1 id="loginTitle">Japon 2027<span>Qui se connecte ?</span></h1>
-    <div class="who" id="whoList"></div>
-    <form class="add-me" id="addMeForm">
-      <input type="text" id="newName" placeholder="Ton prénom, si tu n'es pas dans la liste" maxlength="24" autocomplete="given-name">
-      <button class="btn primary" type="submit">Rejoindre le voyage</button>
-    </form>
-    <p class="muted" style="margin:0;font-size:13px">Choisis ton prénom : tu arriveras sur ta propre liste de préparation. Tout le reste est partagé avec le groupe.</p>
+    <div id="loginBody" style="display:grid;gap:18px"></div>
   </div>
 </section>
 
@@ -701,18 +702,19 @@ function toast(m){const el=$("#toast");el.textContent=m;el.classList.add("on");c
 
 /* ---------- Données partagées (Supabase, accès par code du voyage) ---------- */
 const SB_URL="https://hsggyjmeurjsiwegqzbo.supabase.co", SB_KEY="sb_publishable_0CiI_uRcS4WqSY3OTsc85w_TieGW2Ce";
-let sb=null, code=null, tripInfo=null, chan=null, refetchT=0;
+let sb=null, code=null, tripInfo=null, chan=null, refetchT=0, liveOn=false;
+let sess=ls.get("japon-sess")||"", meId=null, isAdmin=false, roster=[];
 const COLS=["travelers","tasks","stages","activities","budget","expenses"];
 function rpc(fn,args){return sb.rpc(fn,args).then(({data,error})=>{if(error)throw error;return data})}
 function notifyOthers(){try{chan&&chan.send({type:"broadcast",event:"changed",payload:{t:Date.now()}})}catch(e){}}
 async function loadAll(){
-  const rows=await rpc("get_items",{p_code:code});
+  const rows=await rpc("get_items",{p_code:code,p_token:sess});
   const fresh={};COLS.forEach(c=>fresh[c]=[]);let trip={};
   (rows||[]).forEach(r=>{if(r.data&&r.data._deleted)return;if(r.col==="settings"){if(r.id==="trip")trip={...r.data}}else if(fresh[r.col])fresh[r.col].push({id:r.id,...r.data})});
   Object.assign(S,fresh);S.trip=trip;
 }
-function scheduleRefetch(ms=250){clearTimeout(refetchT);refetchT=setTimeout(async()=>{try{await loadAll();render()}catch(e){fail(e)}},ms)}
-async function write(fn,args){try{await rpc(fn,{p_code:code,...args});notifyOthers()}catch(e){fail(e);scheduleRefetch(0)}}
+function scheduleRefetch(ms=250){clearTimeout(refetchT);refetchT=setTimeout(async()=>{if(!sess||!me)return;try{await loadAll();render()}catch(e){fail(e)}},ms)}
+async function write(fn,args){try{await rpc(fn,{p_code:code,p_token:sess,...args});notifyOthers()}catch(e){fail(e);scheduleRefetch(0)}}
 async function put(col,id,data){
   const a=S[col],i=a.findIndex(x=>x.id===id);i<0?a.push({id,...data}):a[i]={id,...data};render();
   await write("put_item",{p_col:col,p_id:id,p_data:data});
@@ -731,6 +733,8 @@ async function setTrip(data){
 }
 function deepMerge(t,s){for(const k in s){if(s[k]&&typeof s[k]==="object"&&!Array.isArray(s[k])){if(!t[k]||typeof t[k]!=="object")t[k]={};deepMerge(t[k],s[k])}else t[k]=s[k]}}
 function fail(e){
+  if(e&&e.code==="28P01"){sessionExpired();return}
+  if(e&&e.code==="42501"){toast("Tu n'as pas le droit de modifier cet élément.");return}
   if(e&&(e.code==="28000"||/code invalide/.test(e.message||""))){ls.set("japon-code","");code=null;showGate("Ce code ne fonctionne plus. Demande le nouveau code à l'organisateur.");return}
   toast(navigator.onLine===false?"Pas de connexion : modification non enregistrée.":"Modification non enregistrée, réessaie.");
 }
@@ -747,10 +751,69 @@ async function tryCode(c){
   if(!info)return false;
   code=c;tripInfo=info;ls.set("japon-code",c);setUrlCode(c);return true;
 }
+/* ----- Comptes : code PIN personnel, session de 24 h d'inactivité ----- */
+let lg={step:"list",id:null,phase:"enter",first:"",msg:"",busy:false}, lgKey="";
+async function refreshRoster(){try{roster=await rpc("list_travelers",{p_code:code})||[]}catch(e){roster=roster||[]}}
+async function enterTrip(){
+  $("#gate").hidden=true;
+  await refreshRoster();
+  if(sess){
+    try{const w=await rpc("whoami",{p_code:code,p_token:sess});meId=w.me;isAdmin=!!w.admin;await startTrip();return}
+    catch(e){if(e&&e.code==="28P01"){clearSess();lg={step:"pin",id:ls.get("japon-last")||null,phase:"enter",first:"",msg:"Pour ta sécurité, entre de nouveau ton code PIN.",busy:false}}else throw e}
+  }
+  showLogin();
+}
+function clearSess(){sess="";ls.set("japon-sess","");meId=null;isAdmin=false}
+function showLogin(){
+  me=null;ready=false;Object.assign(S,{travelers:[],tasks:[],stages:[],activities:[],budget:[],expenses:[]});S.trip={};photos=null;
+  if(lg.step==="pin"){const r=roster.find(x=>x.id===lg.id);if(!r)lg={step:"list",id:null,phase:"enter",first:"",msg:"",busy:false};else if(!r.has_pin&&lg.phase==="enter")lg.phase="create"}
+  lgKey="";closeSettings();render();
+}
+async function sessionExpired(){
+  const last=meId||ls.get("japon-last");clearSess();await refreshRoster();
+  lg={step:"pin",id:last,phase:"enter",first:"",msg:"Ta session a expiré : entre de nouveau ton code PIN.",busy:false};showLogin();
+}
+async function authed(res){
+  sess=res.token;ls.set("japon-sess",sess);meId=res.me;isAdmin=!!res.admin;ls.set("japon-last",meId);
+  lg={step:"list",id:null,phase:"enter",first:"",msg:"",busy:false};await startTrip();
+  if(me){initSeen();syncPush();toast("Bienvenue "+me.name)}
+}
+async function logout(){
+  try{if(sess)await rpc("logout",{p_code:code,p_token:sess})}catch(e){}
+  clearSess();await refreshRoster();lg={step:"list",id:null,phase:"enter",first:"",msg:"",busy:false};showLogin();
+}
+const LG_ERR={wrong:"Code incorrect.",format:"Le code doit faire de 4 à 6 chiffres.",already:"Un code a déjà été choisi pour ce prénom. Entre-le, ou demande à l'organisateur de le réinitialiser.",nopin:"Aucun code n'est encore défini pour ce prénom : choisis-en un.",exists:"Ce prénom existe déjà dans le voyage : touche-le dans la liste.",name:"Indique ton prénom.",unknown:"Ce voyageur n'existe plus."};
+function lockMsg(w){const m=Math.max(1,Math.ceil((w||600)/60));return `Trop d'essais. Réessaie dans ${m} minute${m>1?"s":""}.`}
+async function submitPin(pin,extra){
+  if(lg.busy)return;const r=roster.find(x=>x.id===lg.id);
+  if(lg.step==="pin"&&lg.phase==="enter"){
+    lg.busy=true;lg.msg="";paintLogin();
+    try{const res=await rpc("login_pin",{p_code:code,p_traveler:lg.id,p_pin:pin});lg.busy=false;
+      if(res&&res.ok)return authed(res);
+      if(res.error==="nopin"){await refreshRoster();lg.phase="create";lg.msg=LG_ERR.nopin}
+      else lg.msg=res.error==="locked"?lockMsg(res.wait):res.error==="wrong"?`Code incorrect. ${res.left} essai${res.left>1?"s":""} restant${res.left>1?"s":""}.`:(LG_ERR[res.error]||"Connexion impossible.");
+    }catch(e){lg.busy=false;lg.msg="Connexion impossible. Vérifie ton réseau."}
+    haptic(12);paintLogin(true);return}
+  if(!/^[0-9]{4,6}$/.test(pin)){lg.msg=LG_ERR.format;paintLogin(true);return}
+  if(lg.phase==="create"){lg.first=pin;lg.phase="confirm";lg.msg="";paintLogin(true);return}
+  if(lg.phase==="confirm"){
+    if(pin!==lg.first){lg.phase="create";lg.first="";lg.msg="Les deux codes ne correspondent pas. Recommence.";paintLogin(true);return}
+    lg.busy=true;paintLogin();
+    try{const res=lg.step==="new"?await rpc("join_trip",{p_code:code,p_name:lg.name,p_color:PALETTE[roster.length%PALETTE.length],p_pin:pin})
+        :await rpc("set_first_pin",{p_code:code,p_traveler:lg.id,p_pin:pin});lg.busy=false;
+      if(res&&res.ok){if(lg.step==="new")notifyLater=`${lg.name} a rejoint le voyage !`;await authed(res);if(notifyLater){notifyGroup("prep",notifyLater);notifyLater=""}return}
+      await refreshRoster();lg.msg=LG_ERR[res.error]||"Impossible pour l'instant.";
+      if(res.error==="already"){lg.phase="enter";lg.first=""}else if(res.error==="exists"){lg={step:"list",id:null,phase:"enter",first:"",msg:LG_ERR.exists,busy:false}}else{lg.phase="create";lg.first=""}
+    }catch(e){lg.busy=false;lg.msg="Connexion impossible. Vérifie ton réseau.";lg.phase="create";lg.first=""}
+    paintLogin(true)}
+}
+let notifyLater="";
 async function startTrip(){
   $("#gate").hidden=true;
   try{const qt=new URLSearchParams(location.search).get("tab")||sessionStorage.getItem("japon-tab");sessionStorage.removeItem("japon-tab");if(qt&&["prep","plan","budget","split","photos"].includes(qt))tab=qt}catch(e){}
-  await loadAll();ready=true;pickMe();if(me)initSeen();render();loadPhotos();refreshPushState();
+  await loadAll();ready=true;pickMe();if(!me){await sessionExpired();return}
+  initSeen();render();loadPhotos();refreshPushState().then(renderSettings);
+  if(liveOn)return;liveOn=true;
   try{chan&&sb.removeChannel(chan)}catch(e){}
   chan=sb.channel("trip-"+tripInfo.id,{config:{broadcast:{self:false}}});
   chan.on("broadcast",{event:"changed"},()=>scheduleRefetch()).on("broadcast",{event:"photos"},()=>loadPhotos()).subscribe();
@@ -761,20 +824,16 @@ async function boot(){
   render();
   try{sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false,autoRefreshToken:false}})}catch(e){showGate("Impossible de charger l'outil. Vérifie ta connexion puis recharge la page.");return}
   const c=codeFromUrl()||ls.get("japon-code");
-  try{ if(c && await tryCode(c)) { await startTrip(); return } }catch(e){ showGate("Connexion impossible pour l'instant. Vérifie ton réseau et réessaie.");return }
+  try{ if(c && await tryCode(c)) { await enterTrip(); return } }catch(e){ showGate("Connexion impossible pour l'instant. Vérifie ton réseau et réessaie.");return }
   showGate(c?"Ce code n'est pas reconnu.":"");
 }
-function pickMe(){
-  const saved=ls.get("japon-me");
-  me = S.travelers.find(t=>t.id===saved) || null;
-}
+function pickMe(){ me = S.travelers.find(t=>t.id===meId) || null; }
 
 /* ---------- Rendu ---------- */
 function render(){
   if(me) me = T(me.id) || null;
   const title=S.trip.title||"Japon 2027";
   $("#brand").innerHTML=esc(title)+(local?'<small>aperçu</small>':"");
-  $("#loginTitle").innerHTML=esc(title)+"<span>Qui se connecte ?</span>";
   document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===tab));
   $("#meBtn").innerHTML = me ? av(me)+esc(me.name) : "Se connecter";
   renderLogin();
@@ -800,12 +859,38 @@ function render(){
   if(scrollDay&&daySel){scrollDay=false;const g=document.getElementById("day-"+daySel);g&&g.scrollIntoView({behavior:"smooth",block:"start"})}
 }
 function renderLogin(){
-  const show = ready && !me;
+  const show = !!code && !me && $("#gate").hidden;
   $("#login").hidden = !show;
-  if(!show) return;
-  $("#whoList").innerHTML = S.travelers.length
-    ? S.travelers.slice().sort(byOrder).map(t=>`<button data-act="login" data-id="${t.id}">${av(t,"lg")}<span>${esc(t.name)}</span></button>`).join("")
-    : `<p class="muted" style="margin:0">Personne n'est encore inscrit. Ajoute ton prénom pour commencer.</p>`;
+  if(!show){lgKey="";return}
+  paintLogin();
+}
+function pinField(id,label){return `<label class="f pinf">${label}<input type="password" id="${id}" inputmode="numeric" pattern="[0-9]*" maxlength="6" minlength="4" autocomplete="off" required placeholder="••••"></label>`}
+function paintLogin(force){
+  const key=JSON.stringify([lg.step,lg.id,lg.phase,lg.msg,lg.busy,roster.map(r=>r.id+r.name+r.has_pin).join()]);
+  if(!force&&key===lgKey)return;lgKey=key;
+  const r=roster.find(x=>x.id===lg.id), title=S.trip.title||"Japon 2027";
+  let h="";
+  if(lg.step==="list"){
+    $("#loginTitle").innerHTML=esc(title)+"<span>Qui se connecte ?</span>";
+    h=`<div class="who">${roster.length?roster.map(t=>`<button data-act="pickWho" data-id="${t.id}">${av(t,"lg")}<span>${esc(t.name)}${t.has_pin?"":`<small class="who-new">code à créer</small>`}</span></button>`).join(""):`<p class="muted" style="margin:0">Personne n'est encore inscrit. Ajoute ton prénom pour commencer.</p>`}</div>
+      ${lg.msg?`<p class="gate-msg" role="alert">${esc(lg.msg)}</p>`:""}
+      <form class="add-me" id="joinForm"><input type="text" id="newName" placeholder="Ton prénom, si tu n'es pas dans la liste" maxlength="24" autocomplete="given-name"><button class="btn primary" type="submit">Rejoindre le voyage</button></form>
+      <p class="muted" style="margin:0;font-size:13px">Chaque voyageur protège son compte avec un code PIN personnel, demandé après 24 h sans utiliser l'appli.</p>`;
+  } else {
+    const who=lg.step==="new"?{name:lg.name,color:PALETTE[roster.length%PALETTE.length]}:r;
+    const head=lg.phase==="enter"?"Entre ton code PIN":lg.phase==="create"?"Choisis ton code PIN":"Confirme ton code PIN";
+    const help=lg.phase==="enter"?"Le code à 4 à 6 chiffres que tu as choisi."
+      :lg.phase==="create"?"4 à 6 chiffres. Toi seul le connais : il protège ton compte, tes coches et tes photos."
+      :"Retape le même code pour le confirmer.";
+    $("#loginTitle").innerHTML=esc(title)+`<span>${head}</span>`;
+    h=`<div class="pinwho">${who?av(who,"lg"):""}<div><b>${esc(who?who.name:"")}</b><small class="muted">${help}</small></div></div>
+      <form class="pinform" id="pinForm" autocomplete="off">${pinField("pinInput",lg.phase==="confirm"?"Confirmation":"Code PIN")}
+        <button class="btn primary" type="submit" ${lg.busy?"disabled":""}>${lg.busy?"Un instant…":lg.phase==="enter"?"Se connecter":lg.phase==="create"?"Continuer":"Valider mon code"}</button></form>
+      <p class="gate-msg" role="alert">${esc(lg.msg||"")}</p>
+      ${lg.phase==="enter"?`<p class="muted" style="margin:0;font-size:13px">Code oublié ? Demande à l'organisateur de le réinitialiser : tu en choisiras un nouveau.</p>`:""}<div><button class="link-btn" data-act="lgBack">${lg.step==="new"?"Retour":"Ce n'est pas moi"}</button></div>`;
+  }
+  $("#loginBody").innerHTML=h;
+  const f=document.getElementById(lg.step==="list"?"":"pinInput");if(f&&!lg.busy)setTimeout(()=>f.focus(),30);
 }
 const HERO_POS={"img/pont.jpg":"center 45%","img/avion.jpg":"center 72%","img/fuji-gare.jpg":"center 55%","img/kinkakuji.jpg":"center 40%"};
 function hero(img,k,title,sub,right=""){
@@ -956,9 +1041,18 @@ applyTheme();
 let settingsOpen=false;
 function openSettings(){settingsOpen=true;$("#settings").hidden=false;renderSettings();refreshPushState().then(renderSettings);document.body.style.overflow="hidden"}
 function closeSettings(){settingsOpen=false;$("#settings").hidden=true;document.body.style.overflow=""}
+function adminBlock(){
+  const others=roster.filter(r=>r.id!==meId);
+  return `<section class="set"><h3>Organisateur</h3>
+    <p class="muted small" style="margin:0">Réinitialiser un code : le voyageur en choisira lui-même un nouveau à sa prochaine connexion. Tu ne connais jamais les codes.</p>
+    <div class="adm">${others.length?others.map(r=>`<div class="adm-row"><div class="nm">${av(r,"xs")}<span>${esc(r.name)}<small class="muted">${r.has_pin?"Code PIN défini":"Code à créer à la prochaine connexion"}</small></span></div>
+      ${r.has_pin?`<button class="btn sm" data-act="admReset" data-id="${r.id}">Réinitialiser le PIN</button>`:""}<button class="btn sm ghost" data-act="admRemove" data-id="${r.id}">Retirer du voyage</button></div>`).join(""):`<p class="muted small">Personne d'autre pour l'instant.</p>`}</div>
+    <p class="muted small" style="margin:0">Tu peux aussi supprimer n'importe quelle photo depuis la visionneuse. Retirer un voyageur garde ses dépenses dans l'historique.</p></section>`;
+}
 function renderSettings(){
   if(!settingsOpen)return;const p=themePref();
   const keep=$("#renameInput")?$("#renameInput").value:null;
+  const pk=["pinOld","pinNew","pinNew2"].map(i=>$("#"+i)?$("#"+i).value:"");
   $("#settingsBody").innerHTML=`
     <section class="set"><h3>Thème</h3>
       <div class="seg wide">${[["sakura","Sakura"],["dark","Sombre"],["light","Clair"]].map(([k,l])=>`<button data-act="theme" data-k="${k}" aria-pressed="${p===k}">${l}</button>`).join("")}</div>
@@ -972,21 +1066,31 @@ function renderSettings(){
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" data-act="share">Partager le lien</button><button class="btn" data-act="copyLink">Copier le lien</button></div>
       <p class="muted small">Le lien contient déjà le code : ton ami arrive directement dans le voyage.</p></section>
     <section class="set"><h3>Ajouter l'appli à l'écran d'accueil</h3><p class="muted small" style="margin:0">Choisis une icône, puis suis les étapes pour ton téléphone.</p>${installInner(true)}</section>
+    <section class="set"><h3>Mon code PIN</h3>
+      <form class="pinchg" id="pinChange" autocomplete="off">
+        <label class="f">Code actuel<input type="password" id="pinOld" inputmode="numeric" pattern="[0-9]*" maxlength="6" required></label>
+        <label class="f">Nouveau code<input type="password" id="pinNew" inputmode="numeric" pattern="[0-9]*" maxlength="6" required></label>
+        <label class="f">Confirmation<input type="password" id="pinNew2" inputmode="numeric" pattern="[0-9]*" maxlength="6" required></label>
+        <button class="btn" type="submit">Changer mon code</button></form>
+      <p class="gate-msg" id="pinMsg" role="alert"></p>
+      <p class="muted small">Ton code est demandé après 24 h sans utiliser l'appli. Changer de code déconnecte tes autres appareils.</p></section>
+    ${isAdmin?adminBlock():""}
     <section class="set"><h3>Compte</h3>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="switchUser">Changer de voyageur</button><button class="btn ghost" data-act="leaveTrip">Quitter le voyage sur cet appareil</button></div>
-      <p class="muted small">Quitter efface seulement le code et ton prénom de cet appareil. Les données du groupe ne bougent pas.</p></section>`;
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="logout">Se déconnecter</button><button class="btn ghost" data-act="leaveTrip">Quitter le voyage sur cet appareil</button></div>
+      <p class="muted small">Se déconnecter ramène à l'écran des prénoms ; ton code PIN sera redemandé. Quitter efface aussi le code du voyage de cet appareil. Les données du groupe ne bougent pas.</p></section>`;
   if(keep!==null&&$("#renameInput"))$("#renameInput").value=keep;
+  ["pinOld","pinNew","pinNew2"].forEach((i,k)=>{if($("#"+i)&&pk[k])$("#"+i).value=pk[k]});
 }
 
 /* ----- Photos partagées (originaux, sans compression) ----- */
 let photos=null, photosLoading=false, photosErr="", uploads=[], viewIdx=-1;
 async function photosApi(body){
-  const r=await fetch(SB_URL+"/functions/v1/photos",{method:"POST",headers:{"Content-Type":"application/json","apikey":SB_KEY},body:JSON.stringify({code,...body})});
+  const r=await fetch(SB_URL+"/functions/v1/photos",{method:"POST",headers:{"Content-Type":"application/json","apikey":SB_KEY},body:JSON.stringify({code,token:sess,...body})});
   let j={};try{j=await r.json()}catch(e){}
   if(!r.ok)throw Object.assign(new Error(j.error||"http"),{status:r.status,err:j.error});return j;
 }
 async function loadPhotos(){
-  if(!code)return;photosLoading=true;photosErr="";if(tab==="photos")render();
+  if(!code||!sess)return;photosLoading=true;photosErr="";if(tab==="photos")render();
   try{const j=await photosApi({action:"list"});photos=j.items||[]}catch(e){photosErr="Impossible de charger les photos pour l'instant."}
   photosLoading=false;if(tab==="photos")render();else updateBadges();renderViewer();
 }
@@ -1068,7 +1172,7 @@ function renderPhotos(){
 function renderViewer(){
   const v=$("#viewer");if(!v)return;
   if(viewIdx<0||!photos||!photos[viewIdx]){v.hidden=true;return}
-  const p=photos[viewIdx],t=T(p.who),mine=me&&p.who===me.id;
+  const p=photos[viewIdx],t=T(p.who),mine=me&&(p.who===me.id||isAdmin);
   const dl=p.url?p.url+(p.url.includes("?")?"&":"?")+"download="+encodeURIComponent(p.name):"";
   v.hidden=false;
   v.innerHTML=`<div class="vbar"><div class="vinfo">${t?av(t,"xs"):""}<span><b>${esc(p.name)}</b><small>${t?esc(t.name)+" · ":""}${mb(p.size)}</small></span></div>
@@ -1105,7 +1209,7 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 
 const pushSupported = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
 let pushState="unknown";
-async function pushApi(body){const r=await fetch(SB_URL+"/functions/v1/push",{method:"POST",headers:{"Content-Type":"application/json","apikey":SB_KEY},body:JSON.stringify({code,...body})});const j=await r.json().catch(()=>({}));if(!r.ok)throw j;return j}
+async function pushApi(body){const r=await fetch(SB_URL+"/functions/v1/push",{method:"POST",headers:{"Content-Type":"application/json","apikey":SB_KEY},body:JSON.stringify({code,token:sess,...body})});const j=await r.json().catch(()=>({}));if(!r.ok)throw j;return j}
 function b64u(s){const p="=".repeat((4-s.length%4)%4);const b=atob((s+p).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from(b,c=>c.charCodeAt(0))}
 async function refreshPushState(){
   if(!pushSupported()){pushState=platform()==="ios"&&!isStandalone()?"needs-install":"unsupported";return}
@@ -1767,7 +1871,14 @@ document.addEventListener("click",e=>{
   const b=e.target.closest("[data-act],[data-tab]"); if(!b) return;
   if(b.dataset.tab){tab=b.dataset.tab;if(tab==="photos"&&photos===null)loadPhotos();render();window.scrollTo(0,0);return}
   const id=b.dataset.id, a=b.dataset.act;
-  if(a==="login"){me=T(id);ls.set("japon-me",id);initSeen();syncPush();render();toast("Bienvenue "+me.name);return}
+  if(a==="pickWho"){const r=roster.find(x=>x.id===id);lg={step:"pin",id,phase:r&&r.has_pin?"enter":"create",first:"",msg:"",busy:false};paintLogin(true);return}
+  if(a==="lgBack"){lg={step:"list",id:null,phase:"enter",first:"",msg:"",busy:false};refreshRoster().then(()=>paintLogin(true));paintLogin(true);return}
+  if(a==="logout"){logout();return}
+  if(a==="admReset"||a==="admRemove"){if(!b.dataset.c){b.dataset.c="1";b.textContent=a==="admReset"?"Confirmer la réinitialisation":"Confirmer le retrait";b.style.color="var(--bad)";return}
+    const t=roster.find(x=>x.id===id)||T(id);b.disabled=true;
+    rpc(a==="admReset"?"admin_reset_pin":"admin_remove_traveler",{p_code:code,p_token:sess,p_traveler:id}).then(async()=>{
+      toast(a==="admReset"?`${t?t.name:"Ce voyageur"} choisira un nouveau code à sa prochaine connexion`:`${t?t.name:"Ce voyageur"} a été retiré du voyage`);
+      await refreshRoster();if(a==="admRemove"){notifyOthers();await loadAll().catch(()=>{});render()}renderSettings()}).catch(e=>{fail(e);renderSettings()});return}
   if(a==="openSettings"){openSettings();return}
   if(a==="confetti"){confetti();return}
   if(a==="guideOs"){guideOs=b.dataset.k;if(settingsOpen)renderSettings();if($("#install"))render();return}
@@ -1775,19 +1886,19 @@ document.addEventListener("click",e=>{
   if(a==="pushOff"){disablePush();return}
   if(a==="closeSettings"||(a==="closeSettingsBg"&&e.target===b)){closeSettings();return}
   if(a==="theme"){ls.set("japon-theme",b.dataset.k);applyTheme();if(ready)render();renderSettings();return}
-  if(a==="switchUser"){closeSettings();me=null;ls.set("japon-me","");render();return}
+  if(a==="switchUser"){closeSettings();logout();return}
   if(a==="reloadPhotos"){loadPhotos();return}
   if(a==="openPhoto"){viewIdx=Number(b.dataset.i);renderViewer();return}
   if(a==="closePhoto"){viewIdx=-1;renderViewer();return}
   if(a==="navPhoto"){viewIdx=Math.max(0,Math.min(photos.length-1,viewIdx+Number(b.dataset.d)));renderViewer();return}
-  if(a==="delPhoto"){if(!b.dataset.c){b.dataset.c="1";b.textContent="Confirmer la suppression";b.style.color="var(--bad)";return}
+  if(a==="delPhoto"){if(!b.dataset.c){b.dataset.c="1";b.textContent=photos[viewIdx]&&me&&photos[viewIdx].who!==me.id?"Supprimer la photo de "+((T(photos[viewIdx].who)||{}).name||"ce voyageur")+" ?":"Confirmer la suppression";b.style.color="var(--bad)";return}
     const ph=photos[viewIdx];viewIdx=-1;renderViewer();photosApi({action:"delete",path:ph.path,who:me&&me.id}).then(()=>{toast("Photo supprimée");loadPhotos()}).catch(()=>toast("Suppression impossible"));return}
   if(a==="pickIcon"){iconSel=b.dataset.k;ls.set("japon-icon",iconSel);applyIcon(iconSel);syncPush();render();renderSettings();toast("Icône choisie");return}
   if(a==="install"){if(installEvt){installEvt.prompt();installEvt.userChoice.finally(()=>{installEvt=null;render()})}return}
   if(a==="share"){const data={title:"Japon 2027",text:`Rejoins l'organisation de notre voyage au Japon ! Code du voyage : ${code}`,url:shareUrl()};
     if(navigator.share){navigator.share(data).catch(()=>{})}else{copyText(data.text+"\n"+data.url)}return}
   if(a==="copyLink"){copyText(shareUrl());return}
-  if(a==="leaveTrip"){ls.set("japon-code","");ls.set("japon-me","");location.hash="";location.reload();return}
+  if(a==="leaveTrip"){(sess?rpc("logout",{p_code:code,p_token:sess}).catch(()=>{}):Promise.resolve()).then(()=>{ls.set("japon-code","");ls.set("japon-sess","");location.hash="";location.reload()});return}
   if(a==="toggleTask"){if(!me)return;const t=S.tasks.find(x=>x.id===id);patch("tasks",id,{done:{[me.id]:!(t.done&&t.done[me.id])}});return}
   if(a==="delTask"){if(b.dataset.c){remove("tasks",id);toast("Étape supprimée")}else{b.dataset.c="1";b.textContent="Supprimer ?";b.style.color="var(--bad)";b.style.fontSize="12px";setTimeout(()=>{b.dataset.c="";b.textContent="×";b.style.cssText=""},2500)}return}
   if(a==="delAct"||a==="delExp"||a==="delLine"){const col={delAct:"activities",delExp:"expenses",delLine:"budget"}[a];if(b.dataset.c){remove(col,id);toast("Supprimé")}else{b.dataset.c="1";b.textContent="Supprimer ?";b.style.color="var(--bad)";b.style.fontSize="12px";setTimeout(()=>{b.dataset.c="";b.textContent="×";b.style.cssText=""},2500)}return}
@@ -1843,7 +1954,7 @@ window.addEventListener("scroll",()=>{if(tab!=="plan"||spyRaf)return;spyRaf=requ
   if(window.innerHeight+window.scrollY>=document.documentElement.scrollHeight-4)cur="s-city";
   document.querySelectorAll('.subnav button').forEach(b=>b.setAttribute("aria-current",b.dataset.to===cur&&(cur!=="s-city"||b.dataset.view===planView)))})},{passive:true});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(viewIdx>=0){viewIdx=-1;renderViewer()}else if(settingsOpen)closeSettings()}if(viewIdx>=0&&(e.key==="ArrowLeft"||e.key==="ArrowRight")){viewIdx=Math.max(0,Math.min(photos.length-1,viewIdx+(e.key==="ArrowLeft"?-1:1)));renderViewer()}});
-$("#meBtn").addEventListener("click",()=>{me=null;ls.set("japon-me","");render()});
+$("#meBtn").addEventListener("click",()=>{if(me)openSettings()});
 
 document.addEventListener("change",e=>{
   const el=e.target, a=el.dataset.act; if(!a) return;
@@ -1875,12 +1986,15 @@ document.addEventListener("submit",e=>{
   const f=e.target; e.preventDefault();
   if(f.id==="renameForm"){const n=$("#renameInput").value.trim().slice(0,24);if(!n||!me)return;patch("travelers",me.id,{name:n});toast("Prénom mis à jour");return}
   if(f.id==="gateForm"){const btn=f.querySelector("button");btn.disabled=true;$("#gateMsg").textContent="";
-    tryCode($("#gateCode").value).then(ok=>{if(ok)return startTrip();$("#gateMsg").textContent="Code incorrect. Vérifie l'orthographe (lettres et chiffres)."}).catch(()=>{$("#gateMsg").textContent="Connexion impossible pour l'instant. Réessaie."}).finally(()=>{btn.disabled=false});return}
-  if(f.id==="addMeForm"){const n=$("#newName").value.trim();if(!n)return;
-    const exist=S.travelers.find(t=>t.name.toLowerCase()===n.toLowerCase());
-    if(exist){me=exist;ls.set("japon-me",exist.id);render();return}
-    const id=nid("p");const data={name:n,color:PALETTE[S.travelers.length%PALETTE.length],order:S.travelers.length+1,createdAt:new Date().toISOString()};
-    put("travelers",id,data).then(()=>{me={id,...data};ls.set("japon-me",id);initSeen();$("#newName").value="";render();toast("Bienvenue "+n);notifyGroup("prep",`${n} a rejoint le voyage !`)});return}
+    tryCode($("#gateCode").value).then(ok=>{if(ok)return enterTrip();$("#gateMsg").textContent="Code incorrect. Vérifie l'orthographe (lettres et chiffres)."}).catch(()=>{$("#gateMsg").textContent="Connexion impossible pour l'instant. Réessaie."}).finally(()=>{btn.disabled=false});return}
+  if(f.id==="joinForm"){const n=$("#newName").value.trim().slice(0,24);if(!n)return;
+    const exist=roster.find(t=>(t.name||"").toLowerCase()===n.toLowerCase());
+    if(exist){lg={step:"pin",id:exist.id,phase:exist.has_pin?"enter":"create",first:"",msg:"Ce prénom est déjà dans le voyage.",busy:false};paintLogin(true);return}
+    lg={step:"new",id:null,name:n,phase:"create",first:"",msg:"",busy:false};paintLogin(true);return}
+  if(f.id==="pinForm"){const v=$("#pinInput").value.trim();$("#pinInput").value="";submitPin(v);return}
+  if(f.id==="pinChange"){const o=$("#pinOld").value.trim(),n1=$("#pinNew").value.trim(),n2=$("#pinNew2").value.trim(),m=$("#pinMsg");
+    if(!/^[0-9]{4,6}$/.test(n1)){m.textContent=LG_ERR.format;return}if(n1!==n2){m.textContent="Les deux nouveaux codes ne correspondent pas.";return}
+    rpc("change_pin",{p_code:code,p_token:sess,p_old:o,p_new:n1}).then(res=>{if(res&&res.ok){f.reset();m.textContent="";toast("Code PIN modifié")}else m.textContent=res.error==="locked"?lockMsg():res.error==="wrong"?"Code actuel incorrect.":LG_ERR[res.error]||"Impossible pour l'instant."}).catch(fail);return}
   const k=f.dataset.form, d=new FormData(f);
   const solo=!!(e.submitter&&e.submitter.value==="me"&&me);
   if(k==="task"){const t=String(d.get("title")).trim();if(!t)return;open.task=false;f.reset();put("tasks",nid("t"),{title:t,cat:d.get("cat"),order:S.tasks.length+1,done:{},owner:solo?me.id:null,createdBy:me?me.id:null,createdAt:new Date().toISOString()});if(!solo)notifyGroup("prep",`${myName()} a ajouté une étape : ${t}`);toast(solo?"Étape ajoutée à ta liste":"Étape ajoutée pour tout le monde")}
