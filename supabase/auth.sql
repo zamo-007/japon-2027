@@ -285,3 +285,10 @@ create or replace function public.patch_item(p_code text, p_col text, p_id text,
 begin raise exception 'session expiree' using errcode = '28P01'; end $$;
 alter function public._pin_ok(text) set search_path = public;
 alter function public._guard(text,text,jsonb,jsonb) set search_path = public;
+
+-- Espace photos utilisé par voyage (lu par la fonction photos pour le quota de 1 Go).
+create or replace function public.photos_usage(p_trip uuid) returns bigint language sql stable security definer set search_path=public, storage as $$
+  select coalesce(sum((metadata->>'size')::bigint),0)::bigint from storage.objects where bucket_id = 'photos' and name like p_trip::text || '/%'
+$$;
+revoke all on function public.photos_usage(uuid) from public, anon, authenticated;
+grant execute on function public.photos_usage(uuid) to service_role;

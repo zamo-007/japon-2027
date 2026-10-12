@@ -1,4 +1,4 @@
-// Photos du voyage : session personnelle obligatoire (code du voyage + jeton PIN), originaux sans compression.
+// Photos du voyage : session personnelle obligatoire (code du voyage + jeton PIN), quota de 1 Go pour tout le voyage.
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 
 const cors = {
@@ -9,6 +9,8 @@ const cors = {
 const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 const BUCKET = "photos";
 const MAX = 50 * 1024 * 1024;
+const QUOTA = 1024 * 1024 * 1024; // 1 Go gratuit pour tout le voyage (photos + miniatures)
+const usage = async (tid: string) => Number((await admin.rpc("photos_usage", { p_trip: tid })).data) || 0;
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
 const safeName = (v: unknown) => {
   const n = String(v ?? "photo").normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -28,6 +30,8 @@ Deno.serve(async (req) => {
     if (body.action === "upload") {
       const size = Number(body.size) || 0;
       if (size > MAX) return json({ error: "too_big" }, 413);
+      const used = await usage(tid);
+      if (used + size * 1.05 > QUOTA) return json({ error: "full", used, limit: QUOTA }, 507);
       const key = `${tid}/${me}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}-${safeName(body.name)}`;
       const thumbKey = key.replace(`${tid}/`, `${tid}/_thumbs/`) + ".jpg";
       const o = await store.createSignedUploadUrl(key);
@@ -48,13 +52,14 @@ Deno.serve(async (req) => {
         }
       }
       items.sort((a, b) => (a.created < b.created ? 1 : -1));
-      if (!items.length) return json({ items: [] });
+      const used = await usage(tid);
+      if (!items.length) return json({ items: [], used, limit: QUOTA });
       const thumbPaths = items.map((i) => i.path.replace(`${tid}/`, `${tid}/_thumbs/`) + ".jpg");
       const [full, thumbs] = await Promise.all([
         store.createSignedUrls(items.map((i) => i.path), 86400),
         store.createSignedUrls(thumbPaths, 86400),
       ]);
-      return json({ items: items.map((i, k) => ({ ...i, url: full.data?.[k]?.signedUrl ?? null, thumb: thumbs.data?.[k]?.signedUrl ?? null })) });
+      return json({ used, limit: QUOTA, items: items.map((i, k) => ({ ...i, url: full.data?.[k]?.signedUrl ?? null, thumb: thumbs.data?.[k]?.signedUrl ?? null })) });
     }
 
     if (body.action === "delete") {

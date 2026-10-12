@@ -62,7 +62,7 @@ h1,h2,h3{font-family:var(--display);font-weight:700;margin:0;text-wrap:balance;l
 /* ---------- Shell ---------- */
 .topbar{position:sticky;top:0;padding-top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--ink) 86%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
 .topbar-in{max-width:1080px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:14px}
-.brand{font-family:var(--display);font-weight:800;font-size:19px;white-space:nowrap}
+.brand{font-family:var(--display);font-weight:800;font-size:19px;white-space:nowrap;background:none;border:0;padding:0;color:inherit;cursor:pointer;text-align:left}
 .brand small{font-family:var(--body);font-weight:400;color:var(--mute);font-size:12px;margin-left:6px}
 .tabs{display:flex;gap:4px;margin-left:auto}
 .tab{border:0;background:none;padding:8px 12px;border-radius:10px;color:var(--mute);cursor:pointer;display:flex;align-items:center;gap:7px;white-space:nowrap}
@@ -182,6 +182,23 @@ td.r,th.r{text-align:right}
 .settle{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--ink);border:1px solid var(--line);flex-wrap:wrap}
 .settle .arrow{color:var(--lantern)}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
+.sharepick{gap:12px!important}
+.sp-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.sp-quick{display:inline-flex;border:1px solid var(--line);border-radius:99px;padding:3px;gap:3px;background:var(--ink-3)}
+.sp-quick button{border:0;background:none;color:var(--paper);font:inherit;font-size:13px;padding:7px 14px;border-radius:99px;cursor:pointer;min-height:34px}
+.sp-quick button:hover{background:color-mix(in srgb,var(--lantern) 16%,transparent)}
+.sp-quick button:active{background:var(--lantern);color:var(--lantern-ink)}
+.sp-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+@media (max-width:600px){.sp-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.sp-chip{position:relative;display:flex;align-items:center;gap:10px;min-height:50px;padding:8px 40px 8px 10px;border:1.5px solid var(--line);border-radius:14px;cursor:pointer;user-select:none;background:color-mix(in srgb,var(--ink-3) 50%,transparent);transition:border-color .15s,background .15s}
+.sp-chip span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px}
+.sp-chip input{position:absolute;opacity:0;pointer-events:none}
+.sp-tick{position:absolute;right:12px;top:50%;width:20px;height:20px;margin-top:-10px;border-radius:50%;border:1.5px solid var(--mute)}
+.sp-chip:has(input:checked){border-color:var(--lantern);background:color-mix(in srgb,var(--lantern) 14%,transparent)}
+.sp-chip:has(input:checked) .sp-tick{background:var(--lantern);border-color:var(--lantern)}
+.sp-chip:has(input:checked) .sp-tick::after{content:"";position:absolute;left:6px;top:2px;width:5px;height:10px;border:solid var(--lantern-ink);border-width:0 2px 2px 0;transform:rotate(45deg)}
+.sp-chip:not(:has(input:checked)) .avatar{opacity:.4}.sp-chip:not(:has(input:checked)) span{color:var(--mute)}
+.sp-chip:has(input:focus-visible){outline:2px solid var(--lantern);outline-offset:2px}
 .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:99px;padding:3px 10px 3px 3px;cursor:pointer;font-size:13px;user-select:none}
 .chip input{position:absolute;opacity:0;pointer-events:none}
 .chip:has(input:checked){border-color:var(--lantern);background:rgba(233,169,63,.12)}
@@ -409,7 +426,19 @@ html[data-theme="light"] .panel{box-shadow:0 1px 3px rgba(24,32,54,.06)}
 @media (max-width:760px){.sheet{border-left:0}}
 /* ---- Photos ---- */
 .pgroup{display:grid;gap:8px}
-.pgroup+.pgroup{margin-top:18px}
+.pgroup+.pgroup{margin-top:22px}
+.psep{display:flex;align-items:center;gap:10px;margin:2px 0 4px}.psep span{font-family:var(--display);font-size:17px;font-weight:700;white-space:nowrap;display:inline-block}.psep span::first-letter{text-transform:uppercase}
+.psep i{flex:1;height:1px;background:var(--line)}.psep small{color:var(--mute);font-size:12px;white-space:nowrap}
+.dayfilter{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 14px;scrollbar-width:none;margin-bottom:6px}.dayfilter::-webkit-scrollbar{display:none}
+.dayfilter button{flex:0 0 auto;border:1px solid var(--line);background:var(--ink-3);color:var(--paper);border-radius:99px;padding:8px 14px;font:inherit;font-size:14px;cursor:pointer;min-height:38px}
+.dayfilter button small{color:var(--mute);margin-left:4px}
+.dayfilter button[aria-pressed="true"]{background:var(--lantern);border-color:var(--lantern);color:var(--lantern-ink)}.dayfilter button[aria-pressed="true"] small{color:inherit;opacity:.8}
+.gauge{display:grid;gap:8px;padding:14px;border:1px solid var(--line);border-radius:12px;background:color-mix(in srgb,var(--ink-3) 60%,transparent);margin-bottom:4px}
+.gtop{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:14px}
+.gbar{height:10px;border-radius:99px;background:color-mix(in srgb,var(--paper) 12%,transparent);overflow:hidden}
+.gbar i{display:block;height:100%;border-radius:99px;background:var(--lantern);transition:width .4s}
+.gauge.warn .gbar i{background:#E0A030}.gauge.crit .gbar i{background:var(--bad)}
+.qpick{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}.qpick>span{font-size:14px}
 .pgroup .cat-title{margin:0;text-transform:none;letter-spacing:.02em;font-size:13px}
 .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
 @media (max-width:600px){.pgrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}}
@@ -626,7 +655,7 @@ canvas.confetti{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:n
 <!-- ============ Application ============ -->
 <header class="topbar">
   <div class="topbar-in">
-    <div class="brand" id="brand">Japon 2027</div>
+    <button class="brand" id="brand" data-act="home" title="Page d'accueil">Japon 2027</button>
     <nav class="tabs" role="tablist" aria-label="Sections">
       <button class="tab" role="tab" data-tab="prep" aria-selected="true"><span class="k">準備</span>Préparation<i class="tbadge" data-badge="prep" hidden></i></button>
       <button class="tab" role="tab" data-tab="plan"><span class="k">旅程</span><span class="long">Itinéraire & activités</span><span class="short">Activités</span><i class="tbadge" data-badge="plan" hidden></i></button>
@@ -752,7 +781,7 @@ async function tryCode(c){
   code=c;tripInfo=info;ls.set("japon-code",c);setUrlCode(c);return true;
 }
 /* ----- Comptes : code PIN personnel, session de 24 h d'inactivité ----- */
-let lg={step:"list",id:null,phase:"enter",first:"",msg:"",busy:false}, lgKey="";
+let lg={step:"list",id:null,phase:"enter",first:"",msg:"",busy:false}, lgKey="", lgBrowse=false;
 async function refreshRoster(){try{roster=await rpc("list_travelers",{p_code:code})||[]}catch(e){roster=roster||[]}}
 async function enterTrip(){
   $("#gate").hidden=true;
@@ -765,7 +794,7 @@ async function enterTrip(){
 }
 function clearSess(){sess="";ls.set("japon-sess","");meId=null;isAdmin=false}
 function showLogin(){
-  me=null;ready=false;Object.assign(S,{travelers:[],tasks:[],stages:[],activities:[],budget:[],expenses:[]});S.trip={};photos=null;
+  lgBrowse=false;me=null;ready=false;Object.assign(S,{travelers:[],tasks:[],stages:[],activities:[],budget:[],expenses:[]});S.trip={};photos=null;
   if(lg.step==="pin"){const r=roster.find(x=>x.id===lg.id);if(!r)lg={step:"list",id:null,phase:"enter",first:"",msg:"",busy:false};else if(!r.has_pin&&lg.phase==="enter")lg.phase="create"}
   lgKey="";closeSettings();render();
 }
@@ -774,6 +803,8 @@ async function sessionExpired(){
   lg={step:"pin",id:last,phase:"enter",first:"",msg:"Ta session a expiré : entre de nouveau ton code PIN.",busy:false};showLogin();
 }
 async function authed(res){
+  if(sess&&sess!==res.token){const old=sess;rpc("logout",{p_code:code,p_token:old}).catch(()=>{})}
+  lgBrowse=false;
   sess=res.token;ls.set("japon-sess",sess);meId=res.me;isAdmin=!!res.admin;ls.set("japon-last",meId);
   lg={step:"list",id:null,phase:"enter",first:"",msg:"",busy:false};await startTrip();
   if(me){initSeen();syncPush();toast("Bienvenue "+me.name)}
@@ -859,7 +890,7 @@ function render(){
   if(scrollDay&&daySel){scrollDay=false;const g=document.getElementById("day-"+daySel);g&&g.scrollIntoView({behavior:"smooth",block:"start"})}
 }
 function renderLogin(){
-  const show = !!code && !me && $("#gate").hidden;
+  const show = !!code && (!me||lgBrowse) && $("#gate").hidden;
   $("#login").hidden = !show;
   if(!show){lgKey="";return}
   paintLogin();
@@ -875,6 +906,7 @@ function paintLogin(force){
     h=`<div class="who">${roster.length?roster.map(t=>`<button data-act="pickWho" data-id="${t.id}">${av(t,"lg")}<span>${esc(t.name)}${t.has_pin?"":`<small class="who-new">code à créer</small>`}</span></button>`).join(""):`<p class="muted" style="margin:0">Personne n'est encore inscrit. Ajoute ton prénom pour commencer.</p>`}</div>
       ${lg.msg?`<p class="gate-msg" role="alert">${esc(lg.msg)}</p>`:""}
       <form class="add-me" id="joinForm"><input type="text" id="newName" placeholder="Ton prénom, si tu n'es pas dans la liste" maxlength="24" autocomplete="given-name"><button class="btn primary" type="submit">Rejoindre le voyage</button></form>
+      ${me?`<button class="btn" data-act="homeBack">Revenir à l'appli (${esc(me.name)})</button>`:""}
       <p class="muted" style="margin:0;font-size:13px">Chaque voyageur protège son compte avec un code PIN personnel, demandé après 24 h sans utiliser l'appli.</p>`;
   } else {
     const who=lg.step==="new"?{name:lg.name,color:PALETTE[roster.length%PALETTE.length]}:r;
@@ -1091,9 +1123,17 @@ async function photosApi(body){
 }
 async function loadPhotos(){
   if(!code||!sess)return;photosLoading=true;photosErr="";if(tab==="photos")render();
-  try{const j=await photosApi({action:"list"});photos=j.items||[]}catch(e){photosErr="Impossible de charger les photos pour l'instant."}
+  try{const j=await photosApi({action:"list"});photos=j.items||[];if(j.used!=null)photoUsed=Number(j.used)||0;if(j.limit)photoLimit=Number(j.limit)}catch(e){photosErr="Impossible de charger les photos pour l'instant."}
   photosLoading=false;if(tab==="photos")render();else updateBadges();renderViewer();
 }
+let photoUsed=0, photoLimit=1073741824, photoDay="all", photoMode=ls.get("japon-photo-mode")==="opt"?"opt":"orig";
+/* Version optimisée : 2560 px max, JPEG qualité 0,85 (souvent 4 à 8 fois plus légère). */
+function optimize(file){return new Promise(res=>{
+  if(!/^image\/(jpeg|png|webp|heic|heif)$/i.test(file.type||"")&&!/\.(jpe?g|png|webp|heic|heif)$/i.test(file.name)){res(null);return}
+  const url=URL.createObjectURL(file),img=new Image();
+  img.onload=()=>{try{const M=2560,k=Math.min(1,M/Math.max(img.naturalWidth,img.naturalHeight));const c=document.createElement("canvas");c.width=Math.round(img.naturalWidth*k);c.height=Math.round(img.naturalHeight*k);
+    c.getContext("2d").drawImage(img,0,0,c.width,c.height);c.toBlob(b=>{URL.revokeObjectURL(url);res(b&&b.size<file.size?b:null)},"image/jpeg",.85)}catch(e){URL.revokeObjectURL(url);res(null)}};
+  img.onerror=()=>{URL.revokeObjectURL(url);res(null)};img.src=url})}
 function makeThumb(file){return new Promise(res=>{
   const url=URL.createObjectURL(file),img=new Image();
   img.onload=()=>{try{const M=640,s=Math.min(1,M/Math.max(img.naturalWidth,img.naturalHeight));const c=document.createElement("canvas");c.width=Math.round(img.naturalWidth*s);c.height=Math.round(img.naturalHeight*s);
@@ -1109,10 +1149,11 @@ function putWithProgress(path,token,body,contentType,onPct){
     x.onerror=()=>rej(new Error("network"));x.send(fd);
   });
 }
+const upLabel=(u,p)=>u.status==="ok"?"✓":u.status==="err"?"Échec":u.status==="big"?"Trop lourde":u.status==="full"?"Espace plein":u.status==="wait"?"En attente":u.status==="opt"?"Optimisation…":p+" %";
 function paintUpload(i){
   const u=uploads[i],el=document.getElementById("up-"+i);if(!u||!el)return;
   const p=Math.round(u.pct*100);el.style.setProperty("--p",p);
-  const t=el.querySelector(".uppct");if(t)t.textContent=u.status==="ok"?"✓":u.status==="err"?"Échec":u.status==="big"?"Trop lourde":u.status==="wait"?"En attente":p+" %";
+  const t=el.querySelector(".uppct");if(t)t.textContent=upLabel(u,p);
   el.dataset.st=u.status;
   const done=uploads.filter(x=>x.status==="ok").length,tot=uploads.length,all=uploads.reduce((s,x)=>s+(x.status==="ok"?1:x.pct||0),0)/tot;
   const sum=$("#upSum");if(sum)sum.textContent=done===tot?`${tot} photo${tot>1?"s":""} envoyée${tot>1?"s":""}, affichage en cours…`:`Envoi de ${tot} photo${tot>1?"s":""} · ${done}/${tot} terminée${done>1?"s":""} · ${Math.round(all*100)} %`;
@@ -1127,44 +1168,72 @@ async function uploadFiles(files){
   const box=$("#upBox");if(box)box.scrollIntoView({behavior:"smooth",block:"nearest"});
   for(let i=0;i<list.length;i++){
     const f=list[i],u=uploads[i];if(u.status==="big"){paintUpload(i);continue}
+    let body=f,name=f.name,type=f.type||"application/octet-stream";
+    if(photoMode==="opt"){u.status="opt";paintUpload(i);const o=await optimize(f);if(o){body=o;type="image/jpeg";name=f.name.replace(/\.[^.]+$/,"")+".jpg"}}
+    if(photoUsed+body.size*1.05>photoLimit){u.status="full";paintUpload(i);continue}
     u.status="up";u.pct=0.02;paintUpload(i);
     try{
-      const s=await photosApi({action:"upload",name:f.name,size:f.size,who:me.id});
-      await putWithProgress(s.path,s.token,f,f.type||"application/octet-stream",r=>{u.pct=0.02+r*0.9;paintUpload(i)});
+      const s=await photosApi({action:"upload",name,size:body.size,who:me.id});
+      await putWithProgress(s.path,s.token,body,type,r=>{u.pct=0.02+r*0.9;paintUpload(i)});
+      photoUsed+=body.size;
       u.pct=0.94;paintUpload(i);
       const t=await makeThumb(f);if(t){try{await putWithProgress(s.thumbPath,s.thumbToken,t,"image/jpeg",r=>{u.pct=0.94+r*0.06;paintUpload(i)})}catch(e){}}
       u.status="ok";u.pct=1;
-    }catch(e){u.status="err"}
+    }catch(e){u.status=e&&e.err==="full"?"full":"err"}
     paintUpload(i);
   }
+  if(uploads.some(u=>u.status==="full"))toast("L'espace photos de 1 Go est plein : certaines photos n'ont pas été envoyées.");
   const ok=uploads.filter(u=>u.status==="ok").length;if(ok)notifyGroup("photos",`${myName()} a partagé ${ok} photo${ok>1?"s":""}`);
   try{chan&&chan.send({type:"broadcast",event:"photos",payload:{}})}catch(e){}
   await loadPhotos();
   uploads.filter(u=>u.status==="ok").forEach(u=>u.preview&&URL.revokeObjectURL(u.preview));
   uploads=uploads.filter(u=>u.status!=="ok");render();
-  toast(ok?`${ok} photo${ok>1?"s":""} ajoutée${ok>1?"s":""}`:"Aucune photo n'a pu être envoyée");
+  if(!uploads.some(u=>u.status==="full"))toast(ok?`${ok} photo${ok>1?"s":""} ajoutée${ok>1?"s":""}`:"Aucune photo n'a pu être envoyée");
 }
 const mb = n => !n?"0 Mo":n>=1048576?(n/1048576).toLocaleString("fr-FR",{maximumFractionDigits:1})+" Mo":Math.max(1,Math.round(n/1024))+" Ko";
+const dayKey = iso => {if(!iso)return "";const d=new Date(iso);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+function dayLabel(k,short){
+  const t=new Date(),y=new Date(Date.now()-864e5);
+  if(k===dayKey(t.toISOString()))return "Aujourd'hui";if(k===dayKey(y.toISOString()))return "Hier";
+  const d=new Date(k+"T12:00");return short?d.toLocaleDateString("fr-FR",{day:"numeric",month:"short"}):d.toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:d.getFullYear()===t.getFullYear()?undefined:"numeric"});
+}
+function storageGauge(){
+  const pct=Math.min(100,photoUsed/photoLimit*100), left=Math.max(0,photoLimit-photoUsed);
+  const lvl=pct>=95?"crit":pct>=80?"warn":"ok";
+  return `<div class="gauge ${lvl}" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}" aria-label="Espace photos utilisé">
+    <div class="gtop"><span><b class="num">${mb(photoUsed)}</b> utilisés</span><span class="muted"><b class="num">${mb(left)}</b> restants sur 1 Go</span></div>
+    <div class="gbar"><i style="width:${Math.max(pct,photoUsed?1:0).toFixed(1)}%"></i></div>
+    ${lvl==="crit"?`<p class="small neg" style="margin:0">${left<1048576?"L'espace est plein : supprimez des photos pour en ajouter d'autres.":"Presque plein : passez en qualité optimisée ou faites du tri."}</p>`:lvl==="warn"?`<p class="small" style="margin:0">Plus de 80 % utilisés. La qualité optimisée permet d'en garder beaucoup plus.</p>`:""}
+  </div>`;
+}
 function renderPhotos(){
-  const total=(photos||[]).reduce((s,p)=>s+(p.size||0),0);
-  const groups={};(photos||[]).forEach((p,i)=>{const d=(p.created||"").slice(0,10);(groups[d]=groups[d]||[]).push([p,i])});
+  const n=(photos||[]).length, full=photoUsed>=photoLimit-1048576;
+  const groups={};(photos||[]).forEach((p,i)=>{const d=dayKey(p.created);(groups[d]=groups[d]||[]).push([p,i])});
+  const days=Object.keys(groups).sort().reverse();
+  if(photoDay!=="all"&&!groups[photoDay])photoDay="all";
+  const shown=photoDay==="all"?days:[photoDay];
+  const filters=days.length>1?`<div class="dayfilter" data-keepx="photodays" role="tablist" aria-label="Filtrer par jour d'ajout">
+      <button data-act="photoDay" data-k="all" aria-pressed="${photoDay==="all"}">Toutes <small>${n}</small></button>
+      ${days.map(d=>`<button data-act="photoDay" data-k="${d}" aria-pressed="${photoDay===d}">${esc(dayLabel(d,true))} <small>${groups[d].length}</small></button>`).join("")}</div>`:"";
   const grid = photos===null ? `<p class="muted">Chargement des photos…</p>`
-    : !photos.length ? `<div class="empty">Aucune photo pour l'instant. Ajoute la première : elle sera visible par tout le groupe, en qualité d'origine.</div>`
-    : Object.entries(groups).map(([d,arr])=>`<section class="pgroup"><div class="cat-title">${d?new Date(d+"T12:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"}):""}</div>
-      <div class="pgrid">${arr.map(([p,i])=>{const t=T(p.who);return `<button class="ptile" data-act="openPhoto" data-i="${i}" aria-label="Ouvrir ${esc(p.name)}">${p.thumb?`<img src="${esc(p.thumb)}" alt="" loading="lazy" onerror="this.remove()">`:""}<span class="pname">${esc(p.name)}</span>${t?av(t,"xs"):""}</button>`}).join("")}</div></section>`).join("");
+    : !n ? `<div class="empty">Aucune photo pour l'instant. Ajoute la première : elle sera visible par tout le groupe.</div>`
+    : filters+shown.map(d=>{const arr=groups[d];return `<section class="pgroup"><div class="psep"><span>${esc(dayLabel(d))}</span><i></i><small>${arr.length} photo${arr.length>1?"s":""}</small></div>
+      <div class="pgrid">${arr.map(([p,i])=>{const t=T(p.who);return `<button class="ptile" data-act="openPhoto" data-i="${i}" aria-label="Ouvrir ${esc(p.name)}">${p.thumb?`<img src="${esc(p.thumb)}" alt="" loading="lazy" onerror="this.remove()">`:""}<span class="pname">${esc(p.name)}</span>${t?av(t,"xs"):""}</button>`}).join("")}</div></section>`}).join("");
   const up = uploads.length?`<div id="upBox" class="upbox"><div class="upsum"><span id="upSum">Préparation de l'envoi…</span><div class="upbar"><i id="upBar"></i></div></div>
-    <div class="upgrid">${uploads.map((u,i)=>`<div class="uptile" id="up-${i}" data-st="${u.status}" style="--p:${Math.round(u.pct*100)}"><img src="${u.preview}" alt="" onerror="this.remove()"><div class="upov"><div class="upring"><span class="uppct">${u.status==="ok"?"✓":u.status==="err"?"Échec":u.status==="big"?"Trop lourde":u.status==="wait"?"En attente":Math.round(u.pct*100)+" %"}</span></div></div></div>`).join("")}</div></div>`:"";
-  return hero("img/lanternes.jpg","写真 · shashin","Photos du voyage",`${(photos||[]).length} photo${(photos||[]).length>1?"s":""} · ${mb(total)} sur 1 Go d'espace gratuit`)
+    <div class="upgrid">${uploads.map((u,i)=>`<div class="uptile" id="up-${i}" data-st="${u.status}" style="--p:${Math.round(u.pct*100)}"><img src="${u.preview}" alt="" onerror="this.remove()"><div class="upov"><div class="upring"><span class="uppct">${upLabel(u,Math.round(u.pct*100))}</span></div></div></div>`).join("")}</div></div>`:"";
+  return hero("img/lanternes.jpg","写真 · shashin","Photos du voyage",`${n} photo${n>1?"s":""} · ${mb(photoUsed)} sur 1 Go`)
   + `<div class="wrap">
-    <div class="panel"><h3>Partager des photos<small>originaux, sans compression</small></h3>
+    <div class="panel"><h3>Partager des photos<small>visibles par tout le groupe</small></h3>
+      ${storageGauge()}
+      <div class="qpick"><span>Qualité d'envoi</span><div class="seg"><button data-act="photoMode" data-k="opt" aria-pressed="${photoMode==="opt"}">Optimisée</button><button data-act="photoMode" data-k="orig" aria-pressed="${photoMode==="orig"}">Originale</button></div></div>
+      <p class="muted small" style="margin:0">${photoMode==="opt"?"Optimisée : photo redimensionnée à 2560 px, nette sur écran et en tirage jusqu'au format A4, environ 4 à 8 fois plus légère. C'est cette version qui est gardée et téléchargée.":"Originale : la photo est gardée telle quelle, jusqu'à 50 Mo. C'est ce qui remplit le plus vite le 1 Go."}</p>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-        <label class="btn primary" for="photoInput" style="cursor:pointer">Ajouter des photos</label>
+        ${full?`<button class="btn primary" disabled>Espace plein</button>`:`<label class="btn primary" for="photoInput" style="cursor:pointer">Ajouter des photos</label>`}
         <input type="file" id="photoInput" accept="image/*" multiple data-act="photoFiles" hidden>
         <button class="btn" data-act="reloadPhotos">Actualiser</button>
       </div>
       ${up}
       ${photosErr?`<p class="neg" style="margin:12px 0 0">${photosErr}</p>`:""}
-      <p class="muted small" style="margin:12px 0 0">Chaque photo est gardée telle quelle, jusqu'à 50 Mo. Touche une photo pour l'ouvrir et télécharger l'original.</p>
     </div>
     <div class="panel">${grid}</div>
   </div>`;
@@ -1837,8 +1906,8 @@ function renderSplit(){
             <div class="f" style="flex:0 0 auto"><span>Devise</span><div class="seg"><button type="button" data-act="cur" data-c="EUR" aria-pressed="${expCur==="EUR"}">€</button><button type="button" data-act="cur" data-c="JPY" aria-pressed="${expCur==="JPY"}">¥</button></div></div></div>
             <div class="row"><label class="f">Payé par<select name="payer">${trav.map(t=>`<option value="${t.id}" ${me&&t.id===me.id?"selected":""}>${esc(t.name)}</option>`).join("")}</select></label>
             <label class="f">Date<input type="date" name="date" value="${today}"></label></div>
-            <div class="f"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span>Partagée entre</span><button type="button" class="link-btn" data-act="amongAll">Tout le monde / personne</button></div>
-              <div class="chips">${trav.map(t=>`<label class="chip"><input type="checkbox" name="among" value="${t.id}" checked>${av(t,"xs")}${esc(t.name)}</label>`).join("")}</div>
+            <div class="f sharepick"><div class="sp-head"><span>Partagée entre</span><div class="sp-quick" role="group" aria-label="Sélection rapide"><button type="button" data-act="amongSet" data-k="all">Tout le monde</button><button type="button" data-act="amongSet" data-k="none">Personne</button></div></div>
+              <div class="sp-list">${trav.map(t=>`<label class="sp-chip"><input type="checkbox" name="among" value="${t.id}" checked>${av(t,"xs")}<span>${esc(t.name)}</span><b class="sp-tick" aria-hidden="true"></b></label>`).join("")}</div>
               <span id="shareTxt" class="small" style="color:var(--paper)"></span></div>
             <div><button class="btn primary" type="submit">Enregistrer la dépense</button></div></form>`:`<div class="empty">Ajoute des voyageurs pour partager des dépenses.</div>`}
         </div>
@@ -1871,6 +1940,9 @@ document.addEventListener("click",e=>{
   const b=e.target.closest("[data-act],[data-tab]"); if(!b) return;
   if(b.dataset.tab){tab=b.dataset.tab;if(tab==="photos"&&photos===null)loadPhotos();render();window.scrollTo(0,0);return}
   const id=b.dataset.id, a=b.dataset.act;
+  if(a==="home"){if(!me)return;closeSettings();lgBrowse=true;lg={step:"list",id:null,phase:"enter",first:"",msg:"",busy:false};refreshRoster().then(()=>paintLogin(true));lgKey="";render();window.scrollTo(0,0);return}
+  if(a==="homeBack"){lgBrowse=false;render();return}
+  if(a==="pickWho"&&me&&id===me.id&&sess){lgBrowse=false;render();return}
   if(a==="pickWho"){const r=roster.find(x=>x.id===id);lg={step:"pin",id,phase:r&&r.has_pin?"enter":"create",first:"",msg:"",busy:false};paintLogin(true);return}
   if(a==="lgBack"){lg={step:"list",id:null,phase:"enter",first:"",msg:"",busy:false};refreshRoster().then(()=>paintLogin(true));paintLogin(true);return}
   if(a==="logout"){logout();return}
@@ -1888,6 +1960,8 @@ document.addEventListener("click",e=>{
   if(a==="theme"){ls.set("japon-theme",b.dataset.k);applyTheme();if(ready)render();renderSettings();return}
   if(a==="switchUser"){closeSettings();logout();return}
   if(a==="reloadPhotos"){loadPhotos();return}
+  if(a==="photoDay"){photoDay=b.dataset.k;render();return}
+  if(a==="photoMode"){photoMode=b.dataset.k;ls.set("japon-photo-mode",photoMode);render();return}
   if(a==="openPhoto"){viewIdx=Number(b.dataset.i);renderViewer();return}
   if(a==="closePhoto"){viewIdx=-1;renderViewer();return}
   if(a==="navPhoto"){viewIdx=Math.max(0,Math.min(photos.length-1,viewIdx+Number(b.dataset.d)));renderViewer();return}
@@ -1941,6 +2015,7 @@ document.addEventListener("click",e=>{
     put("expenses",nid("s"),{kind:"settle",title:"Remboursement",amount:amt,currency:"EUR",payer:from,among:[to],date:new Date().toISOString().slice(0,10),createdBy:me?me.id:null,createdAt:new Date().toISOString()});
     notifyGroup("split",`${(T(from)||{}).name||"?"} a remboursé ${(T(to)||{}).name||"?"} : ${eur2(amt)}`);toast("Remboursement enregistré");return}
   if(a==="unsettle"){if(!b.dataset.c){b.dataset.c="1";b.textContent="Confirmer l'annulation";b.style.color="var(--bad)";return}remove("expenses",b.dataset.id);toast("Remboursement annulé");return}
+  if(a==="amongSet"){document.querySelectorAll('form[data-form="exp"] input[name="among"]').forEach(c=>c.checked=b.dataset.k==="all");updateShare();return}
   if(a==="amongAll"){const cbs=[...document.querySelectorAll('form[data-form="exp"] input[name="among"]')];const all=cbs.every(c=>c.checked);cbs.forEach(c=>c.checked=!all);updateShare();return}
   if(a==="expEdit"){expEditId=expEditId===b.dataset.id?null:b.dataset.id;render();return}
   if(a==="expCancel"){expEditId=null;render();return}
