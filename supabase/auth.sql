@@ -292,3 +292,16 @@ create or replace function public.photos_usage(p_trip uuid) returns bigint langu
 $$;
 revoke all on function public.photos_usage(uuid) from public, anon, authenticated;
 grant execute on function public.photos_usage(uuid) to service_role;
+
+-- Originaux dans le Google Drive de l'organisateur (via script Apps Script relié).
+alter table public.trips add column if not exists drive_url text;
+create table if not exists public.photo_files(
+  path text primary key, trip_id uuid not null references public.trips(id), drive_id text,
+  orig_name text, orig_size bigint, orig_mime text, created_at timestamptz not null default now());
+create table if not exists public.drive_tickets(
+  token text primary key, trip_id uuid not null references public.trips(id), kind text not null check (kind in ('put','get','del')),
+  path text, drive_id text, name text, expires_at timestamptz not null);
+alter table public.photo_files enable row level security;
+alter table public.drive_tickets enable row level security;
+revoke all on public.photo_files, public.drive_tickets from anon, authenticated;
+grant all on public.photo_files, public.drive_tickets to service_role;

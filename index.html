@@ -1079,12 +1079,23 @@ function adminBlock(){
     <p class="muted small" style="margin:0">Réinitialiser un code : le voyageur en choisira lui-même un nouveau à sa prochaine connexion. Tu ne connais jamais les codes.</p>
     <div class="adm">${others.length?others.map(r=>`<div class="adm-row"><div class="nm">${av(r,"xs")}<span>${esc(r.name)}<small class="muted">${r.has_pin?"Code PIN défini":"Code à créer à la prochaine connexion"}</small></span></div>
       ${r.has_pin?`<button class="btn sm" data-act="admReset" data-id="${r.id}">Réinitialiser le PIN</button>`:""}<button class="btn sm ghost" data-act="admRemove" data-id="${r.id}">Retirer du voyage</button></div>`).join(""):`<p class="muted small">Personne d'autre pour l'instant.</p>`}</div>
-    <p class="muted small" style="margin:0">Tu peux aussi supprimer n'importe quelle photo depuis la visionneuse. Retirer un voyageur garde ses dépenses dans l'historique.</p></section>`;
+    <p class="muted small" style="margin:0">Tu peux aussi supprimer n'importe quelle photo depuis la visionneuse. Retirer un voyageur garde ses dépenses dans l'historique.</p></section>
+  <section class="set"><h3>Google Drive · photos originales</h3>
+    ${driveOn?`<p class="small" style="margin:0"><span class="pos">Relié.</span> Les originaux arrivent dans le dossier « Japon 2027 – photos originales » de ton Drive${driveBytes?` (${mb(driveBytes)} pour l'instant)`:""}. L'appli n'en garde qu'une version optimisée.</p>
+      <div><button class="btn ghost sm" data-act="driveUnlink">Délier le Drive</button></div>`
+    :`<p class="muted small" style="margin:0">Une fois relié, chaque photo est optimisée dans l'appli et son original intact est rangé dans ton Google Drive (15 Go gratuits partagés avec Gmail). À faire une seule fois, depuis un ordinateur :</p>
+      <ol class="steps"><li>Ouvre <a class="link" href="https://script.google.com/home/projects/create" target="_blank" rel="noopener">script.google.com ↗</a> avec ton compte Google : un nouveau projet s'ouvre.</li>
+        <li>Efface le contenu, puis colle le script : <button class="btn sm" data-act="copyScript">Copier le script</button></li>
+        <li>Enregistre, choisis la fonction <b>autoriser</b> puis <b>Exécuter</b> ; accepte l'accès à ton Drive (« Paramètres avancés » › « Accéder au projet »).</li>
+        <li><b>Déployer</b> › <b>Nouveau déploiement</b> › type <b>Application web</b> ; Exécuter en tant que : <b>Moi</b> ; Qui a accès : <b>Tout le monde</b> › <b>Déployer</b>.</li>
+        <li>Copie l'URL de l'application web (elle finit par /exec) et colle-la ici :</li></ol>
+      <form class="add-me" onsubmit="return false"><input type="url" id="driveUrl" placeholder="https://script.google.com/macros/s/…/exec" autocapitalize="off" spellcheck="false"><button class="btn primary" type="button" data-act="driveLink">Relier</button></form>`}
+    <p class="gate-msg" id="driveMsg" role="alert"></p></section>`;
 }
 function renderSettings(){
   if(!settingsOpen)return;const p=themePref();
   const keep=$("#renameInput")?$("#renameInput").value:null;
-  const pk=["pinOld","pinNew","pinNew2"].map(i=>$("#"+i)?$("#"+i).value:"");
+  const pk=["pinOld","pinNew","pinNew2","driveUrl"].map(i=>$("#"+i)?$("#"+i).value:"");
   $("#settingsBody").innerHTML=`
     <section class="set"><h3>Thème</h3>
       <div class="seg wide">${[["sakura","Sakura"],["dark","Sombre"],["light","Clair"]].map(([k,l])=>`<button data-act="theme" data-k="${k}" aria-pressed="${p===k}">${l}</button>`).join("")}</div>
@@ -1111,7 +1122,7 @@ function renderSettings(){
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="logout">Se déconnecter</button><button class="btn ghost" data-act="leaveTrip">Quitter le voyage sur cet appareil</button></div>
       <p class="muted small">Se déconnecter ramène à l'écran des prénoms ; ton code PIN sera redemandé. Quitter efface aussi le code du voyage de cet appareil. Les données du groupe ne bougent pas.</p></section>`;
   if(keep!==null&&$("#renameInput"))$("#renameInput").value=keep;
-  ["pinOld","pinNew","pinNew2"].forEach((i,k)=>{if($("#"+i)&&pk[k])$("#"+i).value=pk[k]});
+  ["pinOld","pinNew","pinNew2","driveUrl"].forEach((i,k)=>{if($("#"+i)&&pk[k])$("#"+i).value=pk[k]});
 }
 
 /* ----- Photos partagées (originaux, sans compression) ----- */
@@ -1123,15 +1134,16 @@ async function photosApi(body){
 }
 async function loadPhotos(){
   if(!code||!sess)return;photosLoading=true;photosErr="";if(tab==="photos")render();
-  try{const j=await photosApi({action:"list"});photos=j.items||[];if(j.used!=null)photoUsed=Number(j.used)||0;if(j.limit)photoLimit=Number(j.limit)}catch(e){photosErr="Impossible de charger les photos pour l'instant."}
+  try{const j=await photosApi({action:"list"});photos=j.items||[];if(j.used!=null)photoUsed=Number(j.used)||0;if(j.limit)photoLimit=Number(j.limit);driveOn=!!j.drive;driveBytes=Number(j.driveBytes)||0;renderSettings()}catch(e){photosErr="Impossible de charger les photos pour l'instant."}
   photosLoading=false;if(tab==="photos")render();else updateBadges();renderViewer();
 }
-let photoUsed=0, photoLimit=1073741824, photoDay="all", photoMode=ls.get("japon-photo-mode")==="opt"?"opt":"orig";
+let photoUsed=0, photoLimit=1073741824, photoDay="all", driveOn=false, driveBytes=0, origDl={};
+const DRIVE_MAX=36*1024*1024;
 /* Version optimisée : 2560 px max, JPEG qualité 0,85 (souvent 4 à 8 fois plus légère). */
-function optimize(file){return new Promise(res=>{
+function optimize(file,M=2560){return new Promise(res=>{
   if(!/^image\/(jpeg|png|webp|heic|heif)$/i.test(file.type||"")&&!/\.(jpe?g|png|webp|heic|heif)$/i.test(file.name)){res(null);return}
   const url=URL.createObjectURL(file),img=new Image();
-  img.onload=()=>{try{const M=2560,k=Math.min(1,M/Math.max(img.naturalWidth,img.naturalHeight));const c=document.createElement("canvas");c.width=Math.round(img.naturalWidth*k);c.height=Math.round(img.naturalHeight*k);
+  img.onload=()=>{try{const k=Math.min(1,M/Math.max(img.naturalWidth,img.naturalHeight));const c=document.createElement("canvas");c.width=Math.round(img.naturalWidth*k);c.height=Math.round(img.naturalHeight*k);
     c.getContext("2d").drawImage(img,0,0,c.width,c.height);c.toBlob(b=>{URL.revokeObjectURL(url);res(b&&b.size<file.size?b:null)},"image/jpeg",.85)}catch(e){URL.revokeObjectURL(url);res(null)}};
   img.onerror=()=>{URL.revokeObjectURL(url);res(null)};img.src=url})}
 function makeThumb(file){return new Promise(res=>{
@@ -1139,6 +1151,31 @@ function makeThumb(file){return new Promise(res=>{
   img.onload=()=>{try{const M=640,s=Math.min(1,M/Math.max(img.naturalWidth,img.naturalHeight));const c=document.createElement("canvas");c.width=Math.round(img.naturalWidth*s);c.height=Math.round(img.naturalHeight*s);
     c.getContext("2d").drawImage(img,0,0,c.width,c.height);c.toBlob(b=>{URL.revokeObjectURL(url);res(b)},"image/jpeg",.8)}catch(e){URL.revokeObjectURL(url);res(null)}};
   img.onerror=()=>{URL.revokeObjectURL(url);res(null)};img.src=url})}
+/* Original intact → Google Drive de l'organisateur (via le script Apps Script relié). */
+function fileB64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(",")[1]||"");r.onerror=()=>rej(r.error);r.readAsDataURL(file)})}
+async function driveUpload(d,file,onPct){
+  const data=await fileB64(file);
+  return new Promise((res,rej)=>{const x=new XMLHttpRequest();x.open("POST",d.url);x.setRequestHeader("Content-Type","text/plain;charset=utf-8");
+    x.upload.onprogress=e=>{if(e.lengthComputable)onPct(e.loaded/e.total)};
+    x.onload=()=>{let j={};try{j=JSON.parse(x.responseText)}catch(e){}j&&j.ok?res(j):rej(new Error(j.error||"drive"))};
+    x.onerror=()=>rej(new Error("network"));x.send(JSON.stringify({action:"put",ticket:d.ticket,mime:file.type||"application/octet-stream",data}))});
+}
+async function fetchOriginal(p){
+  const st=origDl[p.path]={state:"load"};renderViewer();
+  try{
+    const t=await photosApi({action:"original",path:p.path});
+    const r=await fetch(t.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"get",ticket:t.ticket})});
+    const j=await r.json();if(!j.ok)throw new Error(j.error||"drive");
+    const bin=atob(j.data),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+    st.file=new File([u8],j.name||t.name||p.name,{type:j.mime||"application/octet-stream"});st.state="ready";
+  }catch(e){st.state="err"}
+  renderViewer();
+}
+function saveOriginal(p){
+  const st=origDl[p.path];if(!st||!st.file)return;const f=st.file;
+  try{if(platform()!=="other"&&navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f]}).catch(()=>{});return}}catch(e){}
+  const u=URL.createObjectURL(f),a=document.createElement("a");a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000);
+}
 function putWithProgress(path,token,body,contentType,onPct){
   return new Promise((res,rej)=>{
     const url=`${SB_URL}/storage/v1/object/upload/sign/photos/${path.split("/").map(encodeURIComponent).join("/")}?token=${encodeURIComponent(token)}`;
@@ -1149,7 +1186,7 @@ function putWithProgress(path,token,body,contentType,onPct){
     x.onerror=()=>rej(new Error("network"));x.send(fd);
   });
 }
-const upLabel=(u,p)=>u.status==="ok"?"✓":u.status==="err"?"Échec":u.status==="big"?"Trop lourde":u.status==="full"?"Espace plein":u.status==="wait"?"En attente":u.status==="opt"?"Optimisation…":p+" %";
+const upLabel=(u,p)=>u.status==="opt"?"Préparation…":u.status==="ok"?"✓":u.status==="err"?"Échec":u.status==="big"?"Trop lourde":u.status==="full"?"Espace plein":u.status==="wait"?"En attente":u.status==="opt"?"Optimisation…":p+" %";
 function paintUpload(i){
   const u=uploads[i],el=document.getElementById("up-"+i);if(!u||!el)return;
   const p=Math.round(u.pct*100);el.style.setProperty("--p",p);
@@ -1169,12 +1206,15 @@ async function uploadFiles(files){
   for(let i=0;i<list.length;i++){
     const f=list[i],u=uploads[i];if(u.status==="big"){paintUpload(i);continue}
     let body=f,name=f.name,type=f.type||"application/octet-stream";
-    if(photoMode==="opt"){u.status="opt";paintUpload(i);const o=await optimize(f);if(o){body=o;type="image/jpeg";name=f.name.replace(/\.[^.]+$/,"")+".jpg"}}
+    const toDrive=driveOn&&f.size<=DRIVE_MAX;
+    if(toDrive){u.status="opt";paintUpload(i);const o=await optimize(f,2048);if(o){body=o;type="image/jpeg";name=f.name.replace(/\.[^.]+$/,"")+".jpg"}}
     if(photoUsed+body.size*1.05>photoLimit){u.status="full";paintUpload(i);continue}
     u.status="up";u.pct=0.02;paintUpload(i);
     try{
-      const s=await photosApi({action:"upload",name,size:body.size,who:me.id});
-      await putWithProgress(s.path,s.token,body,type,r=>{u.pct=0.02+r*0.9;paintUpload(i)});
+      const s=await photosApi({action:"upload",name,size:body.size,who:me.id,...(toDrive?{orig_size:f.size,orig_name:f.name,orig_mime:f.type||""}:{})});
+      let base=0.02;
+      if(s.drive){await driveUpload(s.drive,f,r=>{u.pct=0.02+r*0.7;paintUpload(i)});base=0.72}
+      await putWithProgress(s.path,s.token,body,type,r=>{u.pct=base+r*(0.92-base);paintUpload(i)});
       photoUsed+=body.size;
       u.pct=0.94;paintUpload(i);
       const t=await makeThumb(f);if(t){try{await putWithProgress(s.thumbPath,s.thumbToken,t,"image/jpeg",r=>{u.pct=0.94+r*0.06;paintUpload(i)})}catch(e){}}
@@ -1225,8 +1265,7 @@ function renderPhotos(){
   + `<div class="wrap">
     <div class="panel"><h3>Partager des photos<small>visibles par tout le groupe</small></h3>
       ${storageGauge()}
-      <div class="qpick"><span>Qualité d'envoi</span><div class="seg"><button data-act="photoMode" data-k="opt" aria-pressed="${photoMode==="opt"}">Optimisée</button><button data-act="photoMode" data-k="orig" aria-pressed="${photoMode==="orig"}">Originale</button></div></div>
-      <p class="muted small" style="margin:0">${photoMode==="opt"?"Optimisée : photo redimensionnée à 2560 px, nette sur écran et en tirage jusqu'au format A4, environ 4 à 8 fois plus légère. C'est cette version qui est gardée et téléchargée.":"Originale : la photo est gardée telle quelle, jusqu'à 50 Mo. C'est ce qui remplit le plus vite le 1 Go."}</p>
+      <p class="muted small" style="margin:0">${driveOn?`Chaque photo est optimisée dans l'appli pour gagner de la place ; l'original intact est rangé dans le Google Drive du voyage${driveBytes?` (${mb(driveBytes)} d'originaux)`:""} et se télécharge tel quel depuis la photo.`:`Les photos sont gardées en qualité d'origine, jusqu'à 50 Mo.${isAdmin?" Relie ton Google Drive dans les paramètres pour garder les originaux là-bas et alléger l'appli.":""}`}</p>
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         ${full?`<button class="btn primary" disabled>Espace plein</button>`:`<label class="btn primary" for="photoInput" style="cursor:pointer">Ajouter des photos</label>`}
         <input type="file" id="photoInput" accept="image/*" multiple data-act="photoFiles" hidden>
@@ -1238,6 +1277,11 @@ function renderPhotos(){
     <div class="panel">${grid}</div>
   </div>`;
 }
+function origBtn(p){const st=origDl[p.path];
+  if(!st)return `<button class="btn primary sm" data-act="getOrig">Télécharger l'original · ${mb(p.origSize)}</button>`;
+  if(st.state==="load")return `<button class="btn primary sm" disabled>Récupération de l'original…</button>`;
+  if(st.state==="err")return `<button class="btn primary sm" data-act="getOrig">Réessayer le téléchargement</button>`;
+  return `<button class="btn primary sm" data-act="saveOrig">${platform()==="other"?"Enregistrer l'original":"Enregistrer dans Photos / Fichiers"}</button>`}
 function renderViewer(){
   const v=$("#viewer");if(!v)return;
   if(viewIdx<0||!photos||!photos[viewIdx]){v.hidden=true;return}
@@ -1248,8 +1292,8 @@ function renderViewer(){
     <button class="icon-btn vclose" data-act="closePhoto" aria-label="Fermer">×</button></div>
     <div class="vimg">${p.thumb?`<img class="vthumb" src="${esc(p.thumb)}" alt="">`:""}${p.url?`<img class="vfull" src="${esc(p.url)}" alt="${esc(p.name)}" onload="this.previousElementSibling&&this.previousElementSibling.remove()">`:""}
       ${viewIdx>0?`<button class="vnav prev" data-act="navPhoto" data-d="-1" aria-label="Photo précédente">‹</button>`:""}${viewIdx<photos.length-1?`<button class="vnav next" data-act="navPhoto" data-d="1" aria-label="Photo suivante">›</button>`:""}</div>
-    <div class="vfoot"><div class="vbtns">${dl?`<a class="btn primary sm" href="${esc(dl)}" target="_blank" rel="noopener">Télécharger l'original</a>`:""}${mine?`<button class="btn ghost sm" data-act="delPhoto">Supprimer</button>`:""}</div>
-      <p class="vhint">iPhone : appui long sur la photo, puis « Ajouter à Photos ».</p></div>`;
+    <div class="vfoot"><div class="vbtns">${p.orig?origBtn(p):dl?`<a class="btn primary sm" href="${esc(dl)}" target="_blank" rel="noopener">Télécharger la photo</a>`:""}${mine?`<button class="btn ghost sm" data-act="delPhoto">Supprimer</button>`:""}</div>
+      <p class="vhint">${p.orig?`Original intact (${mb(p.origSize)}) conservé dans le Google Drive du voyage.`:"iPhone : appui long sur la photo, puis « Ajouter à Photos »."}</p></div>`;
 }
 
 /* ----- Pastilles « nouveau » & notifications ----- */
@@ -1961,7 +2005,12 @@ document.addEventListener("click",e=>{
   if(a==="switchUser"){closeSettings();logout();return}
   if(a==="reloadPhotos"){loadPhotos();return}
   if(a==="photoDay"){photoDay=b.dataset.k;render();return}
-  if(a==="photoMode"){photoMode=b.dataset.k;ls.set("japon-photo-mode",photoMode);render();return}
+  if(a==="getOrig"){const p=photos&&photos[viewIdx];if(p){delete origDl[p.path];fetchOriginal(p)}return}
+  if(a==="saveOrig"){const p=photos&&photos[viewIdx];if(p)saveOriginal(p);return}
+  if(a==="copyScript"){fetch("drive/apps-script.gs",{cache:"no-cache"}).then(r=>r.text()).then(t=>navigator.clipboard.writeText(t)).then(()=>toast("Script copié")).catch(()=>{window.open("drive/apps-script.gs","_blank")});return}
+  if(a==="driveLink"||a==="driveUnlink"){const inp=$("#driveUrl"),url=a==="driveUnlink"?"":(inp?inp.value.trim():"");const m=$("#driveMsg");if(m)m.textContent=a==="driveLink"?"Vérification du lien…":"";b.disabled=true;
+    photosApi({action:"drive_config",url}).then(r=>{driveOn=!!r.drive;toast(driveOn?"Google Drive relié":"Google Drive délié");loadPhotos();renderSettings()})
+    .catch(e=>{b.disabled=false;const mm=$("#driveMsg");if(mm)mm.textContent=e.err==="url"?"Ce lien ne ressemble pas à une adresse d'application web Apps Script (…/exec).":e.err==="ping"?"Le script ne répond pas comme prévu : vérifie le déploiement (Exécuter en tant que : Moi · Accès : Tout le monde).":"Impossible pour l'instant."});return}
   if(a==="openPhoto"){viewIdx=Number(b.dataset.i);renderViewer();return}
   if(a==="closePhoto"){viewIdx=-1;renderViewer();return}
   if(a==="navPhoto"){viewIdx=Math.max(0,Math.min(photos.length-1,viewIdx+Number(b.dataset.d)));renderViewer();return}
