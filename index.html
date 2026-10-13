@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://hsggyjmeurjsiwegqzbo.supabase.co; connect-src 'self' https://hsggyjmeurjsiwegqzbo.supabase.co wss://hsggyjmeurjsiwegqzbo.supabase.co https://script.google.com https://script.googleusercontent.com; media-src 'self' blob:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://hsggyjmeurjsiwegqzbo.supabase.co; connect-src 'self' https://hsggyjmeurjsiwegqzbo.supabase.co wss://hsggyjmeurjsiwegqzbo.supabase.co https://script.google.com https://script.googleusercontent.com https://api.frankfurter.dev https://open.er-api.com; media-src 'self' blob:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Japon 2027</title>
 <meta name="description" content="Organisation collaborative de notre voyage au Japon : préparation, itinéraire, budget et dépenses.">
@@ -479,6 +479,24 @@ html[data-theme="sakura"] #viewer .ldr,html[data-theme="sakura"] .upov .ldr{--lc
 @media (prefers-reduced-motion:reduce){.ldr{animation-duration:9s}.ldr i{animation-duration:4s}}
 .pendban{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:12px 14px;border-radius:14px;border:1px solid var(--lantern);background:color-mix(in srgb,var(--lantern) 12%,var(--ink-2));color:var(--paper);font:inherit;font-size:14px;cursor:pointer}
 .pendban span:nth-child(2){flex:1;min-width:0}.pendban .link{color:var(--lantern);font-weight:600}
+.bgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+@media (max-width:600px){.bgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}}
+.bcard{position:relative;display:grid;gap:4px;align-content:start;text-align:left;min-height:128px;padding:14px;border:0;border-radius:18px;cursor:pointer;color:#fff;font:inherit;overflow:hidden;
+  background:linear-gradient(140deg,var(--bc),color-mix(in srgb,var(--bc) 62%,#1a1030));box-shadow:0 6px 18px color-mix(in srgb,var(--bc) 35%,transparent);transition:transform .15s,box-shadow .15s}
+.bcard::after{content:"";position:absolute;right:-26px;bottom:-26px;width:96px;height:96px;border-radius:50%;background:rgba(255,255,255,.12)}
+.bcard:hover{transform:translateY(-2px)}.bcard:active{transform:scale(.98)}
+.bcard.auto{cursor:default;opacity:.92}.bcard.auto:hover{transform:none}
+.bc-top{display:flex;justify-content:space-between;gap:6px;align-items:center;font-size:11px;letter-spacing:.04em}
+.bc-city{padding:3px 8px;border-radius:99px;background:rgba(255,255,255,.22);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.bc-tag{opacity:.85;white-space:nowrap}
+.bcard>*{min-width:0;max-width:100%}
+.bc-label{font-family:var(--display);font-weight:800;font-size:17px;line-height:1.2;margin-top:6px;overflow-wrap:anywhere;hyphens:auto}
+.bc-amt{font-size:22px;font-weight:800;margin-top:auto;position:relative;z-index:1}
+.bc-yen{font-size:12px;opacity:.85;position:relative;z-index:1}
+.bc-empty{margin-top:auto;font-size:13px;opacity:.85;border:1px dashed rgba(255,255,255,.6);border-radius:10px;padding:6px 8px;justify-self:start}
+.bedit{grid-column:1/-1;margin-top:12px}
+.bgrid .bedit{margin-top:0}
+.bedit .form{border-color:var(--bc,var(--line))}
 .qpick{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}.qpick>span{font-size:14px}
 .pgroup .cat-title{margin:0;text-transform:none;letter-spacing:.02em;font-size:13px}
 .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
@@ -785,9 +803,14 @@ function cleanItem(col,d){
   for(const k of ["payer","stage","owner","createdBy","from","to","who","kind","cat_id"])if(k in d&&!(typeof d[k]==="string"&&ID_RE.test(d[k])))delete d[k];
   if("among" in d)d.among=Array.isArray(d.among)?d.among.filter(x=>typeof x==="string"&&ID_RE.test(x)):[];
   for(const k of ["done","joined","amounts"])if(k in d){if(!d[k]||typeof d[k]!=="object"||Array.isArray(d[k]))d[k]={};else for(const x of Object.keys(d[k]))if(!ID_RE.test(x))delete d[k][x]}
-  for(const k of ["date","start","end","checkout"])if(k in d&&!(d[k]==null||(typeof d[k]==="string"&&DATE_RE.test(d[k]))))delete d[k];
+  for(const k of ["date","start","end","checkout","rateAt"])if(k in d&&!(d[k]==null||(typeof d[k]==="string"&&DATE_RE.test(d[k]))))delete d[k];
   for(const k of ["url","resaUrl"])if(k in d)d[k]=safeUrl(d[k]);
-  for(const k of ["price","amount","nights","order","rate","target","lat","lon","budget"])if(k in d&&d[k]!=null&&typeof d[k]!=="number"){const n=Number(d[k]);d[k]=Number.isFinite(n)?n:null}
+  for(const k of ["price","amount","nights","order","rate","lat","lon","budget"])if(k in d&&d[k]!=null&&typeof d[k]!=="number"){const n=Number(d[k]);d[k]=Number.isFinite(n)?n:null}
+  const money=x=>x==null||x===""?null:typeof x==="number"?(Number.isFinite(x)?x:null):(x&&typeof x==="object"&&Number.isFinite(Number(x.v))&&(x.c==="EUR"||x.c==="JPY"))?{v:Number(x.v),c:x.c}:null;
+  for(const k of ["target","total","transport","groupTarget"])if(k in d)d[k]=money(d[k]);
+  if(d.amounts&&typeof d.amounts==="object")for(const x of Object.keys(d.amounts))d.amounts[x]=money(d.amounts[x]);
+  if("for" in d&&!(typeof d.for==="string"&&ID_RE.test(d.for)))delete d.for;
+  if("scope" in d&&d.scope!=="group"&&d.scope!=="perso")delete d.scope;
   if("color" in d&&!(typeof d.color==="string"&&HEX_RE.test(d.color)))d.color="#E9A93F";
   for(const k of ["title","name","note","label","body","cat","area","cuisine","time","transport","currency","createdAt"])if(k in d&&d[k]!=null&&typeof d[k]!=="string")d[k]=String(d[k]);
   return d;
@@ -1971,16 +1994,23 @@ function dual(base,val,attrs){
 }
 const DEFAULT_ALERTS=[50,75,90,100];
 const alerts = () => (Array.isArray(S.trip.alerts)&&S.trip.alerts.length?S.trip.alerts:DEFAULT_ALERTS).map(Number).filter(n=>n>0).sort((a,b)=>a-b);
+/* Postes du budget : « perso » (chacun son montant, éventuellement réservé à une personne) ou « groupe » (un montant total partagé). */
+const isGroupLine = b => b.scope==="group";
+const persoLinesFor = t => S.budget.filter(b=>!isGroupLine(b)&&(!b.for||b.for===t.id));
+const groupLines = () => S.budget.filter(isGroupLine);
+const nTrav = () => Math.max(1,S.travelers.length);
+const lineShare = b => amtEur(b.total)/nTrav();
 function personBudget(t){
-  const fixed=S.budget.reduce((s,b)=>s+amtEur(b.amounts&&b.amounts[t.id]),0);
+  const fixed=persoLinesFor(t).reduce((s,b)=>s+amtEur(b.amounts&&b.amounts[t.id]),0);
   const travel=stages().reduce((s,x)=>s+amtEur(x.transport),0);
   const all=S.activities.filter(a=>a.joined&&a.joined[t.id]&&!isInfo(a));const list=all.filter(a=>!isPlace(a)),rl=all.filter(isPlace);
   const acts=list.reduce((s,a)=>s+(Number(a.price)||0),0)/rate();
   const byKind={};Object.keys(PLACE_KINDS).forEach(k=>{const l=rl.filter(a=>a.kind===k);byKind[k]={sum:l.reduce((s,a)=>s+placeCost(a),0)/rate(),n:l.length}});
   const resto=Object.values(byKind).reduce((s,x)=>s+x.sum,0);
   const booked=list.filter(a=>a.booked).reduce((s,a)=>s+(Number(a.price)||0),0)/rate();
+  const share=groupLines().reduce((s,b)=>s+lineShare(b),0);
   const target=amtEur(t.target), total=fixed+travel+acts+resto;
-  return {fixed,travel,acts,resto,byKind,rcount:rl.length,booked,total,target,count:list.length,pct:target?100*total/target:null};
+  return {fixed,travel,acts,resto,byKind,rcount:rl.length,booked,total,share,target,count:list.length,pct:target?100*total/target:null};
 }
 function level(pct){
   if(pct==null) return null;
@@ -1995,7 +2025,7 @@ function spentBy(t){
 const bothCur = v => `${eur(v)} <span class="muted">· ${yen(v*rate())}</span>`;
 function stackChart(b){
   const max=Math.max(b.target,b.total,1)*1.1, w=v=>(100*v/max).toFixed(2);
-  const segs=[["Postes fixes",b.fixed,"var(--seg1)"],["Trajets",b.travel,"var(--seg2)"],["Activités",b.acts,"var(--seg3)"]].concat(Object.entries(PLACE_KINDS).map(([k,K])=>[K.label,(b.byKind&&b.byKind[k].sum)||0,K.color]));
+  const segs=[["Postes perso",b.fixed,"var(--seg1)"],["Trajets",b.travel,"var(--seg2)"],["Activités",b.acts,"var(--seg3)"]].concat(Object.entries(PLACE_KINDS).map(([k,K])=>[K.label,(b.byKind&&b.byKind[k].sum)||0,K.color]));
   const ticks = b.target ? alerts().filter(a=>a<=110).map(a=>{const x=w(b.target*a/100);return `<span class="tick ${a===100?"full":""}" style="left:${x}%"><em style="${x>88?"transform:translateX(-100%)":x<6?"transform:none":""}">${a===100?"Prévisionnel":a+" %"}</em></span>`}).join("") : "";
   return `<div class="chart" role="img" aria-label="Budget prévu ${eur(b.total)} sur un prévisionnel de ${eur(b.target)}">
     <div class="track">${segs.map(([l,v,c])=>v>0?`<i style="width:${w(v)}%;background:${c}" title="${l} : ${eur(v)}"></i>`:"").join("")}${ticks}</div>
@@ -2010,29 +2040,75 @@ function alertBanner(b,who){
     : `${who} : palier de ${L.step} % atteint. ${p} % du budget prévisionnel est déjà prévu, il reste ${eur(reste)}.`;
   return `<div class="alert ${L.lvl}" role="status"><b>${L.lvl==="crit"?"Dépassement":"Alerte budget"}</b><span>${msg}</span></div>`;
 }
+let bEdit=null, bAdd=null, rateBusy=false;
+/* Taux du yen actualisé une fois par jour (BCE via Frankfurter, secours : ExchangeRate-API). Les montants gardent leur devise d'origine : tout se reconvertit avec le nouveau taux. */
+const todayKey=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+async function refreshRate(force){
+  if(rateBusy||!me||(!force&&S.trip.rateAt===todayKey()))return;rateBusy=true;
+  try{
+    let v=null;
+    try{const j=await (await fetch("https://api.frankfurter.dev/v1/latest?base=EUR&symbols=JPY")).json();v=Number(j&&j.rates&&j.rates.JPY)}catch(e){}
+    if(!(v>50&&v<1000)){try{const j=await (await fetch("https://open.er-api.com/v6/latest/EUR")).json();v=Number(j&&j.rates&&j.rates.JPY)}catch(e){}}
+    if(v>50&&v<1000){v=Math.round(v*100)/100;const old=rate();await setTrip({rate:v,rateAt:todayKey()});if(Math.abs(v-old)>=0.01)toast(`Taux du jour : 1 € = ${v.toLocaleString("fr-FR")} ¥ (avant ${old.toLocaleString("fr-FR")} ¥)`);else if(force)toast("Le taux est déjà à jour")}
+    else if(force)toast("Taux indisponible pour l'instant, réessaie plus tard");
+  }finally{rateBusy=false}
+}
+const BCOLORS=["#E26D8F","#8E6BD8","#3F8FD8","#2FA57A","#E58E2C","#2AA3A3","#C2557C","#6C7FD8"];
+function bColor(b,i){return b.stage?sc(b.stage):BCOLORS[i%BCOLORS.length]}
+function cityOpts(sel){return `<option value="">Tout le voyage</option>${stages().map(x=>`<option value="${esc(x.id)}" ${sel===x.id?"selected":""}>${esc(x.name)}</option>`).join("")}`}
+function bCard(b,i,mine){
+  const st=b.stage?stages().find(x=>x.id===b.stage):null, grp=isGroupLine(b);
+  const v=grp?amtEur(b.total):amtEur(me&&b.amounts?b.amounts[me.id]:null), r=rate();
+  if(bEdit===b.id) return bEditor(b);
+  return `<button class="bcard" style="--bc:${bColor(b,i)}" data-act="bEdit" data-id="${esc(b.id)}" aria-label="Modifier ${esc(b.label)}">
+    <span class="bc-top"><span class="bc-city">${st?esc(st.name):"Tout le voyage"}</span>${grp?`<span class="bc-tag">Groupe</span>`:b.for?`<span class="bc-tag">Rien qu'à moi</span>`:""}</span>
+    <span class="bc-label">${esc(b.label)}</span>
+    ${v?`<span class="bc-amt num">${eur(v)}</span><span class="bc-yen num">${yen(v*r)}${grp?` · ${eur(v/nTrav())} / pers.`:""}</span>`:`<span class="bc-empty">Montant à saisir</span>`}
+  </button>`;
+}
+function bEditor(b){
+  const grp=isGroupLine(b);
+  return `<div class="bedit" style="--bc:${bColor(b,0)}"><form class="form" data-form="bedit" data-id="${esc(b.id)}" style="border-style:solid">
+    <div class="row"><label class="f">Poste<input type="text" name="label" required maxlength="40" value="${esc(b.label)}"></label>
+    <label class="f">Ville<select name="stage">${cityOpts(b.stage)}</select></label></div>
+    <div class="f"><span>${grp?"Montant total pour le groupe":"Mon montant"}</span>${grp?dual("gl-"+b.id,b.total,`data-act="dual" data-kind="gline" data-id="${esc(b.id)}"`):dual("bl-"+b.id,me&&b.amounts?b.amounts[me.id]:null,`data-act="dual" data-kind="line" data-id="${esc(b.id)}" ${me?"":"disabled"}`)}</div>
+    ${grp?`<p class="muted small" style="margin:0">Partagé entre les ${nTrav()} voyageurs : ${eur(amtEur(b.total)/nTrav())} chacun.</p>`:!b.for?`<p class="muted small" style="margin:0">Poste commun à tous : chacun y saisit son propre montant.</p>`:""}
+    <div class="row"><button class="btn primary" type="submit">Enregistrer</button><button class="btn ghost" type="button" data-act="bClose">Fermer</button><button class="btn ghost" type="button" data-act="delLine" data-id="${esc(b.id)}" style="margin-left:auto">Supprimer</button></div></form></div>`;
+}
+function bAddForm(scope){
+  return `<div class="bedit"><form class="form" data-form="badd" data-scope="${scope}" style="border-style:solid">
+    <div class="row"><label class="f">Nouveau poste${scope==="group"?" du groupe":" perso"}<input type="text" name="label" required maxlength="40" placeholder="${scope==="group"?"Ex. Location d'un minibus":"Ex. Assurance voyage"}"></label>
+    <label class="f">Ville (facultatif)<select name="stage">${cityOpts("")}</select></label></div>
+    <div class="f"><span>${scope==="group"?"Montant total pour le groupe":"Mon montant"}</span>${dual("nb-"+scope,null,"")}</div>
+    <div class="row"><button class="btn primary" type="submit">Ajouter</button><button class="btn ghost" type="button" data-act="bClose">Annuler</button></div></form></div>`;
+}
 function renderBudget(){
   const trav=S.travelers.slice().sort(byOrder), st=stages(), r=rate();
   const mb = me ? personBudget(me) : personBudget({id:"_"});
   const mySpent = me ? spentBy(me) : 0;
-  const lines=S.budget.slice().sort(byOrder);
-  const myActs=S.activities.filter(a=>me&&a.joined&&a.joined[me.id]);
+  const pLines=me?persoLinesFor(me).sort(byOrder):[], gLines=groupLines().sort(byOrder);
+  const myActs=S.activities.filter(a=>me&&a.joined&&a.joined[me.id]&&!isInfo(a));
   const L=level(mb.pct);
-  const cities=st.map(s=>{const a=myActs.filter(x=>x.stage===s.id);const ay=a.reduce((n,x)=>n+(Number(x.price)||0),0);return {s,n:a.length,act:ay/r,tr:amtEur(s.transport)}});
-  const cmax=Math.max(1,...cities.map(c=>c.act+c.tr));
+  const cities=st.map(s=>{const a=myActs.filter(x=>x.stage===s.id);const act=a.reduce((n,x)=>n+(isPlace(x)?placeCost(x):(Number(x.price)||0)),0)/r;
+    const per=pLines.filter(b=>b.stage===s.id).reduce((n,b)=>n+amtEur(me&&b.amounts?b.amounts[me.id]:null),0);
+    const grp=gLines.filter(b=>b.stage===s.id).reduce((n,b)=>n+lineShare(b),0);
+    return {s,act,tr:amtEur(s.transport),per,grp,sum:act+amtEur(s.transport)+per+grp}});
+  const cmax=Math.max(1,...cities.map(c=>c.sum));
   const group=trav.map(t=>({t,b:personBudget(t)}));
-  const gTarget=group.reduce((s,x)=>s+x.b.target,0), gTotal=group.reduce((s,x)=>s+x.b.total,0);
-  return hero("img/rainbow.jpg","予算 · yosan","Budget",`Taux utilisé : 1 € = ${r} ¥`,
-    `<label class="f" style="color:var(--paper)">Taux de change (¥ pour 1 €)<input type="number" id="rateInput" min="1" step="1" value="${r}" data-act="rate" style="width:140px"></label>`)
+  const gTarget=amtEur(S.trip.groupTarget), gTotal=gLines.reduce((s,b)=>s+amtEur(b.total),0), gPct=gTarget?100*gTotal/gTarget:null, gL=level(gPct);
+  setTimeout(()=>refreshRate(false),0);
+  return hero("img/rainbow.jpg","予算 · yosan","Budget",`Taux utilisé : 1 € = ${r.toLocaleString("fr-FR")} ¥${S.trip.rateAt?` · actualisé le ${new Date(S.trip.rateAt+"T12:00").toLocaleDateString("fr-FR",{day:"numeric",month:"short"})}`:""}`,
+    `<div style="display:grid;gap:6px;justify-items:start"><label class="f" style="color:var(--paper)">Taux de change (¥ pour 1 €)<input type="number" id="rateInput" min="1" step="any" value="${r}" data-act="rate" style="width:140px"></label><button class="link-btn" data-act="rateNow" style="color:var(--paper)">Actualiser maintenant</button></div>`)
   + `<div class="wrap">${notice()}${me?alertBanner(mb,"Toi"):""}
-    <div class="panel"><h3>Mon budget prévisionnel<small>${me?esc(me.name):""} · ce que tu t'autorises à dépenser pour tout le voyage</small></h3>
+    <div class="panel"><h3>Mon budget perso<small>${me?esc(me.name):""} · ce que tu t'autorises à dépenser pour toi</small></h3>
       <div class="cal">
         <div style="display:grid;gap:16px;min-width:0">
           <div class="row" style="align-items:center"><div style="flex:0 1 auto">${dual("target",me?me.target:null,`data-act="dual" data-kind="target" ${me?"":"disabled"}`)}</div>
             ${L?`<span class="pill ${L.lvl}">${Math.round(mb.pct)} % prévu</span>`:`<span class="muted" style="font-size:13px">Saisis un montant en yens ou en euros : l'autre se calcule tout seul.</span>`}</div>
           <div class="kpis">
-            <div class="kpi"><small>DÉJÀ PRÉVU</small><b class="num">${eur(mb.total)}</b><span class="num">${yen(mb.total*r)}</span></div>
+            <div class="kpi"><small>DÉJÀ PRÉVU (PERSO)</small><b class="num">${eur(mb.total)}</b><span class="num">${yen(mb.total*r)}</span></div>
             <div class="kpi"><small>RESTE DISPONIBLE</small><b class="num ${mb.target&&mb.target-mb.total<0?"neg":""}">${mb.target?eur(mb.target-mb.total):"—"}</b><span class="num">${mb.target?yen((mb.target-mb.total)*r):"Pas de prévisionnel"}</span></div>
-            <div class="kpi"><small>DÉJÀ DÉPENSÉ SUR PLACE</small><b class="num">${eur(mySpent)}</b><span>ma part des dépenses communes</span></div>
+            <div class="kpi"><small>MA PART DU GROUPE</small><b class="num">${eur(mb.share)}</b><span>total pour moi : ${eur(mb.total+mb.share)}</span></div>
           </div>
           ${stackChart(mb)}
         </div>
@@ -2044,29 +2120,40 @@ function renderBudget(){
         </div>
       </div>
     </div>
-    <div class="grid2">
-      <div class="panel"><h3>Détail de mon budget<small>yens ou euros, au choix</small></h3>
-        <div class="scroll"><table class="stack"><thead><tr><th>Poste</th><th>Montant par personne</th><th></th></tr></thead><tbody>
-        ${lines.map(b=>`<tr><td>${esc(b.label)}</td><td>${dual("bl-"+b.id,me&&b.amounts?b.amounts[me.id]:null,`data-act="dual" data-kind="line" data-id="${b.id}" ${me?"":"disabled"}`)}</td><td class="r"><button class="icon-btn" data-act="delLine" data-id="${b.id}" aria-label="Supprimer le poste">×</button></td></tr>`).join("")}
-        <tr><td>Trajets entre les villes<br><small class="muted">saisis dans Itinéraire & activités</small></td><td class="num">${bothCur(mb.travel)}</td><td></td></tr>
-        <tr><td>Activités choisies <span class="muted">(${mb.count})</span><br><small class="muted">dont ${eur(mb.booked)} déjà réservés</small></td><td class="num">${bothCur(mb.acts)}</td><td></td></tr>
-${Object.entries(PLACE_KINDS).map(([k,K])=>`<tr><td>${K.budget} <span class="muted">(${mb.byKind[k].n})</span><br><small class="muted">coché « ${K.off} » dans Activités</small></td><td class="num">${bothCur(mb.byKind[k].sum)}</td><td></td></tr>`).join("")}
-        <tr><td><b>Total prévu</b></td><td class="num"><b>${eur(mb.total)}</b> <span class="muted">· ${yen(mb.total*r)}</span></td><td></td></tr>
-        </tbody></table></div>
-        <div style="margin-top:14px">${open.line?`<form class="form" data-form="line"><div class="row"><label class="f">Nouveau poste<input type="text" name="label" required maxlength="40" placeholder="Ex. Assurance voyage"></label><button class="btn primary" type="submit">Ajouter</button><button class="btn ghost" type="button" data-act="close" data-k="line">Annuler</button></div></form>`
-        :`<button class="btn" data-act="openf" data-k="line">+ Ajouter un poste</button>`}</div>
+
+    <div class="panel"><h3>Mes postes perso<small>touche une carte pour la modifier</small></h3>
+      <div class="bgrid">${pLines.map((b,i)=>bCard(b,i)).join("")}
+        <div class="bcard auto" style="--bc:var(--seg2)"><span class="bc-top"><span class="bc-city">Toutes les villes</span><span class="bc-tag">Itinéraire</span></span><span class="bc-label">Trajets entre les villes</span><span class="bc-amt num">${eur(mb.travel)}</span><span class="bc-yen num">${yen(mb.travel*r)}</span></div>
+        <div class="bcard auto" style="--bc:var(--seg3)"><span class="bc-top"><span class="bc-city">${mb.count} choisie${mb.count>1?"s":""}</span><span class="bc-tag">Activités</span></span><span class="bc-label">Activités</span><span class="bc-amt num">${eur(mb.acts)}</span><span class="bc-yen num">${mb.booked?`dont ${eur(mb.booked)} réservés`:yen(mb.acts*r)}</span></div>
+        ${Object.entries(PLACE_KINDS).filter(([k])=>mb.byKind[k].n).map(([k,K])=>`<div class="bcard auto" style="--bc:${K.color}"><span class="bc-top"><span class="bc-city">${mb.byKind[k].n} adresse${mb.byKind[k].n>1?"s":""}</span><span class="bc-tag">Activités</span></span><span class="bc-label">${esc(K.budget)}</span><span class="bc-amt num">${eur(mb.byKind[k].sum)}</span><span class="bc-yen num">${yen(mb.byKind[k].sum*r)}</span></div>`).join("")}
       </div>
-      <div style="display:grid;gap:22px;min-width:0">
-        <div class="panel"><h3>Coût par ville<small>trajet + mes activités</small></h3>
-          <div class="cities">${cities.map(c=>`<div class="city"><span class="cn"><i class="swatch" style="background:${sc(c.s.id)}"></i>${esc(c.s.name)}</span>
-            <div class="ctrack"><i style="width:${(100*c.tr/cmax).toFixed(2)}%;background:var(--seg2)"></i><i style="width:${(100*c.act/cmax).toFixed(2)}%;background:var(--seg3)"></i></div>
-            <span class="cv num">${eur(c.tr+c.act)}<br><small class="muted">${yen((c.tr+c.act)*r)}</small></span></div>`).join("")}</div>
-          <div class="keys" style="margin-top:12px"><span><i style="background:var(--seg2)"></i>Trajet</span><span><i style="background:var(--seg3)"></i>Activités</span></div>
-        </div>
-        <div class="panel"><h3>Le groupe<small>${gTarget?`${Math.round(100*gTotal/gTarget)} % du prévisionnel commun`:"prévu / prévisionnel"}</small></h3>
-          <div class="people">${group.map(({t,b})=>{const l=level(b.pct);const p=b.target?Math.min(100,100*b.total/b.target):0;return `<div class="person">${av(t)}<div><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span>${esc(t.name)}</span><span class="num muted">${eur(b.total)} / ${b.target?eur(b.target):"?"}</span></div><div class="bar" style="margin-top:6px"><i style="width:${p.toFixed(1)}%;background:${l&&l.lvl==="crit"?"var(--bad)":l&&l.lvl==="warn"?"var(--lantern)":"var(--good)"}"></i></div></div>${l?`<span class="pill ${l.lvl}">${Math.round(b.pct)} %</span>`:'<span class="pill">—</span>'}</div>`}).join("")||'<p class="muted">Personne pour l\'instant.</p>'}</div>
-          <p class="muted" style="font-size:13px;margin:14px 0 0">Total du groupe : ${eur(gTotal)} prévus${gTarget?` pour ${eur(gTarget)} de prévisionnel`:""}.</p>
-        </div>
+      ${bAdd==="perso"?bAddForm("perso"):`<button class="btn" data-act="bAdd" data-k="perso" style="margin-top:14px">+ Ajouter un poste perso</button>`}
+      <p class="muted small" style="margin:12px 0 0">Les cartes « Trajets » et « Activités » se remplissent toutes seules depuis Itinéraire & activités.</p>
+    </div>
+
+    <div class="panel"><h3>Budget du groupe<small>dépenses communes, partagées entre les ${nTrav()} voyageurs</small></h3>
+      <div class="row" style="align-items:center;gap:14px;flex-wrap:wrap"><div style="flex:0 1 auto"><div class="cat-title" style="margin:0 0 6px">Budget prévu pour le groupe</div>${dual("gtarget",S.trip.groupTarget,`data-act="dual" data-kind="gtarget" ${me?"":"disabled"}`)}</div>
+        ${gL?`<span class="pill ${gL.lvl}">${Math.round(gPct)} % prévu</span>`:""}</div>
+      <div class="kpis" style="margin-top:14px">
+        <div class="kpi"><small>POSTES DU GROUPE</small><b class="num">${eur(gTotal)}</b><span class="num">${yen(gTotal*r)}</span></div>
+        <div class="kpi"><small>RESTE</small><b class="num ${gTarget&&gTarget-gTotal<0?"neg":""}">${gTarget?eur(gTarget-gTotal):"—"}</b><span>${gTarget?yen((gTarget-gTotal)*r):"Pas de budget de groupe"}</span></div>
+        <div class="kpi"><small>PAR PERSONNE</small><b class="num">${eur(gTotal/nTrav())}</b><span class="num">${yen(gTotal/nTrav()*r)}</span></div>
+      </div>
+      ${gTarget?`<div class="gbar" style="margin-top:14px"><i style="width:${Math.min(100,gPct).toFixed(1)}%;${gL&&gL.lvl==="crit"?"background:var(--bad)":""}"></i></div>`:""}
+      <div class="bgrid" style="margin-top:16px">${gLines.map((b,i)=>bCard(b,i+3)).join("")||`<p class="muted" style="margin:0">Aucun poste commun pour l'instant (location de voiture, logement partagé, guide…).</p>`}</div>
+      ${bAdd==="group"?bAddForm("group"):`<button class="btn" data-act="bAdd" data-k="group" style="margin-top:14px">+ Ajouter un poste du groupe</button>`}
+    </div>
+
+    <div class="grid2">
+      <div class="panel"><h3>Coût par ville<small>pour moi : trajet, activités, postes perso et part du groupe</small></h3>
+        <div class="cities">${cities.map(c=>`<div class="city"><span class="cn"><i class="swatch" style="background:${sc(c.s.id)}"></i>${esc(c.s.name)}</span>
+          <div class="ctrack"><i style="width:${(100*c.tr/cmax).toFixed(2)}%;background:var(--seg2)"></i><i style="width:${(100*c.act/cmax).toFixed(2)}%;background:var(--seg3)"></i><i style="width:${(100*c.per/cmax).toFixed(2)}%;background:var(--seg1)"></i><i style="width:${(100*c.grp/cmax).toFixed(2)}%;background:var(--seg5,#9B6BD0)"></i></div>
+          <span class="cv num">${eur(c.sum)}<br><small class="muted">${yen(c.sum*r)}</small></span></div>`).join("")}</div>
+        <div class="keys" style="margin-top:12px"><span><i style="background:var(--seg2)"></i>Trajet</span><span><i style="background:var(--seg3)"></i>Activités</span><span><i style="background:var(--seg1)"></i>Postes perso</span><span><i style="background:var(--seg5,#9B6BD0)"></i>Part du groupe</span></div>
+        <p class="muted small" style="margin:12px 0 0">Les postes sans ville (« Tout le voyage ») ne comptent dans aucune ville.</p>
+      </div>
+      <div class="panel"><h3>Le groupe<small>budget perso prévu / prévisionnel de chacun</small></h3>
+        <div class="people">${group.map(({t,b})=>{const l=level(b.pct);const p=b.target?Math.min(100,100*b.total/b.target):0;return `<div class="person">${av(t)}<div><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span>${esc(t.name)}</span><span class="num muted">${eur(b.total)} / ${b.target?eur(b.target):"?"}</span></div><div class="bar" style="margin-top:6px"><i style="width:${p.toFixed(1)}%;background:${l&&l.lvl==="crit"?"var(--bad)":l&&l.lvl==="warn"?"var(--lantern)":"var(--good)"}"></i></div></div>${l?`<span class="pill ${l.lvl}">${Math.round(b.pct)} %</span>`:'<span class="pill">—</span>'}</div>`}).join("")||'<p class="muted">Personne pour l\'instant.</p>'}</div>
       </div>
     </div></div>`;
 }
@@ -2169,6 +2256,10 @@ document.addEventListener("click",e=>{
   if(a==="switchUser"){closeSettings();logout();return}
   if(a==="reloadPhotos"){loadPhotos();return}
   if(a==="photoDay"){photoDay=b.dataset.k;render();return}
+  if(a==="rateNow"){refreshRate(true);return}
+  if(a==="bEdit"){bEdit=id;bAdd=null;render();const f=document.querySelector('form[data-form="bedit"] input[name="label"]');f&&f.scrollIntoView({block:"center",behavior:"smooth"});return}
+  if(a==="bAdd"){bAdd=b.dataset.k;bEdit=null;render();const f=document.querySelector('form[data-form="badd"] input[name="label"]');f&&f.focus();return}
+  if(a==="bClose"){bEdit=null;bAdd=null;render();return}
   if(a==="selToggle"){selMode=!selMode;sel.clear();render();return}
   if(a==="selPhoto"){const p=photos[Number(b.dataset.i)];if(!p)return;sel.has(p.path)?sel.delete(p.path):sel.add(p.path);haptic(8);render();return}
   if(a==="selAll"){const all=sel.size===(photos||[]).length;sel.clear();if(!all)(photos||[]).forEach(p=>sel.add(p.path));render();return}
@@ -2196,6 +2287,7 @@ document.addEventListener("click",e=>{
   if(a==="leaveTrip"){(sess?rpc("logout",{p_code:code,p_token:sess}).catch(()=>{}):Promise.resolve()).then(()=>{ls.set("japon-code","");ls.set("japon-sess","");location.hash="";location.reload()});return}
   if(a==="toggleTask"){if(!me)return;const t=S.tasks.find(x=>x.id===id);patch("tasks",id,{done:{[me.id]:!(t.done&&t.done[me.id])}});return}
   if(a==="delTask"){if(b.dataset.c){remove("tasks",id);toast("Étape supprimée")}else{b.dataset.c="1";b.textContent="Supprimer ?";b.style.color="var(--bad)";b.style.fontSize="12px";setTimeout(()=>{b.dataset.c="";b.textContent="×";b.style.cssText=""},2500)}return}
+  if(a==="delLine"&&b.dataset.c){bEdit=null}
   if(a==="delAct"||a==="delExp"||a==="delLine"){const col={delAct:"activities",delExp:"expenses",delLine:"budget"}[a];if(b.dataset.c){remove(col,id);toast("Supprimé")}else{b.dataset.c="1";b.textContent="Supprimer ?";b.style.color="var(--bad)";b.style.fontSize="12px";setTimeout(()=>{b.dataset.c="";b.textContent="×";b.style.cssText=""},2500)}return}
   if(a==="openf"){open[b.dataset.k]=true;render();const f=document.querySelector(`form[data-form="${b.dataset.k}"] input`);f&&f.focus();return}
   if(a==="close"){if(b.dataset.k==="place")placeOpen=null;open[b.dataset.k]=false;render();return}
@@ -2260,6 +2352,8 @@ document.addEventListener("change",e=>{
   if(a==="dual"){const v=el.value===""?null:Math.max(0,Number(el.value));const val=v==null?null:{v,c:el.dataset.cur};const k=el.dataset.kind;
     if(k==="line"&&me)patch("budget",el.dataset.id,{amounts:{[me.id]:val}});
     if(k==="target"&&me)patch("travelers",me.id,{target:val});
+    if(k==="gline")patch("budget",el.dataset.id,{total:val});
+    if(k==="gtarget")setTrip({groupTarget:val});
     if(k==="transport"){const s=stages().find(x=>x.id===el.dataset.id);if(local&&!S.stages.length)S.stages=JSON.parse(JSON.stringify(DEFAULTS.stages));if(S.stages.find(x=>x.id===s.id))patch("stages",s.id,{transport:val});else put("stages",s.id,{name:s.name,order:s.order,nights:s.nights,transport:val})}
     return}
   if(a==="restoResa"){const u=safeUrl(el.value);if(u){patch("activities",el.dataset.id,{resaUrl:u});toast("Lien de réservation ajouté")}else if(el.value.trim())toast("Ce lien ne semble pas valide")}
@@ -2267,7 +2361,7 @@ document.addEventListener("change",e=>{
   if(a==="restoTime"){patch("activities",el.dataset.id,{time:el.value||""})}
   if(a==="actDate"){patch("activities",el.dataset.id,{date:el.value||null})}
   if(a==="actUrl"){const u=safeUrl(el.value);if(u){patch("activities",el.dataset.id,{url:u});toast("Lien ajouté")}else if(el.value.trim())toast("Ce lien ne semble pas valide")}
-  if(a==="rate"){const v=Math.max(1,Number(el.value)||170);setTrip({rate:v})}
+  if(a==="rate"){const v=Math.max(1,Number(el.value)||170);setTrip({rate:Math.round(v*100)/100})}
   if(a==="nights"){const v=Math.max(0,Math.min(30,Number(el.value)||0));const s=stages().find(x=>x.id===el.dataset.id);if(local&&!S.stages.length)S.stages=JSON.parse(JSON.stringify(DEFAULTS.stages));if(S.stages.find(x=>x.id===el.dataset.id))patch("stages",el.dataset.id,{nights:v});else put("stages",s.id,{name:s.name,order:s.order,nights:v})}
 });
 
@@ -2303,6 +2397,12 @@ document.addEventListener("submit",e=>{
     infoOpen=false;infoEdit=null;infoPrefill=null;
     if(id){patch("activities",String(id),data);toast("Fiche mise à jour")}else{put("activities",nid("i"),{kind:"info",...data,stage:null,owner:solo?me.id:null,order:S.activities.filter(isInfo).length+1,createdBy:me?me.id:null,createdAt:new Date().toISOString()});if(!solo)notifyGroup("prep",`${myName()} a ajouté une fiche pratique : ${t}`);toast(solo?"Fiche ajoutée, visible par toi seul":"Fiche ajoutée pour tout le monde")}return}
   if(k==="act"){const t=String(d.get("title")).trim();if(!t)return;const p=d.get("price");f.reset();put("activities",nid("a"),{title:t,stage:stageSel,price:p===""?null:Number(p),note:String(d.get("note")||"").trim(),url:safeUrl(d.get("url")),date:d.get("date")||null,booked:false,joined:me?{[me.id]:true}:{},order:S.activities.filter(x=>x.stage===stageSel).length+1,createdBy:me?me.id:null,createdAt:new Date().toISOString()});notifyGroup("plan",`${myName()} a ajouté une activité à ${(stages().find(x=>x.id===stageSel)||{}).name||""} : ${t}`);open.act=false;f.reset();toast(POI[t]?"Activité ajoutée, visible sur la carte":"Activité ajoutée. Utilise « Placer sur la carte » pour la situer")}
+  if(k==="bedit"){const id=f.dataset.id,l=String(d.get("label")).trim();if(!l)return;patch("budget",id,{label:l,stage:String(d.get("stage")||"")||null});bEdit=null;render();toast("Poste mis à jour");return}
+  if(k==="badd"){const l=String(d.get("label")).trim();if(!l)return;const scope=f.dataset.scope;
+    const ev=f.querySelector('[data-cur="EUR"]').value,jv=f.querySelector('[data-cur="JPY"]').value;const val=ev!==""?{v:Math.max(0,Number(ev)),c:"EUR"}:jv!==""?{v:Math.max(0,Number(jv)),c:"JPY"}:null;
+    const data={label:l,scope,stage:String(d.get("stage")||"")||null,order:S.budget.length+1,createdBy:me?me.id:null,createdAt:new Date().toISOString()};
+    if(scope==="group"){data.total=val}else{data.for=me?me.id:null;data.amounts=me&&val?{[me.id]:val}:{}}
+    bAdd=null;f.reset();put("budget",nid("b"),data);if(scope==="group")notifyGroup("budget",`${myName()} a ajouté un poste au budget du groupe : ${l}`);toast(scope==="group"?"Poste du groupe ajouté":"Poste perso ajouté");return}
   if(k==="line"){const l=String(d.get("label")).trim();if(!l)return;put("budget",nid("b"),{label:l,order:S.budget.length+1,amounts:{},createdBy:me?me.id:null,createdAt:new Date().toISOString()});notifyGroup("budget",`${myName()} a ajouté un poste au budget : ${l}`);open.line=false;f.reset();toast("Poste ajouté")}
   if(k==="exp"){const among=d.getAll("among");const amt=Number(d.get("amount"));if(!amt||!among.length){toast("Indique un montant et au moins une personne");return}
     f.reset();put("expenses",nid("e"),{title:String(d.get("title")).trim(),amount:amt,currency:expCur,payer:d.get("payer"),among,date:d.get("date")||"",createdBy:me?me.id:null,createdAt:new Date().toISOString()});
