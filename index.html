@@ -454,6 +454,27 @@ html[data-theme="light"] .panel{box-shadow:0 1px 3px rgba(24,32,54,.06)}
 .vdl{position:relative;flex:1 1 220px;min-height:38px;border-radius:10px;overflow:hidden;background:rgba(255,255,255,.12);display:grid;place-items:center;font-size:14px}
 .vdl::before{content:"";position:absolute;inset:0;width:calc(var(--p,0)*1%);background:var(--lantern);opacity:.85;transition:width .2s}
 .vdl span{position:relative;color:#fff;font-weight:600}
+/* Loader « pétales en ronde » : rose en Sakura, or en Sombre et Clair */
+.ldr{--lc:var(--lantern);--ls:44px;position:relative;display:inline-block;width:var(--ls);height:var(--ls);flex:0 0 auto;animation:ldspin 3.2s linear infinite}
+.ldr i{position:absolute;left:50%;top:50%;width:calc(var(--ls)*.25);height:calc(var(--ls)*.375);margin:calc(var(--ls)*-.41) 0 0 calc(var(--ls)*-.125);transform-origin:50% calc(var(--ls)*.41);border-radius:50% 50% 50% 50%/62% 62% 38% 38%;background:linear-gradient(180deg,color-mix(in srgb,var(--lc) 45%,#fff),var(--lc));animation:ldbloom 1.6s ease-in-out infinite}
+.ldr i:nth-child(1){transform:rotate(0deg)}.ldr i:nth-child(2){transform:rotate(72deg);animation-delay:.16s}.ldr i:nth-child(3){transform:rotate(144deg);animation-delay:.32s}.ldr i:nth-child(4){transform:rotate(216deg);animation-delay:.48s}.ldr i:nth-child(5){transform:rotate(288deg);animation-delay:.64s}
+.ldr b{position:absolute;left:50%;top:50%;width:calc(var(--ls)*.12);height:calc(var(--ls)*.12);transform:translate(-50%,-50%);border-radius:50%;background:var(--paper);opacity:.65}
+.ldr.sm{--ls:18px;vertical-align:-3px}.ldr.sm b{display:none}
+.ldr.on-accent{--lc:currentColor}
+@keyframes ldbloom{0%,100%{opacity:.25}50%{opacity:1}}
+@keyframes ldspin{to{transform:rotate(360deg)}}
+html[data-theme="sakura"] #viewer .ldr,html[data-theme="sakura"] .upov .ldr{--lc:#EE7FA2}
+.ldr-wrap{display:grid;justify-items:center;gap:12px;padding:40px 16px;text-align:center;color:var(--mute);font-size:15px}
+.ldr-wrap .ldr-pct{font-variant-numeric:tabular-nums;color:var(--paper);font-weight:600}
+.btn .ldr.sm{margin-right:8px}
+.upov .ldr{--ls:40px;display:none}.upov .ldr b{background:#fff}
+.uptile[data-st="up"] .ldr,.uptile[data-st="opt"] .ldr{display:inline-block}
+.uptile[data-st="up"] .upring,.uptile[data-st="opt"] .upring{background:none;animation:none;width:auto;height:auto}
+.uptile[data-st="up"] .upring::before,.uptile[data-st="opt"] .upring::before{display:none}
+.uptile[data-st="up"] .upov,.uptile[data-st="opt"] .upov{grid-template-rows:auto auto;align-content:center;gap:6px}
+.dls-top b{display:flex;align-items:center;gap:8px}
+.vimg .vload{position:absolute;inset:0;z-index:2;display:grid;place-items:center;pointer-events:none}
+@media (prefers-reduced-motion:reduce){.ldr{animation-duration:9s}.ldr i{animation-duration:4s}}
 .qpick{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}.qpick>span{font-size:14px}
 .pgroup .cat-title{margin:0;text-transform:none;letter-spacing:.02em;font-size:13px}
 .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
@@ -886,7 +907,7 @@ function render(){
   $("#meBtn").innerHTML = me ? av(me)+esc(me.name) : "Se connecter";
   renderLogin();
   if(ready&&me){const l=level(personBudget(me).pct);const dot=$("#budgetDot");dot.hidden=!(l&&l.lvl!=="ok");dot.className="tabdot"+(l&&l.lvl==="crit"?" crit":"")}
-  if(!ready){$("#app").innerHTML=`<div class="wrap" style="padding-top:40px"><p class="muted">Chargement du voyage…</p></div>`;return}
+  if(!ready){$("#app").innerHTML=`<div class="wrap" style="padding-top:40px">${loaderBlock("Chargement du voyage…")}</div>`;return}
   const html = {prep:renderPrep,plan:renderPlan,budget:renderBudget,split:renderSplit,photos:renderPhotos}[tab]();
   const keep = captureForms();
   const sx={};document.querySelectorAll("#app [data-keepx]").forEach(el=>sx[el.dataset.keepx]=el.scrollLeft);
@@ -934,13 +955,16 @@ function paintLogin(force){
     $("#loginTitle").innerHTML=esc(title)+`<span>${head}</span>`;
     h=`<div class="pinwho">${who?av(who,"lg"):""}<div><b>${esc(who?who.name:"")}</b><small class="muted">${help}</small></div></div>
       <form class="pinform" id="pinForm" autocomplete="off">${pinField("pinInput",lg.phase==="confirm"?"Confirmation":"Code PIN")}
-        <button class="btn primary" type="submit" ${lg.busy?"disabled":""}>${lg.busy?"Un instant…":lg.phase==="enter"?"Se connecter":lg.phase==="create"?"Continuer":"Valider mon code"}</button></form>
+        <button class="btn primary" type="submit" ${lg.busy?"disabled":""}>${lg.busy?busyBtn(lg.phase==="enter"?"Connexion…":"Création du code…"):lg.phase==="enter"?"Se connecter":lg.phase==="create"?"Continuer":"Valider mon code"}</button></form>
       <p class="gate-msg" role="alert">${esc(lg.msg||"")}</p>
       ${lg.phase==="enter"?`<p class="muted" style="margin:0;font-size:13px">Code oublié ? Demande à l'organisateur de le réinitialiser : tu en choisiras un nouveau.</p>`:""}<div><button class="link-btn" data-act="lgBack">${lg.step==="new"?"Retour":"Ce n'est pas moi"}</button></div>`;
   }
   $("#loginBody").innerHTML=h;
   const f=document.getElementById(lg.step==="list"?"":"pinInput");if(f&&!lg.busy)setTimeout(()=>f.focus(),30);
 }
+const LDR=(cls="")=>`<span class="ldr ${cls}" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><b></b></span>`;
+const loaderBlock=(txt,pct)=>`<div class="ldr-wrap" role="status">${LDR()}<span>${esc(txt)}</span>${pct!=null?`<span class="ldr-pct">${Math.round(pct)} %</span>`:""}</div>`;
+const busyBtn=txt=>`${LDR("sm on-accent")}${esc(txt)}`;
 const HERO_POS={"img/pont.jpg":"center 45%","img/avion.jpg":"center 72%","img/fuji-gare.jpg":"center 55%","img/kinkakuji.jpg":"center 40%"};
 function hero(img,k,title,sub,right=""){
   return `<section class="hero"><img src="${img}" alt="" style="object-position:${HERO_POS[img]||"center"}"><div class="hero-in"><div><h2><span class="k">${k}</span>${title}</h2>${sub?`<p>${sub}</p>`:""}</div>${right}</div></section>`;
@@ -1209,7 +1233,7 @@ async function fetchOriginal(p){
   try{st.file=await fetchPhotoFile(p,(l,t)=>{st.pct=t?l/t:0;paintViewerDl(p)});st.state="ready"}catch(e){st.state="err"}
   renderViewer();
 }
-function paintViewerDl(p){const st=origDl[p.path],el=document.getElementById("vdl");if(!st||!el)return;el.style.setProperty("--p",Math.round(st.pct*100));const t=el.querySelector("span");if(t)t.textContent=`Téléchargement… ${Math.round(st.pct*100)} %`}
+function paintViewerDl(p){const st=origDl[p.path],el=document.getElementById("vdl");if(!st||!el)return;el.style.setProperty("--p",Math.round(st.pct*100));const t=el.querySelector("span");if(t)t.innerHTML=`${LDR("sm")} Téléchargement… ${Math.round(st.pct*100)} %`}
 function saveOriginal(p){const st=origDl[p.path];if(st&&st.file)saveFiles([st.file])}
 /* Archive ZIP sans compression (les photos sont déjà compressées) pour l'ordinateur. */
 const CRC_T=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
@@ -1251,7 +1275,7 @@ function paintBatch(){
   const b=batch,pc=Math.round(b.pct*100);el.hidden=false;
   const title=b.kind==="dl"?(b.state==="ready"?`${b.files.length} photo${b.files.length>1?"s":""} prête${b.files.length>1?"s":""}`:`Téléchargement · ${b.done}/${b.n} photo${b.n>1?"s":""}`)
     :(b.state==="done"?`${b.n-b.errs} photo${b.n-b.errs>1?"s":""} supprimée${b.n-b.errs>1?"s":""}`:`Suppression · ${b.done}/${b.n}`);
-  el.innerHTML=`<div class="dls-in"><div class="dls-top"><b>${title}</b><span class="num">${b.state==="run"?pc+" %":b.errs?`${b.errs} échec${b.errs>1?"s":""}`:"✓"}</span></div>
+  el.innerHTML=`<div class="dls-in"><div class="dls-top"><b>${b.state==="run"?LDR("sm"):""}${title}</b><span class="num">${b.state==="run"?pc+" %":b.errs?`${b.errs} échec${b.errs>1?"s":""}`:"✓"}</span></div>
     <div class="gbar"><i style="width:${b.state==="run"?pc:100}%"></i></div>
     ${b.kind==="dl"&&b.state==="ready"?`<div class="dls-act">${b.files.length?`<button class="btn primary" data-act="batchSave">${canShareFiles(b.files)?"Enregistrer dans Photos / Fichiers":b.files.length>1?"Enregistrer (archive .zip)":"Enregistrer la photo"}</button>`:""}<button class="btn ghost" data-act="batchClose">Fermer</button></div>`:""}</div>`;
 }
@@ -1344,12 +1368,12 @@ function renderPhotos(){
   const filters=days.length>1?`<div class="dayfilter" data-keepx="photodays" role="tablist" aria-label="Filtrer par jour d'ajout">
       <button data-act="photoDay" data-k="all" aria-pressed="${photoDay==="all"}">Toutes <small>${n}</small></button>
       ${days.map(d=>`<button data-act="photoDay" data-k="${d}" aria-pressed="${photoDay===d}">${esc(dayLabel(d,true))} <small>${groups[d].length}</small></button>`).join("")}</div>`:"";
-  const grid = photos===null ? `<p class="muted">Chargement des photos…</p>`
+  const grid = photos===null ? loaderBlock("Chargement des photos…")
     : !n ? `<div class="empty">Aucune photo pour l'instant. Ajoute la première : elle sera visible par tout le groupe.</div>`
     : filters+shown.map(d=>{const arr=groups[d];return `<section class="pgroup"><div class="psep"><span>${esc(dayLabel(d))}</span><i></i><small>${arr.length} photo${arr.length>1?"s":""}</small></div>
       <div class="pgrid${selMode?" selmode":""}">${arr.map(([p,i])=>{const t=T(p.who),on=sel.has(p.path);return `<button class="ptile${on?" on":""}" data-act="${selMode?"selPhoto":"openPhoto"}" data-i="${i}" ${selMode?`aria-pressed="${on}"`:""} aria-label="${selMode?(on?"Désélectionner ":"Sélectionner "):"Ouvrir "}${esc(p.name)}">${selMode?`<b class="pcheck" aria-hidden="true"></b>`:""}${p.thumb?`<img src="${esc(p.thumb)}" alt="" loading="lazy" onerror="this.remove()">`:""}<span class="pname">${esc(p.name)}</span>${t?av(t,"xs"):""}</button>`}).join("")}</div></section>`}).join("");
   const up = uploads.length?`<div id="upBox" class="upbox"><div class="upsum"><span id="upSum">Préparation de l'envoi…</span><div class="upbar"><i id="upBar"></i></div></div>
-    <div class="upgrid">${uploads.map((u,i)=>`<div class="uptile" id="up-${i}" data-st="${u.status}" style="--p:${Math.round(u.pct*100)}"><img src="${u.preview}" alt="" onerror="this.remove()"><div class="upov"><div class="upring"><span class="uppct">${upLabel(u,Math.round(u.pct*100))}</span></div></div></div>`).join("")}</div></div>`:"";
+    <div class="upgrid">${uploads.map((u,i)=>`<div class="uptile" id="up-${i}" data-st="${u.status}" style="--p:${Math.round(u.pct*100)}"><img src="${u.preview}" alt="" onerror="this.remove()"><div class="upov">${LDR()}<div class="upring"><span class="uppct">${upLabel(u,Math.round(u.pct*100))}</span></div></div></div>`).join("")}</div></div>`:"";
   return hero("img/lanternes.jpg","写真 · shashin","Photos du voyage",`${n} photo${n>1?"s":""} · ${mb(driveOn?driveBytes:photoUsed)} sur ${driveOn?"5":"1"} Go`)
   + `<div class="wrap">
     <div class="panel"><h3>Partager des photos<small>visibles par tout le groupe</small></h3>
@@ -1368,7 +1392,7 @@ function renderPhotos(){
 }
 function origBtn(p){const st=origDl[p.path],lbl=p.orig?"Télécharger l'original":"Télécharger";
   if(!st)return `<button class="btn primary sm" data-act="getOrig">${lbl} · ${mb(p.orig?p.origSize:p.size)}</button>`;
-  if(st.state==="load")return `<div class="vdl" id="vdl" style="--p:${Math.round(st.pct*100)}"><span>Téléchargement… ${Math.round(st.pct*100)} %</span></div>`;
+  if(st.state==="load")return `<div class="vdl" id="vdl" style="--p:${Math.round(st.pct*100)}"><span>${LDR("sm")} Téléchargement… ${Math.round(st.pct*100)} %</span></div>`;
   if(st.state==="err")return `<button class="btn primary sm" data-act="getOrig">Réessayer le téléchargement</button>`;
   return `<button class="btn primary sm" data-act="saveOrig">${canShareFiles([st.file])?"Enregistrer dans Photos / Fichiers":"Enregistrer la photo"}</button>`}
 function renderViewer(){
@@ -1379,7 +1403,7 @@ function renderViewer(){
   v.hidden=false;
   v.innerHTML=`<div class="vbar"><div class="vinfo">${t?av(t,"xs"):""}<span><b>${esc(p.name)}</b><small>${t?esc(t.name)+" · ":""}${mb(p.size)}</small></span></div>
     <button class="icon-btn vclose" data-act="closePhoto" aria-label="Fermer">×</button></div>
-    <div class="vimg">${p.thumb?`<img class="vthumb" src="${esc(p.thumb)}" alt="">`:""}${p.url?`<img class="vfull" src="${esc(p.url)}" alt="${esc(p.name)}" onload="this.previousElementSibling&&this.previousElementSibling.remove()">`:""}
+    <div class="vimg">${p.thumb?`<img class="vthumb" src="${esc(p.thumb)}" alt="">`:""}${p.url?`<span class="vload">${LDR()}</span><img class="vfull" src="${esc(p.url)}" alt="${esc(p.name)}" onload="const v=this.parentNode.querySelector('.vload');v&&v.remove();const t=this.parentNode.querySelector('.vthumb');t&&t.remove()">`:""}
       ${viewIdx>0?`<button class="vnav prev" data-act="navPhoto" data-d="-1" aria-label="Photo précédente">‹</button>`:""}${viewIdx<photos.length-1?`<button class="vnav next" data-act="navPhoto" data-d="1" aria-label="Photo suivante">›</button>`:""}</div>
     <div class="vfoot"><div class="vbtns">${p.orig||p.url?origBtn(p):""}${mine?`<button class="btn ghost sm" data-act="delPhoto">Supprimer</button>`:""}</div>
       <p class="vhint">${p.orig?`Original intact (${mb(p.origSize)}) conservé dans le Google Drive du voyage.`:"iPhone : appui long sur la photo, puis « Ajouter à Photos »."}</p></div>`;
@@ -2080,7 +2104,7 @@ document.addEventListener("click",e=>{
   if(a==="lgBack"){lg={step:"list",id:null,phase:"enter",first:"",msg:"",busy:false};refreshRoster().then(()=>paintLogin(true));paintLogin(true);return}
   if(a==="logout"){logout();return}
   if(a==="admReset"||a==="admRemove"){if(!b.dataset.c){b.dataset.c="1";b.textContent=a==="admReset"?"Confirmer la réinitialisation":"Confirmer le retrait";b.style.color="var(--bad)";return}
-    const t=roster.find(x=>x.id===id)||T(id);b.disabled=true;
+    const t=roster.find(x=>x.id===id)||T(id);b.disabled=true;b.innerHTML=busyBtn(a==="admReset"?"Réinitialisation…":"Retrait…");
     rpc(a==="admReset"?"admin_reset_pin":"admin_remove_traveler",{p_code:code,p_token:sess,p_traveler:id}).then(async()=>{
       toast(a==="admReset"?`${t?t.name:"Ce voyageur"} choisira un nouveau code à sa prochaine connexion`:`${t?t.name:"Ce voyageur"} a été retiré du voyage`);
       await refreshRoster();if(a==="admRemove"){notifyOthers();await loadAll().catch(()=>{});render()}renderSettings()}).catch(e=>{fail(e);renderSettings()});return}
@@ -2105,14 +2129,14 @@ document.addEventListener("click",e=>{
   if(a==="getOrig"){const p=photos&&photos[viewIdx];if(p){delete origDl[p.path];fetchOriginal(p)}return}
   if(a==="saveOrig"){const p=photos&&photos[viewIdx];if(p)saveOriginal(p);return}
   if(a==="copyScript"){fetch("drive/apps-script.gs",{cache:"no-cache"}).then(r=>r.text()).then(t=>navigator.clipboard.writeText(t)).then(()=>toast("Script copié")).catch(()=>{window.open("drive/apps-script.gs","_blank")});return}
-  if(a==="driveLink"||a==="driveUnlink"){const inp=$("#driveUrl"),url=a==="driveUnlink"?"":(inp?inp.value.trim():"");const m=$("#driveMsg");if(m)m.textContent=a==="driveLink"?"Vérification du lien…":"";b.disabled=true;
+  if(a==="driveLink"||a==="driveUnlink"){const inp=$("#driveUrl"),url=a==="driveUnlink"?"":(inp?inp.value.trim():"");const m=$("#driveMsg");if(m)m.textContent="";b.disabled=true;b.innerHTML=busyBtn(a==="driveLink"?"Vérification…":"Un instant…");
     photosApi({action:"drive_config",url}).then(r=>{driveOn=!!r.drive;toast(driveOn?"Google Drive relié":"Google Drive délié");loadPhotos();renderSettings()})
     .catch(e=>{b.disabled=false;const mm=$("#driveMsg");if(mm)mm.textContent=e.err==="url"?"Ce lien ne ressemble pas à une adresse d'application web Apps Script (…/exec).":e.err==="ping"?"Le script ne répond pas comme prévu : vérifie le déploiement (Exécuter en tant que : Moi · Accès : Tout le monde).":"Impossible pour l'instant."});return}
   if(a==="openPhoto"){viewIdx=Number(b.dataset.i);renderViewer();return}
   if(a==="closePhoto"){viewIdx=-1;renderViewer();return}
   if(a==="navPhoto"){viewIdx=Math.max(0,Math.min(photos.length-1,viewIdx+Number(b.dataset.d)));renderViewer();return}
   if(a==="delPhoto"){if(!b.dataset.c){b.dataset.c="1";b.textContent=photos[viewIdx]&&me&&photos[viewIdx].who!==me.id?"Supprimer la photo de "+((T(photos[viewIdx].who)||{}).name||"ce voyageur")+" ?":"Confirmer la suppression";b.style.color="var(--bad)";return}
-    const ph=photos[viewIdx];viewIdx=-1;renderViewer();photosApi({action:"delete",path:ph.path,who:me&&me.id}).then(()=>{toast("Photo supprimée");loadPhotos()}).catch(()=>toast("Suppression impossible"));return}
+    const ph=photos[viewIdx];b.disabled=true;b.innerHTML=busyBtn("Suppression…");photosApi({action:"delete",path:ph.path}).then(()=>{viewIdx=-1;renderViewer();toast("Photo supprimée");loadPhotos()}).catch(()=>{b.disabled=false;b.textContent="Supprimer";toast("Suppression impossible")});return}
   if(a==="pickIcon"){iconSel=b.dataset.k;ls.set("japon-icon",iconSel);applyIcon(iconSel);syncPush();render();renderSettings();toast("Icône choisie");return}
   if(a==="install"){if(installEvt){installEvt.prompt();installEvt.userChoice.finally(()=>{installEvt=null;render()})}return}
   if(a==="share"){const data={title:"Japon 2027",text:`Rejoins l'organisation de notre voyage au Japon ! Code du voyage : ${code}`,url:shareUrl()};
@@ -2206,8 +2230,8 @@ document.addEventListener("input",e=>{
 document.addEventListener("submit",e=>{
   const f=e.target; e.preventDefault();
   if(f.id==="renameForm"){const n=$("#renameInput").value.trim().slice(0,24);if(!n||!me)return;patch("travelers",me.id,{name:n});toast("Prénom mis à jour");return}
-  if(f.id==="gateForm"){const btn=f.querySelector("button");btn.disabled=true;$("#gateMsg").textContent="";
-    tryCode($("#gateCode").value).then(ok=>{if(ok)return enterTrip();$("#gateMsg").textContent="Code incorrect. Vérifie l'orthographe (lettres et chiffres)."}).catch(()=>{$("#gateMsg").textContent="Connexion impossible pour l'instant. Réessaie."}).finally(()=>{btn.disabled=false});return}
+  if(f.id==="gateForm"){const btn=f.querySelector("button");btn.disabled=true;const bl=btn.innerHTML;btn.innerHTML=busyBtn("Vérification…");$("#gateMsg").textContent="";
+    tryCode($("#gateCode").value).then(ok=>{if(ok)return enterTrip();$("#gateMsg").textContent="Code incorrect. Vérifie l'orthographe (lettres et chiffres)."}).catch(()=>{$("#gateMsg").textContent="Connexion impossible pour l'instant. Réessaie."}).finally(()=>{btn.disabled=false;btn.innerHTML=bl});return}
   if(f.id==="joinForm"){const n=$("#newName").value.trim().slice(0,24);if(!n)return;
     const exist=roster.find(t=>(t.name||"").toLowerCase()===n.toLowerCase());
     if(exist){lg={step:"pin",id:exist.id,phase:exist.has_pin?"enter":"create",first:"",msg:"Ce prénom est déjà dans le voyage.",busy:false};paintLogin(true);return}
@@ -2215,7 +2239,8 @@ document.addEventListener("submit",e=>{
   if(f.id==="pinForm"){const v=$("#pinInput").value.trim();$("#pinInput").value="";submitPin(v);return}
   if(f.id==="pinChange"){const o=$("#pinOld").value.trim(),n1=$("#pinNew").value.trim(),n2=$("#pinNew2").value.trim(),m=$("#pinMsg");
     if(!/^[0-9]{4,6}$/.test(n1)){m.textContent=LG_ERR.format;return}if(n1!==n2){m.textContent="Les deux nouveaux codes ne correspondent pas.";return}
-    rpc("change_pin",{p_code:code,p_token:sess,p_old:o,p_new:n1}).then(res=>{if(res&&res.ok){f.reset();m.textContent="";toast("Code PIN modifié")}else m.textContent=res.error==="locked"?lockMsg():res.error==="wrong"?"Code actuel incorrect.":LG_ERR[res.error]||"Impossible pour l'instant."}).catch(fail);return}
+    const sb2=f.querySelector("button[type=submit]");sb2.disabled=true;sb2.innerHTML=busyBtn("Modification…");
+    rpc("change_pin",{p_code:code,p_token:sess,p_old:o,p_new:n1}).finally(()=>{sb2.disabled=false;sb2.textContent="Changer mon code"}).then(res=>{if(res&&res.ok){f.reset();m.textContent="";toast("Code PIN modifié")}else m.textContent=res.error==="locked"?lockMsg():res.error==="wrong"?"Code actuel incorrect.":LG_ERR[res.error]||"Impossible pour l'instant."}).catch(fail);return}
   const k=f.dataset.form, d=new FormData(f);
   const solo=!!(e.submitter&&e.submitter.value==="me"&&me);
   if(k==="task"){const t=String(d.get("title")).trim();if(!t)return;open.task=false;f.reset();put("tasks",nid("t"),{title:t,cat:d.get("cat"),order:S.tasks.length+1,done:{},owner:solo?me.id:null,createdBy:me?me.id:null,createdAt:new Date().toISOString()});if(!solo)notifyGroup("prep",`${myName()} a ajouté une étape : ${t}`);toast(solo?"Étape ajoutée à ta liste":"Étape ajoutée pour tout le monde")}
