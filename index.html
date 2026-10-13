@@ -152,6 +152,7 @@ label.f{display:grid;gap:5px;font-size:13px;color:var(--mute)}
 .stage[aria-pressed="true"] img{opacity:1}
 .acts{display:grid;gap:10px}
 .act{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--ink)}
+.act.move{border-style:dashed;background:transparent}
 .act h4{margin:0;font-size:16px;font-weight:700;overflow-wrap:anywhere}
 .act .meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--mute)}
 .act .side{display:grid;justify-items:end;gap:8px;align-content:start}
@@ -1677,6 +1678,8 @@ const PLACE_KINDS={
 let planView="acts", placeFilter="all", placeOpen=null;
 const isPlace = a => !!PLACE_KINDS[a.kind];
 const isResto = isPlace;
+const isMove = a => a.kind==="move";
+const byTime = (x,y) => String(x.time||"99").localeCompare(String(y.time||"99")) || byOrder(x,y);
 const hotelNights = a => a.kind==="hotel"&&a.date&&a.checkout?Math.max(0,diffD(a.date,a.checkout)):(a.kind==="hotel"?1:1);
 const placeCost = a => (Number(a.price)||0)*(a.kind==="hotel"?hotelNights(a):1);
 function daySelect(a,days,act="actDate",label="Jour",val=a.date){return days.length?`<select class="mini" data-act="${act}" data-id="${a.id}" id="${act}-${a.id}" aria-label="${label}"><option value="">${label} à choisir</option>${days.map(d=>`<option value="${d}" ${val===d?"selected":""}>${fmtD(d,{weekday:"short",day:"numeric",month:"short"})}</option>`).join("")}</select>`:""}
@@ -1754,10 +1757,15 @@ function renderInfos(){
 function actCard(a,days){
   const r=rate(),j=!!(me&&a.joined&&a.joined[me.id]),who=S.travelers.filter(t=>a.joined&&a.joined[t.id]),p=Number(a.price)||0;
   const dateSel = days.length ? `<select class="mini" data-act="actDate" data-id="${a.id}" id="ad-${a.id}" aria-label="Jour de l'activité"><option value="">Jour à choisir</option>${days.map((d,)=>`<option value="${d}" ${a.date===d?"selected":""}>${fmtD(d,{weekday:"short",day:"numeric",month:"short"})}</option>`).join("")}</select>` : (a.day?`<span>${esc(a.day)}</span>`:"");
-  return `<article class="act"><div style="display:grid;gap:6px;min-width:0"><h4>${isPlace(a)?`<span class="cuis" style="--kc:${PLACE_KINDS[a.kind].color}">${a.kind==="hotel"?"Hébergement · arrivée":PLACE_KINDS[a.kind].label}${a.time?" · "+esc(a.time):""}</span> `:""}${esc(a.title)}</h4>
+  const timeIn=`<input class="mini" type="time" value="${esc(a.time||"")}" id="at-${a.id}" data-act="restoTime" data-id="${a.id}" aria-label="Heure">`;
+  if(isMove(a)) return `<article class="act move"><div style="display:grid;gap:6px;min-width:0"><h4><span class="cuis" style="--kc:var(--seg5)">Trajet${a.time?" · "+esc(a.time):""}</span> ${esc(a.title)}</h4>
+    ${a.note?`<div class="muted" style="font-size:14px;overflow-wrap:anywhere">${esc(a.note)}</div>`:""}
+    <div class="meta">${dateSel}${days.length?timeIn:""}<button class="icon-btn" data-act="delAct" data-id="${a.id}" aria-label="Supprimer le trajet">×</button></div></div>
+    <div class="side"><small class="muted">Budget du groupe</small></div></article>`;
+  return `<article class="act"><div style="display:grid;gap:6px;min-width:0"><h4>${isPlace(a)?`<span class="cuis" style="--kc:${PLACE_KINDS[a.kind].color}">${a.kind==="hotel"?"Hébergement · arrivée":PLACE_KINDS[a.kind].label}${a.time?" · "+esc(a.time):""}</span> `:isMove(a)?`<span class="cuis" style="--kc:var(--seg5)">Trajet${a.time?" · "+esc(a.time):""}</span> `:a.time?`<span class="cuis" style="--kc:${sc(a.stage)}">${esc(a.time)}</span> `:""}${esc(a.title)}</h4>
     ${isResto(a)&&a.resaUrl?`<div><a class="link" href="${esc(a.resaUrl)}" target="_blank" rel="noopener noreferrer">Voir la réservation ↗</a></div>`:""}
     ${a.note?`<div class="muted" style="font-size:14px;overflow-wrap:anywhere">${esc(a.note)}</div>`:""}
-    <div class="meta">${a.url?`<a class="link" href="${esc(a.url)}" target="_blank" rel="noopener noreferrer">${esc(host(a.url))} ↗</a>`:`<input class="mini" type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Coller un lien" id="au-${a.id}" data-act="actUrl" data-id="${a.id}" aria-label="Lien de l'activité">`}${dateSel}${actGeo(a)?`<button class="link-btn" data-act="showOnMap" data-id="${a.id}">Voir sur la carte</button>`:`<button class="link-btn" data-act="placeAct" data-id="${a.id}">Placer sur la carte</button>`}</div>
+    <div class="meta">${a.url?`<a class="link" href="${esc(a.url)}" target="_blank" rel="noopener noreferrer">${esc(host(a.url))} ↗</a>`:`<input class="mini" type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Coller un lien" id="au-${a.id}" data-act="actUrl" data-id="${a.id}" aria-label="Lien de l'activité">`}${dateSel}${days.length&&!isPlace(a)?timeIn:""}${actGeo(a)?`<button class="link-btn" data-act="showOnMap" data-id="${a.id}">Voir sur la carte</button>`:`<button class="link-btn" data-act="placeAct" data-id="${a.id}">Placer sur la carte</button>`}</div>
     <div class="meta"><span class="stack">${who.map(t=>av(t,"xs")).join("")}</span><span>${who.length} participant${who.length>1?"s":""}</span>
     <button class="pill ${a.booked?"ok":""}" style="background:none;cursor:pointer" data-act="toggleBooked" data-id="${a.id}">${a.booked?"✓ Réservé":"À réserver"}</button>
     <button class="icon-btn" data-act="delAct" data-id="${a.id}" aria-label="Supprimer l'activité">×</button></div></div>
@@ -1936,12 +1944,16 @@ function renderPlan(){
   const st=stages(); if(!st.find(s=>s.id===stageSel)) stageSel=st[0]?.id;
   const cur=st.find(s=>s.id===stageSel)||{};
   const acts=S.activities.filter(a=>a.stage===stageSel).sort(byOrder);
-  const r=rate(), days=stageDays(stageSel), hasDates=!!S.trip.start;
+  const r=rate(), sdays=stageDays(stageSel), hasDates=!!S.trip.start;
+  // Le jour du départ vers l'étape suivante : on garde ce qu'on fait encore ici le matin.
+  const nextD=sdays.length?addD(sdays[sdays.length-1],1):null;
+  const days=nextD&&tripDays().includes(nextD)?sdays.concat(nextD):sdays;
+  const shown=days.filter(d=>sdays.includes(d)||acts.some(a=>a.date===d));
   if(daySel && !days.includes(daySel)) daySel=null;
   let flow;
   if(hasDates && days.length){
-    const planned = days.map(d=>{const i=diffD(S.trip.start,d)+1;const list=acts.filter(a=>a.date===d);
-      return `<section class="daygroup ${d===daySel?"sel":""}" id="day-${d}"><div class="dayhead"><b>Jour ${i}</b><span class="muted">${fmtD(d,{weekday:"long",day:"numeric",month:"long"})}</span><button class="btn sm ghost" data-act="pickDay" data-d="${d}" style="margin-left:auto">${d===daySel?"Jour sélectionné":"Ajouter ici"}</button></div>
+    const planned = shown.map(d=>{const i=diffD(S.trip.start,d)+1;const list=acts.filter(a=>a.date===d).sort(byTime);
+      return `<section class="daygroup ${d===daySel?"sel":""}" id="day-${d}"><div class="dayhead"><b>Jour ${i}</b><span class="muted">${fmtD(d,{weekday:"long",day:"numeric",month:"long"})}${sdays.includes(d)?"":" · départ"}</span><button class="btn sm ghost" data-act="pickDay" data-d="${d}" style="margin-left:auto">${d===daySel?"Jour sélectionné":"Ajouter ici"}</button></div>
         ${list.length?`<div class="acts">${list.map(a=>actCard(a,days)).join("")}</div>`:`<p class="muted" style="margin:0;font-size:14px">Rien de prévu pour l'instant.</p>`}</section>`}).join("");
     const rest=acts.filter(a=>!isResto(a)&&(!a.date||!days.includes(a.date)));
     flow = planned + `<section class="daygroup"><div class="dayhead"><b>À planifier</b><span class="muted">${rest.length} activité${rest.length>1?"s":""} sans jour</span></div>
