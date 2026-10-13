@@ -269,7 +269,8 @@ main{position:relative;z-index:1}
 .pill.info{color:#8FB3E8;border-color:rgba(143,179,232,.45)}
 .pill.warn{color:var(--lantern);border-color:rgba(233,169,63,.5)}
 .pill.crit{color:var(--bad);border-color:rgba(232,128,111,.55)}
-.alert{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;padding:12px 16px;border-radius:12px;border:1px solid;font-size:14px}
+.alert{position:relative;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;padding:12px 44px 12px 16px;border-radius:12px;border:1px solid;font-size:14px}
+.alert-x{position:absolute;top:6px;right:6px;width:32px;height:32px;font-size:20px}
 .alert.info{border-color:rgba(143,179,232,.45);background:rgba(143,179,232,.12)}
 .alert.warn{border-color:rgba(233,169,63,.55);background:rgba(233,169,63,.14)}
 .alert.crit{border-color:rgba(232,128,111,.6);background:rgba(232,128,111,.16)}
@@ -962,7 +963,9 @@ function render(){
   document.querySelectorAll(".tab").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===tab));
   $("#meBtn").innerHTML = me ? av(me)+esc(me.name) : "Se connecter";
   renderLogin();
-  if(ready&&me){const l=level(personBudget(me).pct);const dot=$("#budgetDot");dot.hidden=!(l&&l.lvl!=="ok");dot.className="tabdot"+(l&&l.lvl==="crit"?" crit":"")}
+  if(ready&&me){const l=level(personBudget(me).pct),sig=alertSig(l),dot=$("#budgetDot");
+    if(tab==="budget"&&sig)ls.set(alertKey("seen"),sig);
+    dot.hidden=!(sig&&tab!=="budget"&&ls.get(alertKey("seen"))!==sig);dot.className="tabdot"+(l&&l.lvl==="crit"?" crit":"")}
   if(!ready){$("#app").innerHTML=`<div class="wrap" style="padding-top:40px">${loaderBlock("Chargement du voyage…")}</div>`;return}
   const html = {prep:renderPrep,plan:renderPlan,budget:renderBudget,split:renderSplit,photos:renderPhotos}[tab]();
   const keep = captureForms();
@@ -2032,13 +2035,17 @@ function stackChart(b){
     <div class="axis"><span>0 €</span><span>${eur(max)}</span></div>
     <div class="keys">${segs.map(([l,v,c])=>`<span><i style="background:${c}"></i>${l} <b class="num">${eur(v)}</b></span>`).join("")}</div></div>`;
 }
+/* Une alerte = un palier atteint. La pastille disparaît une fois l'alerte vue ; le bandeau reste jusqu'à ce qu'on le ferme. Un nouveau palier les fait revenir. */
+const alertSig = L => L&&L.lvl!=="ok" ? L.lvl+":"+L.step : "";
+const alertKey = k => "japon-alert-"+k+"-"+(me?me.id:"");
 function alertBanner(b,who){
   const L=level(b.pct); if(!L||L.lvl==="ok") return "";
+  if(ls.get(alertKey("closed"))===alertSig(L)) return "";
   const p=Math.round(b.pct), reste=b.target-b.total;
   const msg = L.lvl==="crit"
     ? `${who} : budget prévisionnel dépassé. ${p} % est déjà prévu, soit ${eur(-reste)} de trop.`
     : `${who} : palier de ${L.step} % atteint. ${p} % du budget prévisionnel est déjà prévu, il reste ${eur(reste)}.`;
-  return `<div class="alert ${L.lvl}" role="status"><b>${L.lvl==="crit"?"Dépassement":"Alerte budget"}</b><span>${msg}</span></div>`;
+  return `<div class="alert ${L.lvl}" role="status"><b>${L.lvl==="crit"?"Dépassement":"Alerte budget"}</b><span>${msg}</span><button class="icon-btn alert-x" data-act="closeAlert" data-k="${alertSig(L)}" aria-label="Fermer l'alerte">×</button></div>`;
 }
 let bEdit=null, bAdd=null, rateBusy=false;
 /* Taux du yen actualisé une fois par jour (BCE via Frankfurter, secours : ExchangeRate-API). Les montants gardent leur devise d'origine : tout se reconvertit avec le nouveau taux. */
@@ -2256,6 +2263,7 @@ document.addEventListener("click",e=>{
   if(a==="switchUser"){closeSettings();logout();return}
   if(a==="reloadPhotos"){loadPhotos();return}
   if(a==="photoDay"){photoDay=b.dataset.k;render();return}
+  if(a==="closeAlert"){ls.set(alertKey("closed"),b.dataset.k);render();return}
   if(a==="rateNow"){refreshRate(true);return}
   if(a==="bEdit"){bEdit=id;bAdd=null;render();const f=document.querySelector('form[data-form="bedit"] input[name="label"]');f&&f.scrollIntoView({block:"center",behavior:"smooth"});return}
   if(a==="bAdd"){bAdd=b.dataset.k;bEdit=null;render();const f=document.querySelector('form[data-form="badd"] input[name="label"]');f&&f.focus();return}
