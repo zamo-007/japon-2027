@@ -17,6 +17,14 @@ function folder_() {
   return f;
 }
 
+// Ne jamais toucher un fichier hors du dossier des photos du voyage.
+function inFolder_(file) {
+  const id = folder_().getId();
+  const it = file.getParents();
+  while (it.hasNext()) { if (it.next().getId() === id) return true; }
+  return false;
+}
+
 function check_(ticket, extra) {
   const r = UrlFetchApp.fetch(API, {
     method: "post", contentType: "application/json", headers: { apikey: KEY },
@@ -34,7 +42,7 @@ function out_(o) {
 function doPost(e) {
   try {
     const b = JSON.parse(e.postData.contents);
-    if (b.action === "ping") return out_({ ok: true, app: "japon-2027" });
+    if (b.action === "ping") return out_({ ok: true, app: "japon-2027", v: 2 });
     const t = check_(b.ticket);
     if (b.action === "put" && t.kind === "put") {
       const blob = Utilities.newBlob(Utilities.base64Decode(b.data), b.mime || "application/octet-stream", t.name || "photo");
@@ -44,11 +52,14 @@ function doPost(e) {
     }
     if (b.action === "get" && t.kind === "get") {
       const file = DriveApp.getFileById(t.drive_id);
+      if (!inFolder_(file)) return out_({ ok: false, error: "hors dossier" });
       const blob = file.getBlob();
       return out_({ ok: true, name: file.getName(), mime: blob.getContentType(), data: Utilities.base64Encode(blob.getBytes()) });
     }
     if (b.action === "del" && t.kind === "del") {
-      DriveApp.getFileById(t.drive_id).setTrashed(true);
+      const file = DriveApp.getFileById(t.drive_id);
+      if (!inFolder_(file)) return out_({ ok: false, error: "hors dossier" });
+      file.setTrashed(true);
       return out_({ ok: true });
     }
     return out_({ ok: false, error: "action" });
@@ -58,7 +69,7 @@ function doPost(e) {
 }
 
 function doGet() {
-  return out_({ ok: true, app: "japon-2027" });
+  return out_({ ok: true, app: "japon-2027", v: 2 });
 }
 
 // À lancer une fois depuis l'éditeur (bouton Exécuter) pour accorder l'accès au Drive.

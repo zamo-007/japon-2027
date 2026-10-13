@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://hsggyjmeurjsiwegqzbo.supabase.co; connect-src 'self' https://hsggyjmeurjsiwegqzbo.supabase.co wss://hsggyjmeurjsiwegqzbo.supabase.co https://script.google.com https://script.googleusercontent.com; media-src 'self' blob:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Japon 2027</title>
 <meta name="description" content="Organisation collaborative de notre voyage au Japon : préparation, itinéraire, budget et dépenses.">
 <meta name="theme-color" content="#FFE1EA">
@@ -475,6 +477,8 @@ html[data-theme="sakura"] #viewer .ldr,html[data-theme="sakura"] .upov .ldr{--lc
 .dls-top b{display:flex;align-items:center;gap:8px}
 .vimg .vload{position:absolute;inset:0;z-index:2;display:grid;place-items:center;pointer-events:none}
 @media (prefers-reduced-motion:reduce){.ldr{animation-duration:9s}.ldr i{animation-duration:4s}}
+.pendban{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:12px 14px;border-radius:14px;border:1px solid var(--lantern);background:color-mix(in srgb,var(--lantern) 12%,var(--ink-2));color:var(--paper);font:inherit;font-size:14px;cursor:pointer}
+.pendban span:nth-child(2){flex:1;min-width:0}.pendban .link{color:var(--lantern);font-weight:600}
 .qpick{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}.qpick>span{font-size:14px}
 .pgroup .cat-title{margin:0;text-transform:none;letter-spacing:.02em;font-size:13px}
 .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
@@ -762,7 +766,7 @@ const byOrder = (a,b) => (a.order ?? 0) - (b.order ?? 0) || String(a.createdAt||
 const T = id => S.travelers.find(t => t.id === id);
 const isSak = () => document.documentElement.getAttribute("data-theme")==="sakura";
 const SAK_AV={"#E9A93F":"#D44C7A","#E58AA8":"#9B6BD0","#7FC8A0":"#3FA37A","#8FB3E8":"#4D8FD6","#C9A6E8":"#B36FC4","#E8806F":"#E07068","#D9CF7A":"#2A9D9D","#6FD0D0":"#5C7FBF"};
-const avc = c => isSak()?(SAK_AV[String(c||"").toUpperCase()]||c):c;
+const avc = c => {c=HEX_RE.test(String(c||""))?c:"#E9A93F";return isSak()?(SAK_AV[c.toUpperCase()]||c):c};
 const av = (t,cls="") => t ? `<span class="avatar ${cls}" style="--c:${avc(t.color)}" title="${esc(t.name)}">${esc((t.name||"?")[0].toUpperCase())}</span>` : "";
 function copyText(t){(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("Lien copié"),()=>toast("Copie impossible sur cet appareil"))}
 function toast(m){const el=$("#toast");el.textContent=m;el.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove("on"),1800)}
@@ -774,13 +778,30 @@ let sess=ls.get("japon-sess")||"", meId=null, isAdmin=false, roster=[];
 const COLS=["travelers","tasks","stages","activities","budget","expenses"];
 function rpc(fn,args){return sb.rpc(fn,args).then(({data,error})=>{if(error)throw error;return data})}
 function notifyOthers(){try{chan&&chan.send({type:"broadcast",event:"changed",payload:{t:Date.now()}})}catch(e){}}
+/* Données reçues : on ne fait confiance à aucun champ (un membre pourrait écrire n'importe quoi via l'API). */
+const ID_RE=/^[A-Za-z0-9_-]{1,64}$/, DATE_RE=/^\d{4}-\d{2}-\d{2}$/, HEX_RE=/^#[0-9A-Fa-f]{3,8}$/;
+function cleanItem(col,d){
+  if(!d||typeof d!=="object"||Array.isArray(d))return {};
+  for(const k of ["payer","stage","owner","createdBy","from","to","who","kind","cat_id"])if(k in d&&!(typeof d[k]==="string"&&ID_RE.test(d[k])))delete d[k];
+  if("among" in d)d.among=Array.isArray(d.among)?d.among.filter(x=>typeof x==="string"&&ID_RE.test(x)):[];
+  for(const k of ["done","joined","amounts"])if(k in d){if(!d[k]||typeof d[k]!=="object"||Array.isArray(d[k]))d[k]={};else for(const x of Object.keys(d[k]))if(!ID_RE.test(x))delete d[k][x]}
+  for(const k of ["date","start","end","checkout"])if(k in d&&!(d[k]==null||(typeof d[k]==="string"&&DATE_RE.test(d[k]))))delete d[k];
+  for(const k of ["url","resaUrl"])if(k in d)d[k]=safeUrl(d[k]);
+  for(const k of ["price","amount","nights","order","rate","target","lat","lon","budget"])if(k in d&&d[k]!=null&&typeof d[k]!=="number"){const n=Number(d[k]);d[k]=Number.isFinite(n)?n:null}
+  if("color" in d&&!(typeof d.color==="string"&&HEX_RE.test(d.color)))d.color="#E9A93F";
+  for(const k of ["title","name","note","label","body","cat","area","cuisine","time","transport","currency","createdAt"])if(k in d&&d[k]!=null&&typeof d[k]!=="string")d[k]=String(d[k]);
+  return d;
+}
 async function loadAll(){
   const rows=await rpc("get_items",{p_code:code,p_token:sess});
+  (rows||[]).forEach(r=>{r.data=cleanItem(r.col,r.data)});
   const fresh={};COLS.forEach(c=>fresh[c]=[]);let trip={};
   (rows||[]).forEach(r=>{if(r.data&&r.data._deleted)return;if(r.col==="settings"){if(r.id==="trip")trip={...r.data}}else if(fresh[r.col])fresh[r.col].push({id:r.id,...r.data})});
   Object.assign(S,fresh);S.trip=trip;
 }
-function scheduleRefetch(ms=250){clearTimeout(refetchT);refetchT=setTimeout(async()=>{if(!sess||!me)return;try{await loadAll();render()}catch(e){fail(e)}},ms)}
+let pendingReq=[];
+async function loadPending(){if(!isAdmin||!sess){pendingReq=[];return}try{pendingReq=await rpc("admin_pending",{p_code:code,p_token:sess})||[]}catch(e){pendingReq=[]}}
+function scheduleRefetch(ms=250){clearTimeout(refetchT);refetchT=setTimeout(async()=>{if(!sess||!me)return;try{await loadAll();await loadPending();render()}catch(e){fail(e)}},ms)}
 async function write(fn,args){try{await rpc(fn,{p_code:code,p_token:sess,...args});notifyOthers()}catch(e){fail(e);scheduleRefetch(0)}}
 async function put(col,id,data){
   const a=S[col],i=a.findIndex(x=>x.id===id);i<0?a.push({id,...data}):a[i]={id,...data};render();
@@ -801,6 +822,7 @@ async function setTrip(data){
 function deepMerge(t,s){for(const k in s){if(s[k]&&typeof s[k]==="object"&&!Array.isArray(s[k])){if(!t[k]||typeof t[k]!=="object")t[k]={};deepMerge(t[k],s[k])}else t[k]=s[k]}}
 function fail(e){
   if(e&&e.code==="28P01"){sessionExpired();return}
+  if(e&&e.code==="28P02"){showPending();return}
   if(e&&e.code==="42501"){toast("Tu n'as pas le droit de modifier cet élément.");return}
   if(e&&(e.code==="28000"||/code invalide/.test(e.message||""))){ls.set("japon-code","");code=null;showGate("Ce code ne fonctionne plus. Demande le nouveau code à l'organisateur.");return}
   toast(navigator.onLine===false?"Pas de connexion : modification non enregistrée.":"Modification non enregistrée, réessaie.");
@@ -825,7 +847,7 @@ async function enterTrip(){
   $("#gate").hidden=true;
   await refreshRoster();
   if(sess){
-    try{const w=await rpc("whoami",{p_code:code,p_token:sess});meId=w.me;isAdmin=!!w.admin;await startTrip();return}
+    try{const w=await rpc("whoami",{p_code:code,p_token:sess});meId=w.me;isAdmin=!!w.admin;if(w.pending){showPending();return}await startTrip();return}
     catch(e){if(e&&e.code==="28P01"){clearSess();lg={step:"pin",id:ls.get("japon-last")||null,phase:"enter",first:"",msg:"Pour ta sécurité, entre de nouveau ton code PIN.",busy:false}}else throw e}
   }
   showLogin();
@@ -836,6 +858,16 @@ function showLogin(){
   if(lg.step==="pin"){const r=roster.find(x=>x.id===lg.id);if(!r)lg={step:"list",id:null,phase:"enter",first:"",msg:"",busy:false};else if(!r.has_pin&&lg.phase==="enter")lg.phase="create"}
   lgKey="";closeSettings();render();
 }
+function showPending(){lg={step:"pending",id:meId,name:ls.get("japon-pending-name")||"",phase:"enter",first:"",msg:"",busy:false};showLogin();startPendingPoll()}
+let pendingT=0;
+function startPendingPoll(){clearInterval(pendingT);pendingT=setInterval(()=>{if(lg.step==="pending"&&document.visibilityState==="visible")checkPending(true)},20000)}
+async function checkPending(silent){
+  if(!sess)return;if(!silent){lg.busy=true;paintLogin(true)}
+  try{const w=await rpc("whoami",{p_code:code,p_token:sess});lg.busy=false;
+    if(!w.pending){clearInterval(pendingT);meId=w.me;isAdmin=!!w.admin;lg={step:"list",id:null,phase:"enter",first:"",msg:"",busy:false};await startTrip();if(me){initSeen();syncPush();toast("Bienvenue "+me.name)}return}
+    if(!silent){lg.msg="Pas encore validé : l'organisateur n'a pas encore accepté.";paintLogin(true)}
+  }catch(e){lg.busy=false;if(e&&e.code==="28P01"){clearInterval(pendingT);sessionExpired();return}if(!silent){lg.msg="Connexion impossible. Réessaie.";paintLogin(true)}}
+}
 async function sessionExpired(){
   const last=meId||ls.get("japon-last");clearSess();await refreshRoster();
   lg={step:"pin",id:last,phase:"enter",first:"",msg:"Ta session a expiré : entre de nouveau ton code PIN.",busy:false};showLogin();
@@ -844,6 +876,7 @@ async function authed(res){
   if(sess&&sess!==res.token){const old=sess;rpc("logout",{p_code:code,p_token:old}).catch(()=>{})}
   lgBrowse=false;
   sess=res.token;ls.set("japon-sess",sess);meId=res.me;isAdmin=!!res.admin;ls.set("japon-last",meId);
+  if(res.pending){const r=roster.find(x=>x.id===meId);ls.set("japon-pending-name",lg.name||(r&&r.name)||"");showPending();return}
   lg={step:"list",id:null,phase:"enter",first:"",msg:"",busy:false};await startTrip();
   if(me){initSeen();syncPush();toast("Bienvenue "+me.name)}
 }
@@ -870,7 +903,7 @@ async function submitPin(pin,extra){
     lg.busy=true;paintLogin();
     try{const res=lg.step==="new"?await rpc("join_trip",{p_code:code,p_name:lg.name,p_color:PALETTE[roster.length%PALETTE.length],p_pin:pin})
         :await rpc("set_first_pin",{p_code:code,p_traveler:lg.id,p_pin:pin});lg.busy=false;
-      if(res&&res.ok){if(lg.step==="new")notifyLater=`${lg.name} a rejoint le voyage !`;await authed(res);if(notifyLater){notifyGroup("prep",notifyLater);notifyLater=""}return}
+      if(res&&res.ok){await authed(res);return}
       await refreshRoster();lg.msg=LG_ERR[res.error]||"Impossible pour l'instant.";
       if(res.error==="already"){lg.phase="enter";lg.first=""}else if(res.error==="exists"){lg={step:"list",id:null,phase:"enter",first:"",msg:LG_ERR.exists,busy:false}}else{lg.phase="create";lg.first=""}
     }catch(e){lg.busy=false;lg.msg="Connexion impossible. Vérifie ton réseau.";lg.phase="create";lg.first=""}
@@ -880,7 +913,7 @@ let notifyLater="";
 async function startTrip(){
   $("#gate").hidden=true;
   try{const qt=new URLSearchParams(location.search).get("tab")||sessionStorage.getItem("japon-tab");sessionStorage.removeItem("japon-tab");if(qt&&["prep","plan","budget","split","photos"].includes(qt))tab=qt}catch(e){}
-  await loadAll();ready=true;pickMe();if(!me){await sessionExpired();return}
+  await loadAll();await loadPending();ready=true;pickMe();if(!me){await sessionExpired();return}
   initSeen();render();loadPhotos();refreshPushState().then(renderSettings);
   if(liveOn)return;liveOn=true;
   try{chan&&sb.removeChannel(chan)}catch(e){}
@@ -939,6 +972,13 @@ function paintLogin(force){
   if(!force&&key===lgKey)return;lgKey=key;
   const r=roster.find(x=>x.id===lg.id), title=S.trip.title||"Japon 2027";
   let h="";
+  if(lg.step==="pending"){
+    $("#loginTitle").innerHTML=esc(title)+"<span>Demande envoyée</span>";
+    $("#loginBody").innerHTML=`<div class="pinwho">${LDR()}<div><b>${esc(lg.name||"Ta demande")}</b><small class="muted">L'organisateur doit confirmer que c'est bien toi avant que tu accèdes au voyage. Cette page s'ouvrira toute seule dès qu'il aura accepté.</small></div></div>
+      <p class="gate-msg" role="alert">${esc(lg.msg||"")}</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" data-act="pendCheck" ${lg.busy?"disabled":""}>${lg.busy?busyBtn("Vérification…"):"Vérifier maintenant"}</button><button class="btn ghost" data-act="logout">Annuler</button></div>`;
+    return;
+  }
   if(lg.step==="list"){
     $("#loginTitle").innerHTML=esc(title)+"<span>Qui se connecte ?</span>";
     h=`<div class="who">${roster.length?roster.map(t=>`<button data-act="pickWho" data-id="${t.id}">${av(t,"lg")}<span>${esc(t.name)}${t.has_pin?"":`<small class="who-new">code à créer</small>`}</span></button>`).join(""):`<p class="muted" style="margin:0">Personne n'est encore inscrit. Ajoute ton prénom pour commencer.</p>`}</div>
@@ -993,7 +1033,7 @@ function renderPrep(){
   const catOpts=[...new Set(["Dates & congés","Vol","Budget","Documents","Hébergement","Sur place"].concat(cats))].map(c=>`<option>${esc(c)}</option>`).join("");
   return hero("img/pont.jpg","準備 · junbi","Préparation du voyage", (me?`${esc(me.name)}, tu es prêt·e à ${mine} %.`:"") + (S.trip.start?` · ${tripDatesLabel()}`:` · <button class="link-btn" data-tab="plan">Choisir les dates du voyage</button>`),
     `<div class="ring" style="--p:${global}" aria-label="Préparation globale ${global} %"><div><span><b class="num">${global}%</b><br><small class="muted">du groupe</small></span></div></div>`)
-  + `<div class="wrap">${notice()}${renderCheer(groupPct())}<div class="grid2">
+  + `<div class="wrap">${notice()}${isAdmin&&pendingReq.length?`<button class="pendban" data-act="openSettings">${LDR("sm")}<span><b>${pendingReq.length} demande${pendingReq.length>1?"s":""} d'accès en attente</b> · ${pendingReq.map(x=>esc(x.name)).join(", ")}</span><span class="link">Voir ›</span></button>`:""}${renderCheer(groupPct())}<div class="grid2">
     <div class="panel"><h3>Ma liste<small>${me?esc(me.name):""} · ${MT.filter(t=>me&&t.done&&t.done[me.id]).length}/${MT.length} étapes</small></h3>
       ${list}
       <div style="margin-top:14px">${open.task?`<form class="form" data-form="task">
@@ -1116,12 +1156,19 @@ function openSettings(){settingsOpen=true;$("#settings").hidden=false;renderSett
 function closeSettings(){settingsOpen=false;$("#settings").hidden=true;document.body.style.overflow=""}
 function adminBlock(){
   const others=roster.filter(r=>r.id!==meId);
-  return `<section class="set"><h3>Organisateur</h3>
+  const pend=pendingReq.length?`<section class="set"><h3>Demandes d'accès</h3>
+    <p class="muted small" style="margin:0">Vérifie auprès de la personne avant d'accepter : quelqu'un qui a le lien peut se faire passer pour un ami.</p>
+    <div class="adm">${pendingReq.map(r=>`<div class="adm-row"><div class="nm">${av(r,"xs")}<span>${esc(r.name)}<small class="muted">${r.claim?"a créé un code pour ce prénom":"nouveau voyageur"} · ${r.since?new Date(r.since).toLocaleString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}):""}</small></span></div>
+      <button class="btn sm primary" data-act="admApprove" data-id="${esc(r.id)}">Accepter</button><button class="btn sm ghost" data-act="admRefuse" data-id="${esc(r.id)}">Refuser</button></div>`).join("")}</div></section>`:"";
+  return `${pend}<section class="set"><h3>Organisateur</h3>
     <p class="muted small" style="margin:0">Réinitialiser un code : le voyageur en choisira lui-même un nouveau à sa prochaine connexion. Tu ne connais jamais les codes.</p>
     <div class="adm">${others.length?others.map(r=>`<div class="adm-row"><div class="nm">${av(r,"xs")}<span>${esc(r.name)}<small class="muted">${r.has_pin?"Code PIN défini":"Code à créer à la prochaine connexion"}</small></span></div>
       ${r.has_pin?`<button class="btn sm" data-act="admReset" data-id="${r.id}">Réinitialiser le PIN</button>`:""}<button class="btn sm ghost" data-act="admRemove" data-id="${r.id}">Retirer du voyage</button></div>`).join(""):`<p class="muted small">Personne d'autre pour l'instant.</p>`}</div>
     <p class="muted small" style="margin:0">Tu peux aussi supprimer n'importe quelle photo depuis la visionneuse. Retirer un voyageur garde ses dépenses dans l'historique.</p></section>
   <section class="set"><h3>Google Drive · photos originales</h3>
+    ${driveOn&&driveOld?`<p class="small neg" style="margin:0"><b>Mise à jour de sécurité requise.</b> Recopie le nouveau script (bouton ci-dessous) dans ton projet Apps Script, puis <b>Déployer › Gérer les déploiements</b> › crayon › Version : <b>Nouvelle version</b> › Déployer. Recolle ensuite l'URL et touche « Relier ». En attendant, le téléchargement des originaux est suspendu.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-act="copyScript">Copier le script</button></div>
+      <form class="add-me" onsubmit="return false"><input type="url" id="driveUrl" placeholder="https://script.google.com/macros/s/…/exec" autocapitalize="off" spellcheck="false"><button class="btn primary" type="button" data-act="driveLink">Relier</button></form>`:""}
     ${driveOn?`<p class="small" style="margin:0"><span class="pos">Relié.</span> Les originaux arrivent dans le dossier « Japon 2027 – photos originales » de ton Drive${driveBytes?` (${mb(driveBytes)} pour l'instant)`:""}. L'appli n'en garde qu'une version optimisée.</p>
       <div><button class="btn ghost sm" data-act="driveUnlink">Délier le Drive</button></div>`
     :`<p class="muted small" style="margin:0">Une fois relié, chaque photo est optimisée dans l'appli et son original intact est rangé dans ton Google Drive (15 Go gratuits partagés avec Gmail). À faire une seule fois, depuis un ordinateur :</p>
@@ -1175,11 +1222,11 @@ async function photosApi(body){
 }
 async function loadPhotos(){
   if(!code||!sess)return;photosLoading=true;photosErr="";if(tab==="photos")render();
-  try{const j=await photosApi({action:"list"});photos=j.items||[];if(j.used!=null)photoUsed=Number(j.used)||0;if(j.limit)photoLimit=Number(j.limit);driveOn=!!j.drive;driveBytes=Number(j.driveBytes)||0;if(j.driveLimit)driveLimit=Number(j.driveLimit);
+  try{const j=await photosApi({action:"list"});photos=j.items||[];if(j.used!=null)photoUsed=Number(j.used)||0;if(j.limit)photoLimit=Number(j.limit);driveOn=!!j.drive;driveOld=!!j.driveOld;driveBytes=Number(j.driveBytes)||0;if(j.driveLimit)driveLimit=Number(j.driveLimit);
     const have=new Set(photos.map(x=>x.path));sel.forEach(x=>{if(!have.has(x))sel.delete(x)});renderSettings()}catch(e){photosErr="Impossible de charger les photos pour l'instant."}
   photosLoading=false;if(tab==="photos")render();else updateBadges();renderViewer();
 }
-let photoUsed=0, photoLimit=1073741824, photoDay="all", driveOn=false, driveBytes=0, driveLimit=5*1073741824, origDl={};
+let driveOld=false, photoUsed=0, photoLimit=1073741824, photoDay="all", driveOn=false, driveBytes=0, driveLimit=5*1073741824, origDl={};
 let selMode=false, sel=new Set(), batch=null;
 const DRIVE_MAX=36*1024*1024;
 /* Version optimisée : 2560 px max, JPEG qualité 0,85 (souvent 4 à 8 fois plus légère). */
@@ -1230,7 +1277,7 @@ function saveFiles(files,zipName){
 }
 async function fetchOriginal(p){
   const st=origDl[p.path]={state:"load",pct:0};renderViewer();
-  try{st.file=await fetchPhotoFile(p,(l,t)=>{st.pct=t?l/t:0;paintViewerDl(p)});st.state="ready"}catch(e){st.state="err"}
+  try{st.file=await fetchPhotoFile(p,(l,t)=>{st.pct=t?l/t:0;paintViewerDl(p)});st.state="ready"}catch(e){st.state="err";if(e&&e.err==="script_old")toast("Originaux suspendus : l'organisateur doit mettre à jour le script Google Drive.")}
   renderViewer();
 }
 function paintViewerDl(p){const st=origDl[p.path],el=document.getElementById("vdl");if(!st||!el)return;el.style.setProperty("--p",Math.round(st.pct*100));const t=el.querySelector("span");if(t)t.innerHTML=`${LDR("sm")} Téléchargement… ${Math.round(st.pct*100)} %`}
@@ -2047,7 +2094,7 @@ function renderSplit(){
   const total=real.reduce((s,e)=>s+toEur(Number(e.amount)||0,e.currency),0);
   const exps=real.slice().sort((a,b)=>String(b.date||b.createdAt).localeCompare(String(a.date||a.createdAt)));
   const myBal=me?(bal[me.id]||0):0, myOut=me?set.filter(x=>x.from===me.id):[], myIn=me?set.filter(x=>x.to===me.id):[];
-  const settleBtn=x=>{const lbl=me&&x.from===me.id?"J'ai remboursé":me&&x.to===me.id?"J'ai été remboursé":"Marquer comme remboursé";return `<button class="btn sm ${me&&(x.from===me.id||x.to===me.id)?"primary":""}" data-act="settle" data-from="${x.from}" data-to="${x.to}" data-amt="${x.amt.toFixed(2)}">${lbl}</button>`};
+  const settleBtn=x=>{const lbl=me&&x.from===me.id?"J'ai remboursé":me&&x.to===me.id?"J'ai été remboursé":"Marquer comme remboursé";return `<button class="btn sm ${me&&(x.from===me.id||x.to===me.id)?"primary":""}" data-act="settle" data-from="${esc(x.from)}" data-to="${esc(x.to)}" data-amt="${x.amt.toFixed(2)}">${lbl}</button>`};
   const mine = me ? `<div class="panel mybal ${myBal>0.005?"plus":myBal<-0.005?"minus":"even"}"><div class="mbtop"><div><small>MON SOLDE</small><b class="num">${myBal>0.005?"+":""}${eur2(myBal)}</b></div>
       <p>${myBal>0.005?"Tu es en positif : on te doit de l'argent.":myBal<-0.005?"Tu es en négatif : tu dois de l'argent.":"Tu es à l'équilibre, personne ne te doit rien et tu ne dois rien."}</p></div>
       ${myOut.length||myIn.length?`<div class="mylines">${myOut.map(x=>`<div class="settle">${av(T(x.to),"xs")}<span>Tu dois <b class="num">${eur2(x.amt)}</b> à ${esc(T(x.to).name)}</span><span style="margin-left:auto">${settleBtn(x)}</span></div>`).join("")}${myIn.map(x=>`<div class="settle">${av(T(x.from),"xs")}<span>${esc(T(x.from).name)} te doit <b class="num">${eur2(x.amt)}</b></span><span style="margin-left:auto">${settleBtn(x)}</span></div>`).join("")}</div>`:""}</div>` : "";
@@ -2102,7 +2149,11 @@ document.addEventListener("click",e=>{
   if(a==="pickWho"&&me&&id===me.id&&sess){lgBrowse=false;render();return}
   if(a==="pickWho"){const r=roster.find(x=>x.id===id);lg={step:"pin",id,phase:r&&r.has_pin?"enter":"create",first:"",msg:"",busy:false};paintLogin(true);return}
   if(a==="lgBack"){lg={step:"list",id:null,phase:"enter",first:"",msg:"",busy:false};refreshRoster().then(()=>paintLogin(true));paintLogin(true);return}
-  if(a==="logout"){logout();return}
+  if(a==="logout"){clearInterval(pendingT);logout();return}
+  if(a==="pendCheck"){checkPending(false);return}
+  if(a==="admApprove"||a==="admRefuse"){const pr=pendingReq.find(x=>x.id===id);b.disabled=true;b.innerHTML=busyBtn(a==="admApprove"?"Validation…":"Refus…");
+    const fn=a==="admApprove"?"admin_approve":pr&&pr.claim?"admin_reset_pin":"admin_remove_traveler";
+    rpc(fn,{p_code:code,p_token:sess,p_traveler:id}).then(async()=>{toast(a==="admApprove"?`${pr?pr.name:"Voyageur"} a accès au voyage`:`Demande de ${pr?pr.name:"ce voyageur"} refusée`);await loadPending();await refreshRoster();await loadAll().catch(()=>{});render();renderSettings()}).catch(e=>{fail(e);renderSettings()});return}
   if(a==="admReset"||a==="admRemove"){if(!b.dataset.c){b.dataset.c="1";b.textContent=a==="admReset"?"Confirmer la réinitialisation":"Confirmer le retrait";b.style.color="var(--bad)";return}
     const t=roster.find(x=>x.id===id)||T(id);b.disabled=true;b.innerHTML=busyBtn(a==="admReset"?"Réinitialisation…":"Retrait…");
     rpc(a==="admReset"?"admin_reset_pin":"admin_remove_traveler",{p_code:code,p_token:sess,p_traveler:id}).then(async()=>{
@@ -2130,7 +2181,7 @@ document.addEventListener("click",e=>{
   if(a==="saveOrig"){const p=photos&&photos[viewIdx];if(p)saveOriginal(p);return}
   if(a==="copyScript"){fetch("drive/apps-script.gs",{cache:"no-cache"}).then(r=>r.text()).then(t=>navigator.clipboard.writeText(t)).then(()=>toast("Script copié")).catch(()=>{window.open("drive/apps-script.gs","_blank")});return}
   if(a==="driveLink"||a==="driveUnlink"){const inp=$("#driveUrl"),url=a==="driveUnlink"?"":(inp?inp.value.trim():"");const m=$("#driveMsg");if(m)m.textContent="";b.disabled=true;b.innerHTML=busyBtn(a==="driveLink"?"Vérification…":"Un instant…");
-    photosApi({action:"drive_config",url}).then(r=>{driveOn=!!r.drive;toast(driveOn?"Google Drive relié":"Google Drive délié");loadPhotos();renderSettings()})
+    photosApi({action:"drive_config",url}).then(r=>{driveOn=!!r.drive;driveOld=driveOn&&Number(r.v)<2;toast(!driveOn?"Google Drive délié":driveOld?"Relié, mais le script n'est pas à jour":"Google Drive relié");loadPhotos();renderSettings()})
     .catch(e=>{b.disabled=false;const mm=$("#driveMsg");if(mm)mm.textContent=e.err==="url"?"Ce lien ne ressemble pas à une adresse d'application web Apps Script (…/exec).":e.err==="ping"?"Le script ne répond pas comme prévu : vérifie le déploiement (Exécuter en tant que : Moi · Accès : Tout le monde).":"Impossible pour l'instant."});return}
   if(a==="openPhoto"){viewIdx=Number(b.dataset.i);renderViewer();return}
   if(a==="closePhoto"){viewIdx=-1;renderViewer();return}

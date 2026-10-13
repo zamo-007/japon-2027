@@ -35,6 +35,11 @@ async function driveUrl(tid: string): Promise<string | null> {
   const { data } = await admin.from("trips").select("drive_url").eq("id", tid).maybeSingle();
   return data?.drive_url && DRIVE_RE.test(data.drive_url) ? data.drive_url : null;
 }
+// Version du script Apps Script : la v2 refuse tout fichier hors du dossier des photos.
+async function driveSafe(tid: string): Promise<boolean> {
+  const { data } = await admin.from("trips").select("drive_v").eq("id", tid).maybeSingle();
+  return Number(data?.drive_v) >= 2;
+}
 async function callScript(url: string, body: unknown) {
   const r = await fetch(url, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(body), redirect: "follow" });
   const t = await r.text();
@@ -53,7 +58,9 @@ Deno.serve(async (req) => {
       if (!t || new Date(t.expires_at).getTime() < Date.now()) return json({ error: "ticket" }, 403);
       if (body.done && t.kind === "put" && t.path) {
         const id = String(body.done).replace(/[^A-Za-z0-9_-]/g, "").slice(0, 100);
-        await admin.from("photo_files").update({ drive_id: id }).eq("path", t.path).eq("trip_id", t.trip_id);
+        if (id.length < 20) return json({ error: "id" }, 400);
+        // Une seule fois par photo : un identifiant déjà enregistré ne peut pas être remplacé.
+        await admin.from("photo_files").update({ drive_id: id }).eq("path", t.path).eq("trip_id", t.trip_id).is("drive_id", null);
         await admin.from("drive_tickets").update({ expires_at: new Date().toISOString() }).eq("token", t.token);
       }
       return json({ ok: true, kind: t.kind, name: t.name, drive_id: t.drive_id });
@@ -102,7 +109,7 @@ Deno.serve(async (req) => {
       const { data: files } = await admin.from("photo_files").select("path,drive_id,orig_name,orig_size").eq("trip_id", tid).not("drive_id", "is", null);
       const fm = new Map((files ?? []).map((f) => [f.path, f]));
       const driveBytes = (files ?? []).reduce((a, f) => a + (Number(f.orig_size) || 0), 0);
-      const meta = { used, limit: QUOTA, drive: !!durl, driveBytes, driveLimit: DRIVE_QUOTA };
+      const meta = { used, limit: QUOTA, drive: !!durl, driveOld: !!durl && !(await driveSafe(tid)), driveBytes, driveLimit: DRIVE_QUOTA };
       if (!items.length) return json({ items: [], ...meta });
       const thumbPaths = items.map((i) => i.path.replace(`${tid}/`, `${tid}/_thumbs/`) + ".jpg");
       const [full, thumbs] = await Promise.all([
@@ -125,6 +132,7 @@ Deno.serve(async (req) => {
       const durl = await driveUrl(tid);
       const { data: f } = await admin.from("photo_files").select("drive_id,orig_name").eq("path", path).eq("trip_id", tid).maybeSingle();
       if (!durl || !f?.drive_id) return json({ error: "no_original" }, 404);
+      if (!(await driveSafe(tid))) return json({ error: "script_old" }, 409);
       return json({ url: durl, name: f.orig_name, ticket: await ticket(tid, "get", 10, { drive_id: f.drive_id, name: f.orig_name }) });
     }
 
@@ -138,7 +146,7 @@ Deno.serve(async (req) => {
         if (owner !== me && !isAdmin) { res.push({ path, ok: false }); continue; }
         await store.remove([path, path.replace(`${tid}/`, `${tid}/_thumbs/`) + ".jpg"]);
         const { data: f } = await admin.from("photo_files").select("drive_id").eq("path", path).eq("trip_id", tid).maybeSingle();
-        if (f?.drive_id && durl) {
+        if (f?.drive_id && durl && (await driveSafe(tid))) {
           try { await callScript(durl, { action: "del", ticket: await ticket(tid, "del", 5, { drive_id: f.drive_id }) }); } catch (_e) { /* l'original reste dans le Drive */ }
         }
         await admin.from("photo_files").update({ drive_id: null }).eq("path", path).eq("trip_id", tid);
@@ -159,8 +167,8 @@ Deno.serve(async (req) => {
       if (!DRIVE_RE.test(url)) return json({ error: "url" }, 400);
       const r = await callScript(url, { action: "ping" });
       if (!r?.ok || r.app !== "japon-2027") return json({ error: "ping", detail: r?.error ?? null }, 400);
-      await admin.from("trips").update({ drive_url: url }).eq("id", tid);
-      return json({ ok: true, drive: true });
+      await admin.from("trips").update({ drive_url: url, drive_v: Number(r.v) || 1 }).eq("id", tid);
+      return json({ ok: true, drive: true, v: Number(r.v) || 1 });
     }
     return json({ error: "action" }, 400);
   } catch (_e) {
