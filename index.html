@@ -438,6 +438,22 @@ html[data-theme="light"] .panel{box-shadow:0 1px 3px rgba(24,32,54,.06)}
 .gbar{height:10px;border-radius:99px;background:color-mix(in srgb,var(--paper) 12%,transparent);overflow:hidden}
 .gbar i{display:block;height:100%;border-radius:99px;background:var(--lantern);transition:width .4s}
 .gauge.warn .gbar i{background:#E0A030}.gauge.crit .gbar i{background:var(--bad)}
+.phead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.pgrid.selmode .ptile img{transition:transform .15s,opacity .15s}
+.ptile.on img{transform:scale(.9);border-radius:8px}.ptile.on{background:color-mix(in srgb,var(--lantern) 30%,var(--ink-3))}
+.pcheck{position:absolute;top:6px;left:6px;z-index:2;width:24px;height:24px;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,.3);box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.ptile.on .pcheck{background:var(--lantern);border-color:#fff}
+.ptile.on .pcheck::after{content:"";position:absolute;left:6px;top:2px;width:6px;height:11px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.selbar{position:sticky;bottom:calc(var(--tabs-h,0px) + 10px);z-index:15;display:grid;gap:10px;padding:14px;border-radius:16px;border:1px solid var(--line);background:color-mix(in srgb,var(--ink-2) 94%,transparent);backdrop-filter:blur(10px);box-shadow:0 8px 28px rgba(0,0,0,.25)}
+@media (max-width:760px){.selbar{bottom:calc(80px + env(safe-area-inset-bottom,0px))}}
+.sb-top{display:flex;justify-content:space-between;align-items:center;gap:10px}.sb-act{display:flex;gap:8px;flex-wrap:wrap}.sb-act .btn{flex:1 1 140px}
+#dlSheet{position:fixed;left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:85;max-width:560px;margin:0 auto}
+@media (min-width:761px){#dlSheet{bottom:20px}}
+.dls-in{display:grid;gap:10px;padding:14px 16px;border-radius:16px;background:var(--ink-2);border:1px solid var(--line);box-shadow:0 10px 30px rgba(0,0,0,.35);color:var(--paper)}
+.dls-top{display:flex;justify-content:space-between;gap:10px}.dls-act{display:flex;gap:8px;flex-wrap:wrap}.dls-act .btn{flex:1 1 160px}
+.vdl{position:relative;flex:1 1 220px;min-height:38px;border-radius:10px;overflow:hidden;background:rgba(255,255,255,.12);display:grid;place-items:center;font-size:14px}
+.vdl::before{content:"";position:absolute;inset:0;width:calc(var(--p,0)*1%);background:var(--lantern);opacity:.85;transition:width .2s}
+.vdl span{position:relative;color:#fff;font-weight:600}
 .qpick{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}.qpick>span{font-size:14px}
 .pgroup .cat-title{margin:0;text-transform:none;letter-spacing:.02em;font-size:13px}
 .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}
@@ -677,6 +693,7 @@ canvas.confetti{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:n
 <div class="updatebar" id="updateBar" hidden><span>Une nouvelle version de l'appli est disponible.</span><button class="btn primary sm" onclick="location.reload()">Mettre à jour</button></div>
 <div class="sheet-bg" id="settings" hidden data-act="closeSettingsBg"><div class="sheet" role="dialog" aria-modal="true" aria-label="Paramètres"><div class="sheet-head"><h2>Paramètres</h2><button class="icon-btn" data-act="closeSettings" aria-label="Fermer" style="font-size:26px">×</button></div><div id="settingsBody" style="display:grid;gap:14px"></div></div></div>
 <div id="viewer" hidden role="dialog" aria-modal="true" aria-label="Photo"></div>
+<div id="dlSheet" hidden role="status" aria-live="polite"></div>
 
 <script>
 (() => {
@@ -1134,10 +1151,12 @@ async function photosApi(body){
 }
 async function loadPhotos(){
   if(!code||!sess)return;photosLoading=true;photosErr="";if(tab==="photos")render();
-  try{const j=await photosApi({action:"list"});photos=j.items||[];if(j.used!=null)photoUsed=Number(j.used)||0;if(j.limit)photoLimit=Number(j.limit);driveOn=!!j.drive;driveBytes=Number(j.driveBytes)||0;renderSettings()}catch(e){photosErr="Impossible de charger les photos pour l'instant."}
+  try{const j=await photosApi({action:"list"});photos=j.items||[];if(j.used!=null)photoUsed=Number(j.used)||0;if(j.limit)photoLimit=Number(j.limit);driveOn=!!j.drive;driveBytes=Number(j.driveBytes)||0;if(j.driveLimit)driveLimit=Number(j.driveLimit);
+    const have=new Set(photos.map(x=>x.path));sel.forEach(x=>{if(!have.has(x))sel.delete(x)});renderSettings()}catch(e){photosErr="Impossible de charger les photos pour l'instant."}
   photosLoading=false;if(tab==="photos")render();else updateBadges();renderViewer();
 }
-let photoUsed=0, photoLimit=1073741824, photoDay="all", driveOn=false, driveBytes=0, origDl={};
+let photoUsed=0, photoLimit=1073741824, photoDay="all", driveOn=false, driveBytes=0, driveLimit=5*1073741824, origDl={};
+let selMode=false, sel=new Set(), batch=null;
 const DRIVE_MAX=36*1024*1024;
 /* Version optimisée : 2560 px max, JPEG qualité 0,85 (souvent 4 à 8 fois plus légère). */
 function optimize(file,M=2560){return new Promise(res=>{
@@ -1162,21 +1181,79 @@ async function driveUpload(d,file,onPct){
     const j=await r.json().catch(()=>({}));if(!j.ok)throw new Error(j.error||"drive");onPct(1);return j;
   }finally{clearInterval(tick)}
 }
-async function fetchOriginal(p){
-  const st=origDl[p.path]={state:"load"};renderViewer();
-  try{
-    const t=await photosApi({action:"original",path:p.path});
-    const r=await fetch(t.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"get",ticket:t.ticket})});
-    const j=await r.json();if(!j.ok)throw new Error(j.error||"drive");
+/* ----- Téléchargement avec jauge (original depuis Drive, sinon fichier de l'appli) ----- */
+function xhrGet(opts,onProg){return new Promise((res,rej)=>{const x=new XMLHttpRequest();x.open(opts.method||"GET",opts.url);x.responseType=opts.type||"text";
+  if(opts.ctype)x.setRequestHeader("Content-Type",opts.ctype);
+  x.onprogress=e=>onProg(e.loaded,e.lengthComputable?e.total:0);
+  x.onload=()=>x.status>=200&&x.status<300?res(x.response):rej(new Error("http "+x.status));x.onerror=()=>rej(new Error("network"));x.send(opts.body||null)})}
+async function fetchPhotoFile(p,onProg){
+  if(p.orig){
+    const t=await photosApi({action:"original",path:p.path});const exp=Math.max(1,(p.origSize||p.size)*1.34+200);
+    const txt=await xhrGet({method:"POST",url:t.url,ctype:"text/plain;charset=utf-8",body:JSON.stringify({action:"get",ticket:t.ticket})},(l)=>onProg(Math.min(l,exp),exp));
+    const j=JSON.parse(txt);if(!j.ok)throw new Error(j.error||"drive");
     const bin=atob(j.data),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
-    st.file=new File([u8],j.name||t.name||p.name,{type:j.mime||"application/octet-stream"});st.state="ready";
-  }catch(e){st.state="err"}
+    onProg(exp,exp);return new File([u8],j.name||t.name||p.name,{type:j.mime||"application/octet-stream"});
+  }
+  if(!p.url)throw new Error("url");
+  const blob=await xhrGet({url:p.url,type:"blob"},(l,tot)=>onProg(l,tot||p.size||l));
+  return new File([blob],p.name,{type:blob.type||"image/jpeg"});
+}
+const canShareFiles=fs=>{try{return platform()!=="other"&&!!navigator.canShare&&navigator.canShare({files:fs})}catch(e){return false}};
+function saveFiles(files,zipName){
+  if(canShareFiles(files)){navigator.share({files}).catch(()=>{});return}
+  const one=files.length===1?files[0]:makeZip(files,zipName||"photos-japon-2027.zip");
+  const u=URL.createObjectURL(one),a=document.createElement("a");a.href=u;a.download=one.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000);
+}
+async function fetchOriginal(p){
+  const st=origDl[p.path]={state:"load",pct:0};renderViewer();
+  try{st.file=await fetchPhotoFile(p,(l,t)=>{st.pct=t?l/t:0;paintViewerDl(p)});st.state="ready"}catch(e){st.state="err"}
   renderViewer();
 }
-function saveOriginal(p){
-  const st=origDl[p.path];if(!st||!st.file)return;const f=st.file;
-  try{if(platform()!=="other"&&navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f]}).catch(()=>{});return}}catch(e){}
-  const u=URL.createObjectURL(f),a=document.createElement("a");a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000);
+function paintViewerDl(p){const st=origDl[p.path],el=document.getElementById("vdl");if(!st||!el)return;el.style.setProperty("--p",Math.round(st.pct*100));const t=el.querySelector("span");if(t)t.textContent=`Téléchargement… ${Math.round(st.pct*100)} %`}
+function saveOriginal(p){const st=origDl[p.path];if(st&&st.file)saveFiles([st.file])}
+/* Archive ZIP sans compression (les photos sont déjà compressées) pour l'ordinateur. */
+const CRC_T=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+function crc32(u8){let c=0xFFFFFFFF;for(let i=0;i<u8.length;i++)c=CRC_T[(c^u8[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0}
+function makeZip(files,name){
+  const parts=[],cent=[];let off=0;const enc=new TextEncoder(),used={};
+  files.forEach(f=>{let n=f.name;if(used[n]){const k=n.lastIndexOf(".");n=(k>0?n.slice(0,k):n)+"-"+(++used[f.name])+(k>0?n.slice(k):"")}else used[n]=1;
+    const nm=enc.encode(n),data=f._u8,crc=crc32(data),h=new DataView(new ArrayBuffer(30));
+    h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(8,0,true);h.setUint32(14,crc,true);h.setUint32(18,data.length,true);h.setUint32(22,data.length,true);h.setUint16(26,nm.length,true);
+    parts.push(h.buffer,nm,data);
+    const c=new DataView(new ArrayBuffer(46));c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint32(16,crc,true);c.setUint32(20,data.length,true);c.setUint32(24,data.length,true);c.setUint16(28,nm.length,true);c.setUint32(42,off,true);
+    cent.push(c.buffer,nm);off+=30+nm.length+data.length});
+  const cs=cent.reduce((a,b)=>a+(b.byteLength||b.length),0),e=new DataView(new ArrayBuffer(22));
+  e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cs,true);e.setUint32(16,off,true);
+  return new File([...parts,...cent,e.buffer],name,{type:"application/zip"});
+}
+/* ----- Sélection multiple : télécharger ou supprimer en lot ----- */
+const canDel=p=>!!(me&&(p.who===me.id||isAdmin));
+async function batchDownload(){
+  const list=(photos||[]).filter(p=>sel.has(p.path));if(!list.length)return;
+  batch={kind:"dl",n:list.length,done:0,pct:0,state:"run",files:[],errs:0};paintBatch();
+  const tot=list.reduce((a,p)=>a+(p.orig?p.origSize*1.34:p.size)||1,0);let base=0;
+  for(const p of list){const w=(p.orig?p.origSize*1.34:p.size)||1;
+    try{const f=await fetchPhotoFile(p,(l,t)=>{batch.pct=(base+(t?l/t:0)*w)/tot;paintBatch()});f._u8=new Uint8Array(await f.arrayBuffer());batch.files.push(f)}catch(e){batch.errs++}
+    base+=w;batch.done++;batch.pct=base/tot;paintBatch()}
+  batch.state="ready";paintBatch();
+}
+async function batchDelete(){
+  const list=(photos||[]).filter(p=>sel.has(p.path)&&canDel(p));if(!list.length)return;
+  batch={kind:"del",n:list.length,done:0,pct:0,state:"run",errs:0};paintBatch();
+  for(let k=0;k<list.length;k+=5){const chunk=list.slice(k,k+5);
+    try{const r=await photosApi({action:"delete_many",paths:chunk.map(p=>p.path)});(r.results||[]).forEach(x=>{if(!x.ok)batch.errs++})}catch(e){batch.errs+=chunk.length}
+    batch.done=Math.min(list.length,k+5);batch.pct=batch.done/list.length;paintBatch()}
+  batch.state="done";paintBatch();sel.clear();selMode=false;await loadPhotos();
+  setTimeout(()=>{if(batch&&batch.kind==="del"){batch=null;paintBatch()}},2200);
+}
+function paintBatch(){
+  const el=$("#dlSheet");if(!el)return;if(!batch){el.hidden=true;el.innerHTML="";return}
+  const b=batch,pc=Math.round(b.pct*100);el.hidden=false;
+  const title=b.kind==="dl"?(b.state==="ready"?`${b.files.length} photo${b.files.length>1?"s":""} prête${b.files.length>1?"s":""}`:`Téléchargement · ${b.done}/${b.n} photo${b.n>1?"s":""}`)
+    :(b.state==="done"?`${b.n-b.errs} photo${b.n-b.errs>1?"s":""} supprimée${b.n-b.errs>1?"s":""}`:`Suppression · ${b.done}/${b.n}`);
+  el.innerHTML=`<div class="dls-in"><div class="dls-top"><b>${title}</b><span class="num">${b.state==="run"?pc+" %":b.errs?`${b.errs} échec${b.errs>1?"s":""}`:"✓"}</span></div>
+    <div class="gbar"><i style="width:${b.state==="run"?pc:100}%"></i></div>
+    ${b.kind==="dl"&&b.state==="ready"?`<div class="dls-act">${b.files.length?`<button class="btn primary" data-act="batchSave">${canShareFiles(b.files)?"Enregistrer dans Photos / Fichiers":b.files.length>1?"Enregistrer (archive .zip)":"Enregistrer la photo"}</button>`:""}<button class="btn ghost" data-act="batchClose">Fermer</button></div>`:""}</div>`;
 }
 function putWithProgress(path,token,body,contentType,onPct){
   return new Promise((res,rej)=>{
@@ -1211,22 +1288,22 @@ async function uploadFiles(files){
     let body=f,name=f.name,type=f.type||"application/octet-stream";
     const toDrive=driveOn&&f.size<=DRIVE_MAX;
     if(toDrive){u.status="opt";paintUpload(i);const o=await optimize(f,2048);if(o){body=o;type="image/jpeg";name=f.name.replace(/\.[^.]+$/,"")+".jpg"}}
-    if(photoUsed+body.size*1.05>photoLimit){u.status="full";paintUpload(i);continue}
+    if(photoUsed+body.size*1.05>photoLimit||(toDrive&&driveBytes+f.size>driveLimit)){u.status="full";paintUpload(i);continue}
     u.status="up";u.pct=0.02;paintUpload(i);
     try{
       const s=await photosApi({action:"upload",name,size:body.size,who:me.id,...(toDrive?{orig_size:f.size,orig_name:f.name,orig_mime:f.type||""}:{})});
       let base=0.02;
-      if(s.drive){try{await driveUpload(s.drive,f,r=>{u.pct=0.02+r*0.7;paintUpload(i)})}catch(e){driveFail++;body=f;type=f.type||"application/octet-stream"}base=0.72}
+      if(s.drive){try{await driveUpload(s.drive,f,r=>{u.pct=0.02+r*0.7;paintUpload(i)});driveBytes+=f.size}catch(e){driveFail++;body=f;type=f.type||"application/octet-stream"}base=0.72}
       await putWithProgress(s.path,s.token,body,type,r=>{u.pct=base+r*(0.92-base);paintUpload(i)});
       photoUsed+=body.size;
       u.pct=0.94;paintUpload(i);
       const t=await makeThumb(f);if(t){try{await putWithProgress(s.thumbPath,s.thumbToken,t,"image/jpeg",r=>{u.pct=0.94+r*0.06;paintUpload(i)})}catch(e){}}
       u.status="ok";u.pct=1;
-    }catch(e){u.status=e&&e.err==="full"?"full":"err"}
+    }catch(e){u.status=e&&(e.err==="full"||e.err==="full_app")?"full":"err"}
     paintUpload(i);
   }
   if(driveFail)setTimeout(()=>toast(`Google Drive n'a pas répondu : ${driveFail} photo${driveFail>1?"s":""} gardée${driveFail>1?"s":""} en qualité d'origine dans l'appli.`),2200);
-  if(uploads.some(u=>u.status==="full"))toast("L'espace photos de 1 Go est plein : certaines photos n'ont pas été envoyées.");
+  if(uploads.some(u=>u.status==="full"))toast("L'espace photos est plein : certaines photos n'ont pas été envoyées.");
   const ok=uploads.filter(u=>u.status==="ok").length;if(ok)notifyGroup("photos",`${myName()} a partagé ${ok} photo${ok>1?"s":""}`);
   try{chan&&chan.send({type:"broadcast",event:"photos",payload:{}})}catch(e){}
   await loadPhotos();
@@ -1242,16 +1319,24 @@ function dayLabel(k,short){
   const d=new Date(k+"T12:00");return short?d.toLocaleDateString("fr-FR",{day:"numeric",month:"short"}):d.toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:d.getFullYear()===t.getFullYear()?undefined:"numeric"});
 }
 function storageGauge(){
-  const pct=Math.min(100,photoUsed/photoLimit*100), left=Math.max(0,photoLimit-photoUsed);
-  const lvl=pct>=95?"crit":pct>=80?"warn":"ok";
+  const used=driveOn?driveBytes:photoUsed, lim=driveOn?driveLimit:photoLimit, label=driveOn?"5 Go":"1 Go";
+  const pct=Math.min(100,used/lim*100), left=Math.max(0,lim-used), lvl=pct>=95?"crit":pct>=80?"warn":"ok";
   return `<div class="gauge ${lvl}" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}" aria-label="Espace photos utilisé">
-    <div class="gtop"><span><b class="num">${mb(photoUsed)}</b> utilisés</span><span class="muted"><b class="num">${mb(left)}</b> restants sur 1 Go</span></div>
-    <div class="gbar"><i style="width:${Math.max(pct,photoUsed?1:0).toFixed(1)}%"></i></div>
-    ${lvl==="crit"?`<p class="small neg" style="margin:0">${left<1048576?"L'espace est plein : supprimez des photos pour en ajouter d'autres.":"Presque plein : passez en qualité optimisée ou faites du tri."}</p>`:lvl==="warn"?`<p class="small" style="margin:0">Plus de 80 % utilisés. La qualité optimisée permet d'en garder beaucoup plus.</p>`:""}
+    <div class="gtop"><span><b class="num">${mb(used)}</b> utilisés</span><span class="muted"><b class="num">${mb(left)}</b> restants sur ${label}</span></div>
+    <div class="gbar"><i style="width:${Math.max(pct,used?1:0).toFixed(1)}%"></i></div>
+    ${lvl==="crit"?`<p class="small neg" style="margin:0">${left<1048576?"L'espace est plein : supprimez des photos pour en ajouter d'autres.":"Presque plein : pensez à faire du tri."}</p>`:lvl==="warn"?`<p class="small" style="margin:0">Plus de 80 % de l'espace est utilisé.</p>`:""}
   </div>`;
 }
+const photosFull=()=>driveOn?driveBytes>=driveLimit-1048576:photoUsed>=photoLimit-1048576;
+function selBar(){
+  const list=(photos||[]).filter(p=>sel.has(p.path)),k=list.length,dk=list.filter(canDel).length,all=k===(photos||[]).length;
+  return `<div class="selbar" role="toolbar" aria-label="Photos sélectionnées"><div class="sb-top"><b>${k?`${k} sélectionnée${k>1?"s":""}`:"Touche les photos à choisir"}</b><button class="link-btn" data-act="selAll">${all?"Tout désélectionner":"Tout sélectionner"}</button></div>
+    <div class="sb-act"><button class="btn primary" data-act="selDownload" ${k?"":"disabled"}>Télécharger${k?` (${k})`:""}</button>
+    <button class="btn ghost" data-act="selDelete" ${dk?"":"disabled"} style="${dk?"color:var(--bad)":""}">Supprimer${dk?` (${dk})`:""}</button></div>
+    ${k&&dk<k?`<p class="muted small" style="margin:0">Tu ne peux supprimer que tes propres photos${isAdmin?"":" (l'organisateur peut tout supprimer)"}.</p>`:""}</div>`;
+}
 function renderPhotos(){
-  const n=(photos||[]).length, full=photoUsed>=photoLimit-1048576;
+  const n=(photos||[]).length, full=photosFull();
   const groups={};(photos||[]).forEach((p,i)=>{const d=dayKey(p.created);(groups[d]=groups[d]||[]).push([p,i])});
   const days=Object.keys(groups).sort().reverse();
   if(photoDay!=="all"&&!groups[photoDay])photoDay="all";
@@ -1262,10 +1347,10 @@ function renderPhotos(){
   const grid = photos===null ? `<p class="muted">Chargement des photos…</p>`
     : !n ? `<div class="empty">Aucune photo pour l'instant. Ajoute la première : elle sera visible par tout le groupe.</div>`
     : filters+shown.map(d=>{const arr=groups[d];return `<section class="pgroup"><div class="psep"><span>${esc(dayLabel(d))}</span><i></i><small>${arr.length} photo${arr.length>1?"s":""}</small></div>
-      <div class="pgrid">${arr.map(([p,i])=>{const t=T(p.who);return `<button class="ptile" data-act="openPhoto" data-i="${i}" aria-label="Ouvrir ${esc(p.name)}">${p.thumb?`<img src="${esc(p.thumb)}" alt="" loading="lazy" onerror="this.remove()">`:""}<span class="pname">${esc(p.name)}</span>${t?av(t,"xs"):""}</button>`}).join("")}</div></section>`}).join("");
+      <div class="pgrid${selMode?" selmode":""}">${arr.map(([p,i])=>{const t=T(p.who),on=sel.has(p.path);return `<button class="ptile${on?" on":""}" data-act="${selMode?"selPhoto":"openPhoto"}" data-i="${i}" ${selMode?`aria-pressed="${on}"`:""} aria-label="${selMode?(on?"Désélectionner ":"Sélectionner "):"Ouvrir "}${esc(p.name)}">${selMode?`<b class="pcheck" aria-hidden="true"></b>`:""}${p.thumb?`<img src="${esc(p.thumb)}" alt="" loading="lazy" onerror="this.remove()">`:""}<span class="pname">${esc(p.name)}</span>${t?av(t,"xs"):""}</button>`}).join("")}</div></section>`}).join("");
   const up = uploads.length?`<div id="upBox" class="upbox"><div class="upsum"><span id="upSum">Préparation de l'envoi…</span><div class="upbar"><i id="upBar"></i></div></div>
     <div class="upgrid">${uploads.map((u,i)=>`<div class="uptile" id="up-${i}" data-st="${u.status}" style="--p:${Math.round(u.pct*100)}"><img src="${u.preview}" alt="" onerror="this.remove()"><div class="upov"><div class="upring"><span class="uppct">${upLabel(u,Math.round(u.pct*100))}</span></div></div></div>`).join("")}</div></div>`:"";
-  return hero("img/lanternes.jpg","写真 · shashin","Photos du voyage",`${n} photo${n>1?"s":""} · ${mb(photoUsed)} sur 1 Go`)
+  return hero("img/lanternes.jpg","写真 · shashin","Photos du voyage",`${n} photo${n>1?"s":""} · ${mb(driveOn?driveBytes:photoUsed)} sur ${driveOn?"5":"1"} Go`)
   + `<div class="wrap">
     <div class="panel"><h3>Partager des photos<small>visibles par tout le groupe</small></h3>
       ${storageGauge()}
@@ -1273,19 +1358,19 @@ function renderPhotos(){
       <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         ${full?`<button class="btn primary" disabled>Espace plein</button>`:`<label class="btn primary" for="photoInput" style="cursor:pointer">Ajouter des photos</label>`}
         <input type="file" id="photoInput" accept="image/*" multiple data-act="photoFiles" hidden>
-        <button class="btn" data-act="reloadPhotos">Actualiser</button>
       </div>
       ${up}
       ${photosErr?`<p class="neg" style="margin:12px 0 0">${photosErr}</p>`:""}
     </div>
-    <div class="panel">${grid}</div>
+    <div class="panel">${n?`<div class="phead"><h3 style="margin:0">Album<small>${n} photo${n>1?"s":""}</small></h3><button class="btn sm${selMode?" primary":""}" data-act="selToggle">${selMode?"Terminer":"Sélectionner"}</button></div>`:""}${grid}</div>
+    ${selMode?selBar():""}
   </div>`;
 }
-function origBtn(p){const st=origDl[p.path];
-  if(!st)return `<button class="btn primary sm" data-act="getOrig">Télécharger l'original · ${mb(p.origSize)}</button>`;
-  if(st.state==="load")return `<button class="btn primary sm" disabled>Récupération de l'original…</button>`;
+function origBtn(p){const st=origDl[p.path],lbl=p.orig?"Télécharger l'original":"Télécharger";
+  if(!st)return `<button class="btn primary sm" data-act="getOrig">${lbl} · ${mb(p.orig?p.origSize:p.size)}</button>`;
+  if(st.state==="load")return `<div class="vdl" id="vdl" style="--p:${Math.round(st.pct*100)}"><span>Téléchargement… ${Math.round(st.pct*100)} %</span></div>`;
   if(st.state==="err")return `<button class="btn primary sm" data-act="getOrig">Réessayer le téléchargement</button>`;
-  return `<button class="btn primary sm" data-act="saveOrig">${platform()==="other"?"Enregistrer l'original":"Enregistrer dans Photos / Fichiers"}</button>`}
+  return `<button class="btn primary sm" data-act="saveOrig">${canShareFiles([st.file])?"Enregistrer dans Photos / Fichiers":"Enregistrer la photo"}</button>`}
 function renderViewer(){
   const v=$("#viewer");if(!v)return;
   if(viewIdx<0||!photos||!photos[viewIdx]){v.hidden=true;return}
@@ -1296,7 +1381,7 @@ function renderViewer(){
     <button class="icon-btn vclose" data-act="closePhoto" aria-label="Fermer">×</button></div>
     <div class="vimg">${p.thumb?`<img class="vthumb" src="${esc(p.thumb)}" alt="">`:""}${p.url?`<img class="vfull" src="${esc(p.url)}" alt="${esc(p.name)}" onload="this.previousElementSibling&&this.previousElementSibling.remove()">`:""}
       ${viewIdx>0?`<button class="vnav prev" data-act="navPhoto" data-d="-1" aria-label="Photo précédente">‹</button>`:""}${viewIdx<photos.length-1?`<button class="vnav next" data-act="navPhoto" data-d="1" aria-label="Photo suivante">›</button>`:""}</div>
-    <div class="vfoot"><div class="vbtns">${p.orig?origBtn(p):dl?`<a class="btn primary sm" href="${esc(dl)}" target="_blank" rel="noopener">Télécharger la photo</a>`:""}${mine?`<button class="btn ghost sm" data-act="delPhoto">Supprimer</button>`:""}</div>
+    <div class="vfoot"><div class="vbtns">${p.orig||p.url?origBtn(p):""}${mine?`<button class="btn ghost sm" data-act="delPhoto">Supprimer</button>`:""}</div>
       <p class="vhint">${p.orig?`Original intact (${mb(p.origSize)}) conservé dans le Google Drive du voyage.`:"iPhone : appui long sur la photo, puis « Ajouter à Photos »."}</p></div>`;
 }
 
@@ -2009,6 +2094,14 @@ document.addEventListener("click",e=>{
   if(a==="switchUser"){closeSettings();logout();return}
   if(a==="reloadPhotos"){loadPhotos();return}
   if(a==="photoDay"){photoDay=b.dataset.k;render();return}
+  if(a==="selToggle"){selMode=!selMode;sel.clear();render();return}
+  if(a==="selPhoto"){const p=photos[Number(b.dataset.i)];if(!p)return;sel.has(p.path)?sel.delete(p.path):sel.add(p.path);haptic(8);render();return}
+  if(a==="selAll"){const all=sel.size===(photos||[]).length;sel.clear();if(!all)(photos||[]).forEach(p=>sel.add(p.path));render();return}
+  if(a==="selDownload"){if(batch&&batch.state==="run")return;batchDownload();return}
+  if(a==="selDelete"){if(batch&&batch.state==="run")return;const dk=(photos||[]).filter(p=>sel.has(p.path)&&canDel(p)).length;
+    if(!b.dataset.c){b.dataset.c="1";b.textContent=`Confirmer : supprimer ${dk} photo${dk>1?"s":""}`;return}batchDelete();return}
+  if(a==="batchSave"){if(batch&&batch.files)saveFiles(batch.files);return}
+  if(a==="batchClose"){batch=null;paintBatch();selMode=false;sel.clear();render();return}
   if(a==="getOrig"){const p=photos&&photos[viewIdx];if(p){delete origDl[p.path];fetchOriginal(p)}return}
   if(a==="saveOrig"){const p=photos&&photos[viewIdx];if(p)saveOriginal(p);return}
   if(a==="copyScript"){fetch("drive/apps-script.gs",{cache:"no-cache"}).then(r=>r.text()).then(t=>navigator.clipboard.writeText(t)).then(()=>toast("Script copié")).catch(()=>{window.open("drive/apps-script.gs","_blank")});return}

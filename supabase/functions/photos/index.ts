@@ -1,4 +1,4 @@
-// Photos du voyage : session personnelle obligatoire (code du voyage + jeton PIN), quota de 1 Go pour tout le voyage.
+// Photos du voyage : session personnelle obligatoire (code du voyage + jeton PIN), 1 Go dans l'appli, 5 Go d'originaux dans Google Drive.
 // Si l'organisateur a relié son Google Drive, l'original intact y est rangé (via un script Apps Script),
 // et l'appli ne garde qu'une version optimisée + une miniature.
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
@@ -12,12 +12,17 @@ const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE
 const BUCKET = "photos";
 const MAX = 50 * 1024 * 1024;
 const DRIVE_MAX = 36 * 1024 * 1024; // envoi en base64 vers Apps Script : 50 Mo maximum par requête
-const QUOTA = 1024 * 1024 * 1024; // 1 Go gratuit pour tout le voyage (photos + miniatures)
+const QUOTA = 1024 * 1024 * 1024; // 1 Go gratuit côté appli (versions optimisées + miniatures)
+const DRIVE_QUOTA = 5 * 1024 * 1024 * 1024; // 5 Go d'originaux dans le Google Drive de l'organisateur
+async function driveUsed(tid: string) {
+  const { data } = await admin.from("photo_files").select("orig_size").eq("trip_id", tid).not("drive_id", "is", null);
+  return (data ?? []).reduce((a, f) => a + (Number(f.orig_size) || 0), 0);
+}
 const DRIVE_RE = /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]{20,}\/exec$/;
 const usage = async (tid: string) => Number((await admin.rpc("photos_usage", { p_trip: tid })).data) || 0;
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
 const safeName = (v: unknown) => {
-  const n = String(v ?? "photo").normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const n = String(v ?? "photo").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   return n.replace(/[^A-Za-z0-9._-]/g, "_").replace(/_+/g, "_").slice(-80) || "photo.jpg";
 };
 const rand = () => Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) => b.toString(16).padStart(2, "0")).join("");
@@ -63,7 +68,7 @@ Deno.serve(async (req) => {
       const size = Number(body.size) || 0;
       if (size > MAX) return json({ error: "too_big" }, 413);
       const used = await usage(tid);
-      if (used + size * 1.05 > QUOTA) return json({ error: "full", used, limit: QUOTA }, 507);
+      if (used + size * 1.05 > QUOTA) return json({ error: "full_app", used, limit: QUOTA }, 507);
       const key = `${tid}/${me}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}-${safeName(body.name)}`;
       const thumbKey = key.replace(`${tid}/`, `${tid}/_thumbs/`) + ".jpg";
       const o = await store.createSignedUploadUrl(key);
@@ -72,6 +77,7 @@ Deno.serve(async (req) => {
       const res: Record<string, unknown> = { path: key, token: o.data.token, thumbPath: thumbKey, thumbToken: t.data.token };
       const durl = body.orig_size ? await driveUrl(tid) : null;
       if (durl && Number(body.orig_size) <= DRIVE_MAX) {
+        if ((await driveUsed(tid)) + Number(body.orig_size) > DRIVE_QUOTA) return json({ error: "full" }, 507);
         const origName = String(body.orig_name ?? body.name ?? "photo").slice(0, 120);
         await admin.from("photo_files").insert({ path: key, trip_id: tid, orig_name: origName, orig_size: Number(body.orig_size) || 0, orig_mime: String(body.orig_mime ?? "").slice(0, 60) });
         res.drive = { url: durl, ticket: await ticket(tid, "put", 20, { path: key, name: origName }) };
@@ -96,7 +102,7 @@ Deno.serve(async (req) => {
       const { data: files } = await admin.from("photo_files").select("path,drive_id,orig_name,orig_size").eq("trip_id", tid).not("drive_id", "is", null);
       const fm = new Map((files ?? []).map((f) => [f.path, f]));
       const driveBytes = (files ?? []).reduce((a, f) => a + (Number(f.orig_size) || 0), 0);
-      const meta = { used, limit: QUOTA, drive: !!durl, driveBytes };
+      const meta = { used, limit: QUOTA, drive: !!durl, driveBytes, driveLimit: DRIVE_QUOTA };
       if (!items.length) return json({ items: [], ...meta });
       const thumbPaths = items.map((i) => i.path.replace(`${tid}/`, `${tid}/_thumbs/`) + ".jpg");
       const [full, thumbs] = await Promise.all([
@@ -122,21 +128,24 @@ Deno.serve(async (req) => {
       return json({ url: durl, name: f.orig_name, ticket: await ticket(tid, "get", 10, { drive_id: f.drive_id, name: f.orig_name }) });
     }
 
-    if (body.action === "delete") {
-      // Seul l'auteur de la photo (ou l'organisateur) peut la supprimer.
-      const path = String(body.path ?? "");
-      if (!path.startsWith(`${tid}/`) || path.startsWith(`${tid}/_thumbs/`) || path.includes("..")) return json({ error: "forbidden" }, 403);
-      const owner = path.slice(tid.length + 1).split("/")[0];
-      if (owner !== me && !isAdmin) return json({ error: "forbidden" }, 403);
-      const thumb = path.replace(`${tid}/`, `${tid}/_thumbs/`) + ".jpg";
-      await store.remove([path, thumb]);
-      const { data: f } = await admin.from("photo_files").select("drive_id").eq("path", path).eq("trip_id", tid).maybeSingle();
+    if (body.action === "delete" || body.action === "delete_many") {
+      const paths: string[] = body.action === "delete_many" ? (Array.isArray(body.paths) ? body.paths.map(String).slice(0, 200) : []) : [String(body.path ?? "")];
       const durl = await driveUrl(tid);
-      if (f?.drive_id && durl) {
-        try { await callScript(durl, { action: "del", ticket: await ticket(tid, "del", 5, { drive_id: f.drive_id }) }); } catch (_e) { /* l'original reste dans le Drive */ }
+      const res: { path: string; ok: boolean }[] = [];
+      for (const path of paths) {
+        if (!path.startsWith(`${tid}/`) || path.startsWith(`${tid}/_thumbs/`) || path.includes("..")) { res.push({ path, ok: false }); continue; }
+        const owner = path.slice(tid.length + 1).split("/")[0];
+        if (owner !== me && !isAdmin) { res.push({ path, ok: false }); continue; }
+        await store.remove([path, path.replace(`${tid}/`, `${tid}/_thumbs/`) + ".jpg"]);
+        const { data: f } = await admin.from("photo_files").select("drive_id").eq("path", path).eq("trip_id", tid).maybeSingle();
+        if (f?.drive_id && durl) {
+          try { await callScript(durl, { action: "del", ticket: await ticket(tid, "del", 5, { drive_id: f.drive_id }) }); } catch (_e) { /* l'original reste dans le Drive */ }
+        }
+        await admin.from("photo_files").update({ drive_id: null }).eq("path", path).eq("trip_id", tid);
+        res.push({ path, ok: true });
       }
-      await admin.from("photo_files").update({ drive_id: null }).eq("path", path).eq("trip_id", tid);
-      return json({ ok: true });
+      if (body.action === "delete" && !res[0]?.ok) return json({ error: "forbidden" }, 403);
+      return json({ ok: true, results: res });
     }
 
     // Organisateur : relier ou délier le script Google Drive.
