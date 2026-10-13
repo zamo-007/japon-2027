@@ -1154,11 +1154,13 @@ function makeThumb(file){return new Promise(res=>{
 /* Original intact → Google Drive de l'organisateur (via le script Apps Script relié). */
 function fileB64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(",")[1]||"");r.onerror=()=>rej(r.error);r.readAsDataURL(file)})}
 async function driveUpload(d,file,onPct){
+  // Requête « simple » (text/plain, sans écouteur de progression) : Apps Script ne répond pas aux pré-vérifications CORS.
   const data=await fileB64(file);
-  return new Promise((res,rej)=>{const x=new XMLHttpRequest();x.open("POST",d.url);x.setRequestHeader("Content-Type","text/plain;charset=utf-8");
-    x.upload.onprogress=e=>{if(e.lengthComputable)onPct(e.loaded/e.total)};
-    x.onload=()=>{let j={};try{j=JSON.parse(x.responseText)}catch(e){}j&&j.ok?res(j):rej(new Error(j.error||"drive"))};
-    x.onerror=()=>rej(new Error("network"));x.send(JSON.stringify({action:"put",ticket:d.ticket,mime:file.type||"application/octet-stream",data}))});
+  const est=Math.max(1500,file.size/180);let t0=Date.now(),tick=setInterval(()=>onPct(Math.min(.92,(Date.now()-t0)/est)),250);
+  try{
+    const r=await fetch(d.url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"put",ticket:d.ticket,mime:file.type||"application/octet-stream",data})});
+    const j=await r.json().catch(()=>({}));if(!j.ok)throw new Error(j.error||"drive");onPct(1);return j;
+  }finally{clearInterval(tick)}
 }
 async function fetchOriginal(p){
   const st=origDl[p.path]={state:"load"};renderViewer();
@@ -1203,6 +1205,7 @@ async function uploadFiles(files){
   uploads=list.map(f=>({name:f.name,size:f.size,status:f.size>50*1024*1024?"big":"wait",pct:0,preview:URL.createObjectURL(f)}));
   render();uploads.forEach((_,i)=>paintUpload(i));
   const box=$("#upBox");if(box)box.scrollIntoView({behavior:"smooth",block:"nearest"});
+  let driveFail=0;
   for(let i=0;i<list.length;i++){
     const f=list[i],u=uploads[i];if(u.status==="big"){paintUpload(i);continue}
     let body=f,name=f.name,type=f.type||"application/octet-stream";
@@ -1213,7 +1216,7 @@ async function uploadFiles(files){
     try{
       const s=await photosApi({action:"upload",name,size:body.size,who:me.id,...(toDrive?{orig_size:f.size,orig_name:f.name,orig_mime:f.type||""}:{})});
       let base=0.02;
-      if(s.drive){await driveUpload(s.drive,f,r=>{u.pct=0.02+r*0.7;paintUpload(i)});base=0.72}
+      if(s.drive){try{await driveUpload(s.drive,f,r=>{u.pct=0.02+r*0.7;paintUpload(i)})}catch(e){driveFail++;body=f;type=f.type||"application/octet-stream"}base=0.72}
       await putWithProgress(s.path,s.token,body,type,r=>{u.pct=base+r*(0.92-base);paintUpload(i)});
       photoUsed+=body.size;
       u.pct=0.94;paintUpload(i);
@@ -1222,6 +1225,7 @@ async function uploadFiles(files){
     }catch(e){u.status=e&&e.err==="full"?"full":"err"}
     paintUpload(i);
   }
+  if(driveFail)setTimeout(()=>toast(`Google Drive n'a pas répondu : ${driveFail} photo${driveFail>1?"s":""} gardée${driveFail>1?"s":""} en qualité d'origine dans l'appli.`),2200);
   if(uploads.some(u=>u.status==="full"))toast("L'espace photos de 1 Go est plein : certaines photos n'ont pas été envoyées.");
   const ok=uploads.filter(u=>u.status==="ok").length;if(ok)notifyGroup("photos",`${myName()} a partagé ${ok} photo${ok>1?"s":""}`);
   try{chan&&chan.send({type:"broadcast",event:"photos",payload:{}})}catch(e){}
