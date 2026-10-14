@@ -157,6 +157,14 @@ label.f{display:grid;gap:5px;font-size:13px;color:var(--mute)}
 .stage[aria-pressed="true"]{border-color:var(--lantern)}
 .stage[aria-pressed="true"] img{opacity:1}
 .acts{display:grid;gap:10px}
+.flist{display:grid;gap:10px;margin-bottom:4px}
+.fcard{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--ink)}
+.ficon{display:grid;place-items:center;width:44px;height:52px;border-radius:8px;background:#D9534F;color:#fff;font:700 12px/1 system-ui,sans-serif;letter-spacing:.04em;box-shadow:inset 0 -10px 0 rgba(0,0,0,.12)}
+.fmain{display:grid;gap:3px;min-width:0}.fmain b{overflow-wrap:anywhere}.fmain small{font-size:12.5px;overflow-wrap:anywhere}
+.fact{display:flex;gap:6px;align-items:center}
+.fdl{min-width:96px;font-size:13px}
+.fileup{display:grid;gap:8px;margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:12px}
+@media (max-width:600px){.fcard{grid-template-columns:auto minmax(0,1fr)}.fact{grid-column:1/-1;justify-content:flex-end}}
 [data-sort]>[data-sid]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 [data-sort]>[data-sid] input,[data-sort]>[data-sid] textarea{-webkit-user-select:text;user-select:text}
 .sorting [data-sort]{min-height:56px;border-radius:14px;outline:1.5px dashed color-mix(in srgb,var(--paper) 22%,transparent);outline-offset:4px}
@@ -1270,12 +1278,74 @@ async function photosApi(body){
 }
 async function loadPhotos(){
   if(!code||!sess)return;photosLoading=true;photosErr="";if(tab==="photos")render();
-  try{const j=await photosApi({action:"list"});photos=j.items||[];if(j.used!=null)photoUsed=Number(j.used)||0;if(j.limit)photoLimit=Number(j.limit);driveOn=!!j.drive;driveOld=!!j.driveOld;driveBytes=Number(j.driveBytes)||0;if(j.driveLimit)driveLimit=Number(j.driveLimit);
+  try{const j=await photosApi({action:"list"});photos=j.items||[];pfiles=Array.isArray(j.files)?j.files:[];if(j.used!=null)photoUsed=Number(j.used)||0;if(j.limit)photoLimit=Number(j.limit);driveOn=!!j.drive;driveOld=!!j.driveOld;driveBytes=Number(j.driveBytes)||0;if(j.driveLimit)driveLimit=Number(j.driveLimit);
     const have=new Set(photos.map(x=>x.path));sel.forEach(x=>{if(!have.has(x))sel.delete(x)});renderSettings()}catch(e){photosErr="Impossible de charger les photos pour l'instant."}
   photosLoading=false;if(tab==="photos")render();else updateBadges();renderViewer();
 }
 let driveOld=false, photoUsed=0, photoLimit=1073741824, photoDay="all", driveOn=false, driveBytes=0, driveLimit=5*1073741824, origDl={};
 let selMode=false, sel=new Set(), batch=null;
+/* ----- Fichiers PDF partagés (billets, réservations) : rangés seulement dans le Google Drive du voyage ----- */
+let pfiles=[], fileUp=null, fileDl={};
+const isPdfBytes = u8 => u8.length>4&&u8[0]===0x25&&u8[1]===0x50&&u8[2]===0x44&&u8[3]===0x46&&u8[4]===0x2D; // « %PDF- »
+async function uploadShared(file,label){
+  if(!me)return;
+  if(!driveOn){toast("L'organisateur doit d'abord relier Google Drive dans les paramètres.");return}
+  if(!/\.pdf$/i.test(file.name)){toast("Seuls les fichiers PDF peuvent être partagés.");return}
+  if(file.size>DRIVE_MAX){toast("Fichier trop lourd (36 Mo maximum).");return}
+  if(driveBytes+file.size>driveLimit){toast("L'espace du Drive est plein.");return}
+  const head=new Uint8Array(await file.slice(0,5).arrayBuffer());
+  if(!isPdfBytes(head)){toast("Ce fichier n'est pas un vrai PDF : envoi refusé.");return}
+  fileUp={name:file.name,pct:0.02,state:"run"};paintFileUp();
+  try{
+    const s=await photosApi({action:"file_upload",name:file.name,size:file.size,mime:"application/pdf",label:label||""});
+    await driveUpload(s.drive,new File([file],file.name,{type:"application/pdf"}),r=>{fileUp.pct=0.02+r*0.96;paintFileUp()});
+    driveBytes+=file.size;fileUp=null;
+    notifyGroup("photos",`${myName()} a partagé un fichier : ${label||file.name}`);
+    try{chan&&chan.send({type:"broadcast",event:"photos",payload:{}})}catch(e){}
+    toast("Fichier partagé avec tout le groupe");await loadPhotos();
+  }catch(e){fileUp=null;render();
+    toast(e&&e.err==="no_drive"?"Google Drive n'est pas relié.":e&&e.err==="script_old"?"L'organisateur doit mettre à jour le script Google Drive.":e&&e.err==="full"?"L'espace du Drive est plein.":e&&e.err==="type"?"Seuls les fichiers PDF peuvent être partagés.":"L'envoi a échoué, réessaie.")}
+}
+function paintFileUp(){const el=$("#fileUp");if(!el){render();return}
+  if(!fileUp){el.hidden=true;return}el.hidden=false;const pc=Math.round(fileUp.pct*100);
+  el.innerHTML=`<div class="dls-top"><b>${LDR("sm")} Envoi de ${esc(fileUp.name)}</b><span class="num">${pc} %</span></div><div class="gbar"><i style="width:${pc}%"></i></div>`}
+async function downloadShared(f){
+  const st=fileDl[f.path]={state:"load",pct:0};render();
+  try{
+    const t=await photosApi({action:"original",path:f.path});const exp=Math.max(1,f.size*1.34+200);
+    const txt=await xhrGet({method:"POST",url:t.url,ctype:"text/plain;charset=utf-8",body:JSON.stringify({action:"get",ticket:t.ticket})},l=>{st.pct=Math.min(1,l/exp);paintFileDl(f)});
+    const j=JSON.parse(txt);if(!j.ok)throw new Error(j.error||"drive");
+    const bin=atob(j.data),u8=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u8[i]=bin.charCodeAt(i);
+    if(!isPdfBytes(u8))throw Object.assign(new Error("notpdf"),{err:"notpdf"});
+    const name=String(f.name||"fichier.pdf").replace(/[\\/:*?"<>|]/g,"_").replace(/(\.pdf)?$/i,".pdf");
+    st.file=new File([u8],name,{type:"application/pdf"});st.state="ready";
+  }catch(e){st.state="err";toast(e&&e.err==="notpdf"?"Le fichier reçu n'est pas un PDF valide : téléchargement bloqué.":e&&e.err==="script_old"?"L'organisateur doit mettre à jour le script Google Drive.":"Téléchargement impossible pour l'instant.")}
+  render();
+}
+function paintFileDl(f){const st=fileDl[f.path],el=document.querySelector(`[data-fdl="${CSS.escape(f.path)}"]`);if(!st||!el)return;const pc=Math.round(st.pct*100);el.style.setProperty("--p",pc);el.innerHTML=`${LDR("sm")} ${pc} %`}
+function fileCard(f){
+  const t=T(f.who),st=fileDl[f.path],mine=canDel(f);
+  const d=f.created?new Date(f.created).toLocaleDateString("fr-FR",{day:"numeric",month:"short"}):"";
+  const btn=!st||st.state==="err"?`<button class="btn primary sm" data-act="fileDl" data-path="${esc(f.path)}">${st?"Réessayer":"Télécharger"}</button>`
+    :st.state==="load"?`<span class="vdl fdl" data-fdl="${esc(f.path)}" style="--p:${Math.round(st.pct*100)}">${LDR("sm")} ${Math.round(st.pct*100)} %</span>`
+    :`<button class="btn primary sm" data-act="fileSave" data-path="${esc(f.path)}">${canShareFiles([st.file])?"Enregistrer / ouvrir":"Enregistrer le PDF"}</button>`;
+  return `<article class="fcard"><span class="ficon" aria-hidden="true">PDF</span><div class="fmain"><b>${esc(f.label||f.name)}</b>
+    <small class="muted">${f.label?esc(f.name)+" · ":""}${mb(f.size)}${t?" · "+esc(t.name):""}${d?" · "+d:""}</small></div>
+    <div class="fact">${btn}${mine?`<button class="icon-btn" data-act="fileDel" data-path="${esc(f.path)}" aria-label="Supprimer ${esc(f.label||f.name)}">×</button>`:""}</div></article>`;
+}
+function filesPanel(){
+  const n=pfiles.length;
+  return `<div class="panel" id="s-files"><h3>Fichiers partagés<small>billets, réservations… en PDF</small></h3>
+    <p class="muted small" style="margin:0 0 12px">Tu as payé l'entrée pour tout le groupe ? Dépose ici le PDF des billets : il est rangé dans le Google Drive du voyage et chacun peut le télécharger.</p>
+    ${n?`<div class="flist">${pfiles.map(fileCard).join("")}</div>`:`<div class="empty" style="margin-bottom:12px">Aucun fichier partagé pour l'instant.</div>`}
+    <div id="fileUp" class="fileup" ${fileUp?"":"hidden"}></div>
+    ${driveOn&&!driveOld?`<form class="form fform" data-form="sharedFile" style="border-style:solid;margin-top:12px">
+      <label class="f">De quoi s'agit-il ? <span class="muted">(facultatif)</span><input type="text" name="label" maxlength="80" placeholder="Ex. Billets teamLab, dimanche 7 mars"></label>
+      <div class="row" style="align-items:center"><label class="btn primary" for="sharedInput" style="cursor:pointer">Partager un PDF</label><small class="muted">36 Mo maximum</small></div>
+      <input type="file" id="sharedInput" accept="application/pdf,.pdf" data-act="sharedFile" hidden></form>`
+      :`<p class="small" style="margin:12px 0 0">${driveOld?"Le script Google Drive doit être mis à jour par l'organisateur pour partager des fichiers.":"Le partage de fichiers demande que l'organisateur relie Google Drive dans les paramètres."}</p>`}
+  </div>`;
+}
 const DRIVE_MAX=36*1024*1024;
 /* Version optimisée : 2560 px max, JPEG qualité 0,85 (souvent 4 à 8 fois plus légère). */
 function optimize(file,M=2560){return new Promise(res=>{
@@ -1481,6 +1551,7 @@ function renderPhotos(){
       ${up}
       ${photosErr?`<p class="neg" style="margin:12px 0 0">${photosErr}</p>`:""}
     </div>
+    ${filesPanel()}
     <div class="panel">${n?`<div class="phead"><h3 style="margin:0">Album<small>${n} photo${n>1?"s":""}</small></h3><button class="btn sm${selMode?" primary":""}" data-act="selToggle">${selMode?"Terminer":"Sélectionner"}</button></div>`:""}${grid}</div>
     ${selMode?selBar():""}
   </div>`;
@@ -1516,7 +1587,7 @@ function unseenCounts(){
     plan:S.activities.filter(x=>!isInfo(x)&&nw(x,"plan")).length,
     budget:S.budget.filter(x=>nw(x,"budget")).length,
     split:S.expenses.filter(x=>nw(x,"split")).length,
-    photos:(photos||[]).filter(p=>p.who!==mine&&after(p.created,seenAt("photos"))).length};
+    photos:(photos||[]).concat(pfiles).filter(p=>p.who!==mine&&after(p.created,seenAt("photos"))).length};
 }
 function updateBadges(){
   if(!ready||!me)return;
@@ -2385,6 +2456,11 @@ document.addEventListener("click",e=>{
     if(!b.dataset.c){b.dataset.c="1";b.textContent=`Confirmer : supprimer ${dk} photo${dk>1?"s":""}`;return}batchDelete();return}
   if(a==="batchSave"){if(batch&&batch.files)saveFiles(batch.files);return}
   if(a==="batchClose"){batch=null;paintBatch();selMode=false;sel.clear();render();return}
+  if(a==="fileDl"){const f=pfiles.find(x=>x.path===b.dataset.path);if(f)downloadShared(f);return}
+  if(a==="fileSave"){const st=fileDl[b.dataset.path];if(st&&st.file)saveFiles([st.file]);return}
+  if(a==="fileDel"){const f=pfiles.find(x=>x.path===b.dataset.path);if(!f)return;
+    if(!b.dataset.c){b.dataset.c="1";b.textContent="Supprimer ?";b.style.color="var(--bad)";b.style.fontSize="12px";setTimeout(()=>{if(b.isConnected){b.dataset.c="";b.textContent="×";b.style.cssText=""}},2500);return}
+    photosApi({action:"delete",path:f.path}).then(()=>{pfiles=pfiles.filter(x=>x.path!==f.path);toast("Fichier supprimé");loadPhotos()}).catch(()=>toast("Suppression impossible"));return}
   if(a==="getOrig"){const p=photos&&photos[viewIdx];if(p){delete origDl[p.path];fetchOriginal(p)}return}
   if(a==="saveOrig"){const p=photos&&photos[viewIdx];if(p)saveOriginal(p);return}
   if(a==="copyScript"){fetch("drive/apps-script.gs",{cache:"no-cache"}).then(r=>r.text()).then(t=>navigator.clipboard.writeText(t)).then(()=>toast("Script copié")).catch(()=>{window.open("drive/apps-script.gs","_blank")});return}
@@ -2465,6 +2541,7 @@ document.addEventListener("change",e=>{
   const el=e.target, a=el.dataset.act; if(!a) return;
   if(el.closest&&el.closest('form[data-form="exp"]')){updateShare()}
   if(a==="photoFiles"){const f=[...el.files];el.value="";uploadFiles(f);return}
+  if(a==="sharedFile"){const f=el.files[0];el.value="";const lab=el.closest("form")?.querySelector('[name="label"]');if(f)uploadShared(f,lab?lab.value.trim():"").then(()=>{if(lab)lab.value=""});return}
   if(a==="lineAmt"&&me){const v=el.value===""?null:Math.max(0,Number(el.value));patch("budget",el.dataset.id,{amounts:{[me.id]:v}})}
   if(a==="dual"){const v=el.value===""?null:Math.max(0,Number(el.value));const val=v==null?null:{v,c:el.dataset.cur};const k=el.dataset.kind;
     if(k==="line"&&me)patch("budget",el.dataset.id,{amounts:{[me.id]:val}});
@@ -2505,6 +2582,7 @@ document.addEventListener("submit",e=>{
     rpc("change_pin",{p_code:code,p_token:sess,p_old:o,p_new:n1}).finally(()=>{sb2.disabled=false;sb2.textContent="Changer mon code"}).then(res=>{if(res&&res.ok){f.reset();m.textContent="";toast("Code PIN modifié")}else m.textContent=res.error==="locked"?lockMsg():res.error==="wrong"?"Code actuel incorrect.":LG_ERR[res.error]||"Impossible pour l'instant."}).catch(fail);return}
   const k=f.dataset.form, d=new FormData(f);
   const solo=!!(e.submitter&&e.submitter.value==="me"&&me);
+  if(k==="sharedFile"){const i=$("#sharedInput");i&&i.click();return}
   if(k==="task"){const t=String(d.get("title")).trim();if(!t)return;open.task=false;f.reset();put("tasks",nid("t"),{title:t,cat:d.get("cat"),order:S.tasks.length+1,done:{},owner:solo?me.id:null,createdBy:me?me.id:null,createdAt:new Date().toISOString()});if(!solo)notifyGroup("prep",`${myName()} a ajouté une étape : ${t}`);toast(solo?"Étape ajoutée à ta liste":"Étape ajoutée pour tout le monde")}
   if(k==="place"){const t=String(d.get("title")).trim();if(!t)return;const p=d.get("price"),kind=String(d.get("kind"));if(!PLACE_KINDS[kind])return;placeOpen=null;f.reset();
     put("activities",nid("r"),{kind,title:t,stage:stageSel,cuisine:String(d.get("cuisine")||""),area:String(d.get("area")||"").trim(),price:p===""||p==null?null:Number(p),resaUrl:safeUrl(d.get("resaUrl")),url:safeUrl(d.get("url")),date:d.get("date")||null,checkout:d.get("checkout")||null,time:"",note:String(d.get("note")||"").trim(),booked:false,joined:me?{[me.id]:true}:{},order:S.activities.filter(x=>x.stage===stageSel&&x.kind===kind).length+1,createdBy:me?me.id:null,createdAt:new Date().toISOString()});

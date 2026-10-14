@@ -1,4 +1,4 @@
-// Photos du voyage : session personnelle obligatoire (code du voyage + jeton PIN), 1 Go dans l'appli, 5 Go d'originaux dans Google Drive.
+// Photos et fichiers PDF partagés du voyage : session personnelle obligatoire (code du voyage + jeton PIN), 1 Go dans l'appli, 5 Go d'originaux dans Google Drive.
 // Si l'organisateur a relié son Google Drive, l'original intact y est rangé (via un script Apps Script),
 // et l'appli ne garde qu'une version optimisée + une miniature.
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
@@ -19,6 +19,7 @@ async function driveUsed(tid: string) {
   return (data ?? []).reduce((a, f) => a + (Number(f.orig_size) || 0), 0);
 }
 const DRIVE_RE = /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]{20,}\/exec$/;
+const cleanLabel = (v: unknown) => String(v ?? "").replace(/[\u0000-\u001f\u007f<>]/g, "").replace(/\s+/g, " ").trim().slice(0, 80);
 const usage = async (tid: string) => Number((await admin.rpc("photos_usage", { p_trip: tid })).data) || 0;
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
 const safeName = (v: unknown) => {
@@ -92,6 +93,23 @@ Deno.serve(async (req) => {
       return json(res);
     }
 
+    // Fichier PDF à partager (billets, réservations…) : rangé uniquement dans le Google Drive du voyage.
+    if (body.action === "file_upload") {
+      const size = Number(body.size) || 0;
+      const name = String(body.name ?? "").slice(0, 120);
+      if (size <= 0 || size > DRIVE_MAX) return json({ error: "too_big" }, 413);
+      if (!/\.pdf$/i.test(name) || String(body.mime ?? "application/pdf") !== "application/pdf") return json({ error: "type" }, 415);
+      const durl = await driveUrl(tid);
+      if (!durl) return json({ error: "no_drive" }, 409);
+      if (!(await driveSafe(tid))) return json({ error: "script_old" }, 409);
+      if ((await driveUsed(tid)) + size > DRIVE_QUOTA) return json({ error: "full" }, 507);
+      const key = `${tid}/${me}/_f/${Date.now()}-${crypto.randomUUID().slice(0, 8)}-${safeName(name)}`;
+      const label = cleanLabel(body.label) || null;
+      const { error } = await admin.from("photo_files").insert({ path: key, trip_id: tid, kind: "file", label, orig_name: name, orig_size: size, orig_mime: "application/pdf" });
+      if (error) return json({ error: "storage" }, 500);
+      return json({ path: key, drive: { url: durl, ticket: await ticket(tid, "put", 20, { path: key, name }) } });
+    }
+
     if (body.action === "list") {
       const top = await store.list(tid, { limit: 1000 });
       const folders = (top.data ?? []).filter((f) => !f.id && f.name !== "_thumbs").map((f) => f.name);
@@ -106,10 +124,12 @@ Deno.serve(async (req) => {
       items.sort((a, b) => (a.created < b.created ? 1 : -1));
       const used = await usage(tid);
       const durl = await driveUrl(tid);
-      const { data: files } = await admin.from("photo_files").select("path,drive_id,orig_name,orig_size").eq("trip_id", tid).not("drive_id", "is", null);
-      const fm = new Map((files ?? []).map((f) => [f.path, f]));
+      const { data: files } = await admin.from("photo_files").select("path,drive_id,orig_name,orig_size,kind,label,created_at").eq("trip_id", tid).not("drive_id", "is", null);
+      const fm = new Map((files ?? []).filter((f) => f.kind !== "file").map((f) => [f.path, f]));
+      const shared = (files ?? []).filter((f) => f.kind === "file").sort((a, b) => (a.created_at < b.created_at ? 1 : -1))
+        .map((f) => ({ path: f.path, who: f.path.slice(tid.length + 1).split("/")[0], name: f.orig_name, label: f.label, size: Number(f.orig_size) || 0, created: f.created_at }));
       const driveBytes = (files ?? []).reduce((a, f) => a + (Number(f.orig_size) || 0), 0);
-      const meta = { used, limit: QUOTA, drive: !!durl, driveOld: !!durl && !(await driveSafe(tid)), driveBytes, driveLimit: DRIVE_QUOTA };
+      const meta = { files: shared, used, limit: QUOTA, drive: !!durl, driveOld: !!durl && !(await driveSafe(tid)), driveBytes, driveLimit: DRIVE_QUOTA };
       if (!items.length) return json({ items: [], ...meta });
       const thumbPaths = items.map((i) => i.path.replace(`${tid}/`, `${tid}/_thumbs/`) + ".jpg");
       const [full, thumbs] = await Promise.all([
