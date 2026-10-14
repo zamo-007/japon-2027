@@ -125,6 +125,12 @@ label.f{display:grid;gap:5px;font-size:13px;color:var(--mute)}
 .ring b{font-family:var(--display);font-size:30px}
 .bar{height:6px;border-radius:99px;background:color-mix(in srgb,var(--paper) 10%,transparent);overflow:hidden}
 .bar i{display:block;height:100%;background:var(--lantern);border-radius:99px;transition:width .4s}
+.sbar{position:relative;display:flex;height:10px;margin-top:6px;border-radius:99px;background:color-mix(in srgb,var(--paper) 10%,transparent);overflow:visible}
+.sbar i{display:block;height:100%;transition:width .4s}
+.sbar i:first-child{border-radius:99px 0 0 99px}.sbar i:last-of-type{border-radius:0 99px 99px 0}
+.sbar b{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;border-radius:2px;background:var(--paper);opacity:.75}
+.sbar-legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;font-size:12px;color:var(--mute)}
+.sbar-legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
 .people{display:grid;gap:12px}
 .person{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center}
 .person .bar{grid-column:2/3}
@@ -2186,8 +2192,17 @@ function renderBudget(){
         <div class="keys" style="margin-top:12px"><span><i style="background:var(--seg2)"></i>Trajet</span><span><i style="background:var(--seg3)"></i>Activités</span><span><i style="background:var(--seg1)"></i>Postes perso</span><span><i style="background:var(--seg5,#9B6BD0)"></i>Part du groupe</span></div>
         <p class="muted small" style="margin:12px 0 0">Les postes sans ville (« Tout le voyage ») ne comptent dans aucune ville.</p>
       </div>
-      <div class="panel"><h3>Le groupe<small>budget perso prévu / prévisionnel de chacun</small></h3>
-        <div class="people">${group.map(({t,b})=>{const l=level(b.pct);const p=b.target?Math.min(100,100*b.total/b.target):0;return `<div class="person">${av(t)}<div><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span>${esc(t.name)}</span><span class="num muted">${eur(b.total)} / ${b.target?eur(b.target):"?"}</span></div><div class="bar" style="margin-top:6px"><i style="width:${p.toFixed(1)}%;background:${l&&l.lvl==="crit"?"var(--bad)":l&&l.lvl==="warn"?"var(--lantern)":"var(--good)"}"></i></div></div>${l?`<span class="pill ${l.lvl}">${Math.round(b.pct)} %</span>`:'<span class="pill">—</span>'}</div>`}).join("")||'<p class="muted">Personne pour l\'instant.</p>'}</div>
+      <div class="panel"><h3>Le groupe<small>ce que chacun prévoit de payer : part du groupe + budget perso</small></h3>
+        ${(()=>{const gPer=gTarget?gTarget/nTrav():0;
+          const rows=group.map(({t,b})=>{const planned=b.share+b.total, budget=(b.target||0)+gPer;return {t,b,planned,budget,pct:budget?100*planned/budget:null}});
+          const scale=Math.max(1,...rows.map(x=>Math.max(x.planned,x.budget)));
+          const w=v=>(100*Math.max(0,v)/scale).toFixed(2);
+          return `<div class="people">${rows.map(({t,b,planned,budget,pct})=>{const l=level(pct);
+            return `<div class="person">${av(t)}<div style="min-width:0"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span>${esc(t.name)}${me&&t.id===me.id?' <span class="muted">(toi)</span>':""}</span><span class="num muted">${eur(planned)}${budget?` / ${eur(budget)}`:""}</span></div>
+              <div class="sbar" role="img" aria-label="${esc(t.name)} : part du groupe ${eur(b.share)}, perso ${eur(b.total)}${budget?`, prévisionnel ${eur(budget)}`:""}"><i style="width:${w(b.share)}%;background:var(--seg5,#9B6BD0)"></i><i style="width:${w(b.total)}%;background:var(--seg1)"></i>${budget?`<b style="left:${w(budget)}%"></b>`:""}</div>
+              <div class="sbar-legend num"><span><i style="background:var(--seg5,#9B6BD0)"></i>Groupe ${eur(b.share)}</span><span><i style="background:var(--seg1)"></i>Perso ${eur(b.total)}</span></div></div>
+              ${l?`<span class="pill ${l.lvl}">${Math.round(pct)} %</span>`:'<span class="pill">—</span>'}</div>`}).join("")||'<p class="muted">Personne pour l\'instant.</p>'}</div>
+          <p class="muted small" style="margin:14px 0 0">Violet : part de chacun dans les dépenses du groupe (budget du groupe ÷ ${nTrav()}). Bleu : son budget perso prévu (vol, shopping, activités cochées…). Le trait marque son prévisionnel total${gTarget?` (${eur(gPer)} de groupe + son prévisionnel perso)`:""}. Le détail des postes perso reste visible par chacun seulement.</p>`})()}
       </div>
     </div></div>`;
 }
