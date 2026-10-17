@@ -712,7 +712,175 @@ html[data-theme="sakura"] .check input:checked::after{border-color:#fff}
 .cheer.done .ct{font-size:20px}
 canvas.confetti{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:90}
 @media (max-width:760px){.cheer{padding:12px 14px;gap:2px 12px}.cheer .ck{min-width:54px}.cheer .ck b{font-size:19px}.cheer .ct{font-size:16px}}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (prefers-reduced-motion:reduce){.ldr{animation-duration:9s}}
+</style>
+<style id="fluid">
+/* ======================================================================
+   Fluidité « Apple Design » : réaction immédiate à l'appui, ressorts sans
+   rebond par défaut, trajets symétriques (on sort par où on est entré),
+   feuille du bas qu'on peut attraper et lancer. Seuls transform/opacity bougent.
+   ====================================================================== */
+:root{
+  /* Ressort amorti critique (amortissement 1.0, réponse 0.35 s) */
+  --spring:linear(0, 0.001 0.5%, 0.007 1.5%, 0.024 2.8%, 0.056 4.4%, 0.103 6.4%, 0.165 8.5%, 0.238 10.9%, 0.319 13.5%, 0.404 16.3%, 0.489 19.3%, 0.570 22.4%, 0.645 25.8%, 0.712 29.3%, 0.771 33%, 0.821 36.8%, 0.862 40.8%, 0.896 45%, 0.922 49.3%, 0.943 53.8%, 0.959 58.4%, 0.971 63.1%, 0.979 68%, 0.986 73%, 0.990 78.1%, 0.993 83.4%, 0.996 88.8%, 0.998 94.3%, 1);
+  --spring-d:.48s;
+  --ease-out:cubic-bezier(.22,1,.36,1);
+  --press:cubic-bezier(.3,0,.5,1);
+}
+@supports not (transition-timing-function:linear(0,1)){:root{--spring:cubic-bezier(.22,1,.36,1)}}
+html{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+button,a,label,summary,select,[data-act],[data-tab]{touch-action:manipulation}
+h1,.hero h2,.login-card h1{letter-spacing:-.012em}
+.panel h3,.sheet-head h2{letter-spacing:-.005em}
+
+/* ---------- 1. Réponse : le bouton réagit dès qu'on pose le doigt ---------- */
+:is(.btn,.join,.idea,.chip,.sp-chip,.sp-quick button,.dayfilter button,.subnav button,.cityview button,.zoombar button,.seg button,.themepick button,.iconpick button,.who button,.gearbtn,.mebtn,.icon-btn,.pendban,.stage,.bcard,.vnav,.brand,.alert-x,.info summary,.tab .k,.cheer .btn){
+  transition:transform .42s var(--spring),background-color .22s var(--ease-out),border-color .22s var(--ease-out),color .22s var(--ease-out),box-shadow .22s var(--ease-out),opacity .22s var(--ease-out)}
+:is(.btn,.join,.idea,.chip,.sp-chip,.sp-quick button,.dayfilter button,.subnav button,.cityview button,.zoombar button,.seg button,.themepick button,.iconpick button,.who button,.gearbtn,.mebtn,.icon-btn,.pendban,.vnav,.brand,.alert-x,.cheer .btn):active:not(:disabled){
+  transform:scale(.96);transition-duration:.1s;transition-timing-function:var(--press)}
+:is(.stage,.bcard,.cityview button):active:not(:disabled){transform:scale(.975);transition-duration:.1s;transition-timing-function:var(--press)}
+.info summary:active{background:color-mix(in srgb,var(--paper) 5%,transparent)}
+.tab:active .k{transform:scale(.86);transition-duration:.1s;transition-timing-function:var(--press)}
+.btn.primary:active:not(:disabled){filter:brightness(.94)}
+.btn:disabled,.join:disabled{opacity:.5;cursor:default}
+/* Pas d'effet « survol » collé après un appui sur téléphone */
+@media (hover:none){
+  .who button:hover,.bcard:hover{transform:none}
+  .btn:hover{border-color:var(--line)}
+  .btn.primary:hover{border-color:var(--lantern)}
+  .idea:hover{color:var(--mute);border-color:color-mix(in srgb,var(--paper) 25%,transparent)}
+  .icon-btn:hover{color:var(--mute)}
+}
+@media (hover:hover) and (pointer:fine){
+  .tab:hover:not([aria-selected="true"]){color:var(--paper)}
+  .btn.primary:hover{filter:brightness(1.05)}
+  .subnav button:hover,.dayfilter button:hover{border-color:var(--lantern)}
+}
+
+/* ---------- 2. Barre d'onglets : un indicateur qui glisse ---------- */
+@media (min-width:761px){.tabs{position:relative}}
+.tabind{position:absolute;left:0;top:0;width:0;height:0;border-radius:12px;background:var(--ink-3);z-index:0;pointer-events:none;opacity:0;
+  transition:transform var(--spring-d) var(--spring),width var(--spring-d) var(--spring),height var(--spring-d) var(--spring),opacity .2s}
+.tabind.on{opacity:1}
+.tabind.instant{transition:none}
+html[data-theme="sakura"] .tabind{background:rgba(212,76,122,.14)}
+.tabs.has-ind .tab[aria-selected="true"]{background:none}
+.tab{transition:color .25s var(--ease-out)}
+.tab .k{display:inline-block}
+.tab[aria-selected="true"] .k{transform:translateY(-1px)}
+
+/* ---------- 3. Changement d'onglet : le contenu arrive du côté de l'onglet ---------- */
+#app{overflow-x:hidden;overflow-x:clip}
+@keyframes inFromR{from{opacity:0;transform:translate3d(28px,0,0)}}
+@keyframes inFromL{from{opacity:0;transform:translate3d(-28px,0,0)}}
+@keyframes inUp{from{opacity:0;transform:translate3d(0,14px,0)}}
+@keyframes heroIn{from{opacity:.4;transform:scale(1.06)}}
+@keyframes fadeIn{from{opacity:0}}
+#app.go-r .hero-in,#app.go-r .wrap>*{animation:inFromR .52s var(--spring) both}
+#app.go-l .hero-in,#app.go-l .wrap>*{animation:inFromL .52s var(--spring) both}
+#app.go-r .hero img,#app.go-l .hero img{animation:heroIn .7s var(--ease-out) both}
+#app:is(.go-r,.go-l) .wrap>:nth-child(2){animation-delay:.035s}
+#app:is(.go-r,.go-l) .wrap>:nth-child(3){animation-delay:.07s}
+#app:is(.go-r,.go-l) .wrap>:nth-child(4){animation-delay:.1s}
+#app:is(.go-r,.go-l) .wrap>:nth-child(n+5){animation-delay:.13s}
+.backdrop{transition:opacity .45s var(--ease-out)}
+.backdrop.swap{opacity:.25}
+/* Un formulaire qui s'ouvre se déplie depuis son bouton */
+.pop-in{animation:inUp .45s var(--spring) both;transform-origin:top center}
+/* Case cochée : la coche se dessine, sans rebond */
+@keyframes tickIn{from{transform:rotate(-45deg) translate(1px,-1px) scale(.3);opacity:0}}
+@keyframes boxIn{0%{transform:scale(.82)}100%{transform:scale(1)}}
+.check input{transition:background-color .2s var(--ease-out),border-color .2s var(--ease-out)}
+.check.pop input{animation:boxIn .42s var(--spring)}
+.check.pop input:checked::after{animation:tickIn .32s var(--spring) .04s both}
+.check .t{transition:color .25s var(--ease-out)}
+/* Détails (infos pratiques) qui s'ouvrent en douceur */
+.info summary b::before{transition:transform .35s var(--spring)}
+.info.opening .ibody{animation:inUp .4s var(--spring) both}
+/* Toast : arrive du bas, matière flou */
+.toast{transform:translate(-50%,14px) scale(.96);transition:opacity .22s var(--ease-out),transform .45s var(--spring);-webkit-backdrop-filter:blur(14px) saturate(160%);backdrop-filter:blur(14px) saturate(160%);background:color-mix(in srgb,var(--paper) 92%,transparent);box-shadow:0 8px 24px rgba(0,0,0,.18);font-weight:500}
+.toast.on{transform:translate(-50%,0) scale(1)}
+/* Barre du haut : le séparateur n'apparaît que quand le contenu passe dessous */
+.topbar{transition:border-color .25s var(--ease-out),box-shadow .25s var(--ease-out)}
+.topbar:not(.scrolled){border-bottom-color:transparent}
+.topbar.scrolled{box-shadow:0 6px 18px -12px rgba(0,0,0,.35)}
+html[data-theme="sakura"] .topbar:not(.scrolled){border-bottom-color:transparent}
+/* Rubans horizontaux : arrêt doux sur les cartes, bords en fondu */
+.stages,.cityview,.dayfilter{scroll-snap-type:x proximity;scroll-padding-inline:2px;overscroll-behavior-x:contain}
+.stages>*,.cityview>*,.dayfilter>*{scroll-snap-align:start}
+.subnav{overscroll-behavior-x:contain}
+.stages,.dayfilter{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 28px),transparent)}
+.stages.at-end,.dayfilter.at-end{-webkit-mask-image:none;mask-image:none}
+
+/* ---------- 4. Paramètres : feuille qui glisse ---------- */
+.sheet-bg{background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;overscroll-behavior:contain}
+.sheet-bg::before{content:"";position:fixed;inset:0;background:rgba(5,7,14,.5);opacity:var(--scrim,0);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);pointer-events:none}
+.sheet{position:relative;will-change:transform;box-shadow:-16px 0 40px rgba(0,0,0,.18);overscroll-behavior:contain}
+.grab{display:none}
+@media (max-width:760px){
+  .sheet-bg{align-items:flex-end;justify-content:center}
+  .sheet{height:auto;max-height:calc(100dvh - env(safe-area-inset-top,0px) - 14px);width:100%;border-left:0;border-top:1px solid var(--line);border-radius:22px 22px 0 0;padding-top:6px;box-shadow:0 -12px 40px rgba(0,0,0,.22)}
+  .grab{display:block;position:sticky;top:-6px;z-index:2;margin:0 -18px -10px;padding:10px 0 12px;touch-action:none;cursor:grab;background:linear-gradient(var(--ink) 70%,transparent)}
+  .grab::before{content:"";display:block;width:38px;height:5px;margin:0 auto;border-radius:99px;background:color-mix(in srgb,var(--paper) 28%,transparent)}
+  .sheet-head{touch-action:none}
+  .sheet-head .icon-btn{width:40px;height:40px;display:grid;place-items:center;border-radius:50%;background:color-mix(in srgb,var(--paper) 8%,transparent);font-size:22px!important;color:var(--paper)}
+}
+/* Visionneuse photo : la matière apparaît (flou + échelle) et repart pareil */
+@keyframes viewIn{from{opacity:0}}
+@keyframes viewImgIn{from{opacity:0;transform:scale(.94)}}
+@keyframes viewOut{to{opacity:0}}
+#viewer.v-in{animation:viewIn .3s var(--ease-out) both}
+#viewer.v-in .vimg img:not(.vthumb){animation:viewImgIn .45s var(--spring) both}
+#viewer.v-out{animation:viewOut .22s var(--ease-out) both;pointer-events:none}
+#viewer.v-out .vimg{transition:transform .25s var(--ease-out);transform:scale(.96)}
+/* Barres qui apparaissent (mise à jour, sélection photos, téléchargement) */
+.updatebar:not([hidden]),#dlSheet:not([hidden]),.selbar{animation:inUp .45s var(--spring) both}
+
+/* ---------- 5. Téléphone : espacements réguliers, cibles d'au moins 44 px ---------- */
+@media (max-width:760px){
+  .tabs{padding:6px 6px calc(4px + env(safe-area-inset-bottom,0px));gap:2px}
+  .tab{flex:1 1 0;min-width:0;min-height:52px;padding:6px 2px 5px;border-radius:12px;font-size:10.5px;line-height:1.2;justify-content:center;gap:3px;letter-spacing:.01em}
+  .tab .k{font-size:17px;line-height:1}
+  .tab:not([aria-selected="true"]) .k{opacity:.6}
+  .tbadge{top:2px;right:calc(50% - 22px)}
+  main{padding-bottom:calc(78px + env(safe-area-inset-bottom,0px))}
+  .toast,.updatebar{bottom:calc(80px + env(safe-area-inset-bottom,0px))}
+  .selbar{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+  #dlSheet{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+  .topbar-in{padding:8px 14px;gap:10px}
+  .gearbtn{width:40px;height:40px}
+  .mebtn{min-height:40px;padding:3px 12px 3px 4px}
+  .wrap{padding:6px 14px 40px;gap:14px}
+  .hero-in{padding:56px 16px 16px}
+  .panel{padding:16px;border-radius:16px}
+  .panel h3{margin-bottom:14px}
+  .btn{min-height:44px;padding:10px 16px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+  .btn.sm{min-height:36px;padding:6px 12px;border-radius:10px}
+  .icon-btn{min-width:40px;min-height:40px;display:inline-grid;place-items:center}
+  .join{min-height:36px;padding:7px 14px}
+  .idea{min-height:36px;padding:7px 14px}
+  .subnav{padding:10px 0 8px;gap:8px}
+  .subnav button{min-height:38px;padding:8px 15px;box-shadow:0 2px 10px rgba(0,0,0,.14)}
+  .seg button{min-height:40px}
+  .themepick button{min-height:34px}
+  .check{min-height:52px}
+  .act,.resto,.mcard{border-radius:14px}
+  .form{padding:14px;border-radius:14px}
+  input[type=text],input[type=number],input[type=date],select,textarea{min-height:44px;border-radius:12px}
+  .line-input,.dual input,.nights input,.mini{min-height:38px}
+  .kpi{border-radius:14px}
+  .who button{min-height:52px;border-radius:14px}
+  .vnav{width:44px;height:56px}
+}
+
+/* ---------- 6. Mouvement réduit : fondus courts, aucun glissement ---------- */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition-property:opacity,color,background-color,border-color!important;transition-duration:.15s!important;animation-duration:.01ms!important;animation-delay:0s!important}
+  .ldr,.ldr i,.refreshbtn.spin svg,#ptr svg{animation-duration:9s!important}
+  :is(.btn,.join,.chip,.sp-chip,.stage,.bcard,.gearbtn,.mebtn,.icon-btn):active:not(:disabled){transform:none;opacity:.7}
+  .toast,.toast.on{transform:translate(-50%,0)}
+}
+@media (prefers-reduced-transparency:reduce){.toast{background:var(--paper);-webkit-backdrop-filter:none;backdrop-filter:none}.sheet-bg::before{-webkit-backdrop-filter:none;backdrop-filter:none}}
 </style>
 
 <!-- ============ Code du voyage ============ -->
@@ -764,7 +932,7 @@ canvas.confetti{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:n
 <label id="hapticLbl" aria-hidden="true" style="position:fixed;left:-99px;top:0;width:1px;height:1px;overflow:hidden;opacity:0"><input type="checkbox" switch tabindex="-1"></label>
 <div class="toast" id="toast" role="status"></div>
 <div class="updatebar" id="updateBar" hidden><span>Une nouvelle version de l'appli est disponible.</span><button class="btn primary sm" onclick="location.reload()">Mettre à jour</button></div>
-<div class="sheet-bg" id="settings" hidden data-act="closeSettingsBg"><div class="sheet" role="dialog" aria-modal="true" aria-label="Paramètres"><div class="sheet-head"><h2>Paramètres</h2><button class="icon-btn" data-act="closeSettings" aria-label="Fermer" style="font-size:26px">×</button></div><div id="settingsBody" style="display:grid;gap:14px"></div></div></div>
+<div class="sheet-bg" id="settings" hidden data-act="closeSettingsBg"><div class="sheet" role="dialog" aria-modal="true" aria-label="Paramètres"><div class="grab" aria-hidden="true"></div><div class="sheet-head"><h2>Paramètres</h2><button class="icon-btn" data-act="closeSettings" aria-label="Fermer" style="font-size:26px">×</button></div><div id="settingsBody" style="display:grid;gap:14px"></div></div></div>
 <div id="viewer" hidden role="dialog" aria-modal="true" aria-label="Photo"></div>
 <div id="dlSheet" hidden role="status" aria-live="polite"></div>
 
@@ -984,6 +1152,42 @@ async function boot(){
 }
 function pickMe(){ me = S.travelers.find(t=>t.id===meId) || null; }
 
+/* ---------- Fluidité : petits outils ---------- */
+const TAB_ORDER=["prep","plan","budget","split","photos"];
+let lastTab=null,popCheck=null;
+const reduceMotion=()=>matchMedia("(prefers-reduced-motion: reduce)").matches;
+function formKeys(withEl){const out=[...document.querySelectorAll("#app form[data-form]")].map(f=>[f.dataset.form+":"+(f.dataset.id||"")+":"+(f.dataset.scope||""),f]);return withEl?out:new Set(out.map(x=>x[0]))}
+/* Indicateur d'onglet : une pastille qui glisse vers l'onglet choisi */
+function placeTabInd(instant){const nav=document.querySelector("nav.tabs");if(!nav)return;let ind=nav.querySelector(".tabind");
+  if(!ind){ind=document.createElement("span");ind.className="tabind instant";ind.setAttribute("aria-hidden","true");nav.prepend(ind);nav.classList.add("has-ind");instant=true}
+  const t=nav.querySelector('.tab[aria-selected="true"]');if(!t||!t.offsetWidth){ind.classList.remove("on");return}
+  const inset=matchMedia("(max-width:760px)").matches?2:0;
+  ind.classList.toggle("instant",!!instant||!ind.classList.contains("on")||reduceMotion());
+  ind.style.width=(t.offsetWidth-inset*2)+"px";ind.style.height=(t.offsetHeight)+"px";
+  ind.style.transform=`translate3d(${t.offsetLeft+inset}px,${t.offsetTop}px,0)`;ind.classList.add("on");
+  if(ind.classList.contains("instant"))requestAnimationFrame(()=>requestAnimationFrame(()=>ind.classList.remove("instant")))}
+addEventListener("resize",()=>placeTabInd(true),{passive:true});
+/* Rubans horizontaux : fondu du bord droit tant qu'il reste du contenu */
+function markScrollEnds(){document.querySelectorAll("#app .stages,#app .dayfilter").forEach(el=>{const f=()=>el.classList.toggle("at-end",el.scrollLeft+el.clientWidth>=el.scrollWidth-4);f();if(!el.__se){el.__se=1;el.addEventListener("scroll",f,{passive:true})}})}
+/* Barre du haut : séparateur seulement quand le contenu glisse dessous */
+addEventListener("scroll",()=>{const tb=document.querySelector(".topbar");if(tb)tb.classList.toggle("scrolled",scrollY>4)},{passive:true});
+/* Infos pratiques : le contenu se déplie quand on ouvre */
+document.addEventListener("click",e=>{const s=e.target.closest(".info summary");if(!s)return;const d=s.parentElement;setTimeout(()=>{if(d.open){d.classList.add("opening");setTimeout(()=>d.classList.remove("opening"),450)}},0)});
+
+/* ---------- Ressort (amortissement + réponse, façon Apple) ----------
+   Interruptible : repart toujours de la valeur affichée et garde la vitesse. */
+function springTo(st,to,{zeta=1,resp=.35,v,onUpdate,onDone}={}){
+  cancelAnimationFrame(st.raf);if(v!=null)st.v=v;st.to=to;
+  if(reduceMotion()){st.x=to;st.v=0;onUpdate&&onUpdate(st.x);onDone&&onDone();return}
+  const k=Math.pow(2*Math.PI/resp,2),c=4*Math.PI*zeta/resp;let last=performance.now();
+  const step=now=>{let dt=Math.min(.064,(now-last)/1000);last=now;
+    for(const h=1/240;dt>0;dt-=h){const s=Math.min(h,dt);const a=-k*(st.x-to)-c*st.v;st.v+=a*s;st.x+=st.v*s}
+    if(Math.abs(st.v)<5&&Math.abs(st.x-to)<.5){st.x=to;st.v=0;onUpdate&&onUpdate(st.x);onDone&&onDone();return}
+    onUpdate&&onUpdate(st.x);st.raf=requestAnimationFrame(step)};
+  st.raf=requestAnimationFrame(step)}
+const project=(v,d=.998)=>(v/1000)*d/(1-d);
+const rubber=(o,dim,c=.55)=>(o*dim*c)/(dim+c*Math.abs(o));
+
 /* ---------- Rendu ---------- */
 function render(){
   if(drag){drag.queued=true;return}
@@ -999,14 +1203,21 @@ function render(){
   if(!ready){$("#app").innerHTML=`<div class="wrap" style="padding-top:40px">${loaderBlock("Chargement du voyage…")}</div>`;return}
   const html = {prep:renderPrep,plan:renderPlan,budget:renderBudget,split:renderSplit,photos:renderPhotos}[tab]();
   const keep = captureForms();
+  const app=$("#app"),tabChanged=lastTab!==null&&lastTab!==tab,prevForms=tabChanged?null:formKeys();
+  if(!tabChanged){clearTimeout(render.goT);app.classList.remove("go-r","go-l")}
   const sx={};document.querySelectorAll("#app [data-keepx]").forEach(el=>sx[el.dataset.keepx]=el.scrollLeft);
   $("#app").innerHTML = html;
   document.querySelectorAll("#app [data-keepx]").forEach(el=>{if(sx[el.dataset.keepx]!=null)el.scrollLeft=sx[el.dataset.keepx];
     const sel=el.querySelector('[aria-pressed="true"],[aria-selected="true"]');
     if(sel&&el.dataset.keepx!=="subnav"){const l=sel.offsetLeft,r=l+sel.offsetWidth;if(l<el.scrollLeft+8||r>el.scrollLeft+el.clientWidth-8)el.scrollLeft=Math.max(0,l-(el.clientWidth-sel.offsetWidth)/2)}});
   restoreForms(keep);
+  if(tabChanged&&!reduceMotion()){const d=TAB_ORDER.indexOf(tab)>TAB_ORDER.indexOf(lastTab)?"go-r":"go-l";
+    app.classList.remove("go-r","go-l");void app.offsetWidth;app.classList.add(d);clearTimeout(render.goT);render.goT=setTimeout(()=>app.classList.remove("go-r","go-l"),800)}
+  else if(prevForms)formKeys(true).forEach(([k,f])=>{if(!prevForms.has(k))f.classList.add("pop-in")});
+  if(popCheck){const c=document.getElementById("c-"+popCheck);if(c)c.closest(".check").classList.add("pop");popCheck=null}
+  lastTab=tab;placeTabInd(!tabChanged);markScrollEnds();
   const bgImg = tab==="prep"?"img/pont.jpg":tab==="plan"?(STAGE_IMG[stageSel]||"img/lanternes.jpg"):tab==="budget"?"img/rainbow.jpg":tab==="photos"?"img/lanternes.jpg":"img/ruelle.jpg";
-  const bd=$("#bd"); bd.style.backgroundImage=`url("${bgImg}")`; bd.style.backgroundPosition=HERO_POS[bgImg]||"center";
+  const bd=$("#bd"); if(tabChanged&&!reduceMotion()&&bd.dataset.img!==bgImg){bd.classList.add("swap");setTimeout(()=>bd.classList.remove("swap"),60)} bd.dataset.img=bgImg; bd.style.backgroundImage=`url("${bgImg}")`; bd.style.backgroundPosition=HERO_POS[bgImg]||"center";
   if(tab==="plan") mountMap();
   renderSettings();
   window.__tab=tab;
@@ -1208,8 +1419,42 @@ applyTheme();
 
 /* ----- Paramètres ----- */
 let settingsOpen=false;
-function openSettings(){settingsOpen=true;$("#settings").hidden=false;renderSettings();refreshPushState().then(renderSettings);document.body.style.overflow="hidden"}
-function closeSettings(){settingsOpen=false;$("#settings").hidden=true;document.body.style.overflow=""}
+const SH={x:0,v:0,raf:0,axis:"y",closing:false};
+function sheetEls(){const bg=$("#settings");return{bg,sh:bg.querySelector(".sheet")}}
+function sheetDim(){const{sh}=sheetEls();return SH.axis==="y"?sh.offsetHeight:sh.offsetWidth}
+function sheetPaint(x){const{bg,sh}=sheetEls();const dim=sheetDim()||1;
+  sh.style.transform=SH.axis==="y"?`translate3d(0,${x}px,0)`:`translate3d(${x}px,0,0)`;
+  bg.style.setProperty("--scrim",Math.max(0,Math.min(1,1-x/dim)).toFixed(3))}
+function openSettings(){const{bg,sh}=sheetEls();const wasOpen=settingsOpen&&!SH.closing;settingsOpen=true;SH.closing=false;
+  bg.hidden=false;renderSettings();refreshPushState().then(renderSettings);document.body.style.overflow="hidden";
+  if(wasOpen)return;
+  SH.axis=matchMedia("(max-width:760px)").matches?"y":"x";
+  if(!SH.raf||SH.x===0){SH.x=sheetDim();SH.v=0}           /* sinon on repart d'où la feuille se trouve */
+  sh.scrollTop=0;sheetPaint(SH.x);springTo(SH,0,{zeta:1,resp:.38,onUpdate:sheetPaint,onDone:()=>{SH.raf=0}})}
+function closeSettings(v){if(!settingsOpen)return;settingsOpen=false;SH.closing=true;document.body.style.overflow="";
+  const{bg}=sheetEls();
+  springTo(SH,sheetDim(),{zeta:1,resp:.32,v,onUpdate:sheetPaint,onDone:()=>{SH.raf=0;if(SH.closing){bg.hidden=true;SH.closing=false}}})}
+/* Glisser la feuille vers le bas pour la fermer : suit le doigt 1:1, résiste vers le haut,
+   et au lâcher on projette l'élan pour décider (fermer ou revenir), en gardant la vitesse. */
+(function(){const bg=$("#settings");let g=null;
+  const hist=(t,y)=>{g.h.push([t,y]);while(g.h.length>2&&t-g.h[0][0]>100)g.h.shift()};
+  bg.addEventListener("touchstart",e=>{if(SH.axis!=="y"||!settingsOpen||e.touches.length!==1)return;const sh=bg.querySelector(".sheet");
+    const top=e.target.closest(".grab,.sheet-head");if(!top&&(!sh.contains(e.target)||sh.scrollTop>0))return;
+    if(e.target.closest("input,select,textarea,.seg,.iconpick,.themepick"))return;
+    const y=e.touches[0].clientY;g={y0:y,x0:e.touches[0].clientX,base:SH.x,on:!!top,top:!!top,h:[]};hist(performance.now(),y);
+    if(g.on){cancelAnimationFrame(SH.raf);SH.raf=0}},{passive:true});
+  bg.addEventListener("touchmove",e=>{if(!g)return;const y=e.touches[0].clientY,dy=y-g.y0,dx=e.touches[0].clientX-g.x0;
+    if(!g.on){if(Math.abs(dy)<8&&Math.abs(dx)<8)return;
+      const sh=bg.querySelector(".sheet");if(dy>0&&Math.abs(dy)>Math.abs(dx)&&sh.scrollTop<=0){g.on=true;g.y0=y;g.base=SH.x;cancelAnimationFrame(SH.raf);SH.raf=0}else{g=null;return}}
+    e.preventDefault();hist(performance.now(),y);
+    let x=g.base+(y-g.y0);if(x<0)x=-rubber(-x,sheetDim());SH.x=x;sheetPaint(x)},{passive:false});
+  const end=()=>{if(!g)return;const was=g;g=null;if(!was.on)return;const a=was.h[0],b=was.h[was.h.length-1];
+    const v=b&&a&&b[0]>a[0]?(b[1]-a[1])/((b[0]-a[0])/1000):0;SH.v=v;
+    const dim=sheetDim(),land=SH.x+project(v);
+    if(land>dim*.45||v>900){haptic(8);closeSettings(v)}
+    else springTo(SH,0,{zeta:.82,resp:.32,v,onUpdate:sheetPaint,onDone:()=>{SH.raf=0}})};
+  bg.addEventListener("touchend",end,{passive:true});bg.addEventListener("touchcancel",end,{passive:true});
+})();
 function adminBlock(){
   const others=roster.filter(r=>r.id!==meId);
   const pend=pendingReq.length?`<section class="set"><h3>Demandes d'accès</h3>
@@ -1563,7 +1808,9 @@ function origBtn(p){const st=origDl[p.path],lbl=p.orig?"Télécharger l'original
   return `<button class="btn primary sm" data-act="saveOrig">${canShareFiles([st.file])?"Enregistrer dans Photos / Fichiers":"Enregistrer la photo"}</button>`}
 function renderViewer(){
   const v=$("#viewer");if(!v)return;
-  if(viewIdx<0||!photos||!photos[viewIdx]){v.hidden=true;return}
+  if(viewIdx<0||!photos||!photos[viewIdx]){if(v.hidden)return;if(reduceMotion()){v.hidden=true;return}
+    v.classList.remove("v-in");v.classList.add("v-out");clearTimeout(renderViewer.t);renderViewer.t=setTimeout(()=>{if(viewIdx<0){v.hidden=true;v.classList.remove("v-out")}},230);return}
+  const opening=v.hidden||v.classList.contains("v-out");clearTimeout(renderViewer.t);v.classList.remove("v-out");if(opening){v.classList.remove("v-in");void v.offsetWidth;v.classList.add("v-in")}
   const p=photos[viewIdx],t=T(p.who),mine=me&&(p.who===me.id||isAdmin);
   const dl=p.url?p.url+(p.url.includes("?")?"&":"?")+"download="+encodeURIComponent(p.name):"";
   v.hidden=false;
@@ -2478,7 +2725,7 @@ document.addEventListener("click",e=>{
     if(navigator.share){navigator.share(data).catch(()=>{})}else{copyText(data.text+"\n"+data.url)}return}
   if(a==="copyLink"){copyText(shareUrl());return}
   if(a==="leaveTrip"){(sess?rpc("logout",{p_code:code,p_token:sess}).catch(()=>{}):Promise.resolve()).then(()=>{ls.set("japon-code","");ls.set("japon-sess","");location.hash="";location.reload()});return}
-  if(a==="toggleTask"){if(!me)return;const t=S.tasks.find(x=>x.id===id);patch("tasks",id,{done:{[me.id]:!(t.done&&t.done[me.id])}});return}
+  if(a==="toggleTask"){if(!me)return;const t=S.tasks.find(x=>x.id===id);if(!(t.done&&t.done[me.id])){popCheck=id;haptic(10)}patch("tasks",id,{done:{[me.id]:!(t.done&&t.done[me.id])}});return}
   if(a==="delTask"){if(b.dataset.c){remove("tasks",id);toast("Étape supprimée")}else{b.dataset.c="1";b.textContent="Supprimer ?";b.style.color="var(--bad)";b.style.fontSize="12px";setTimeout(()=>{b.dataset.c="";b.textContent="×";b.style.cssText=""},2500)}return}
   if(a==="delLine"&&b.dataset.c){bEdit=null}
   if(a==="delAct"||a==="delExp"||a==="delLine"){const col={delAct:"activities",delExp:"expenses",delLine:"budget"}[a];if(b.dataset.c){remove(col,id);toast("Supprimé")}else{b.dataset.c="1";b.textContent="Supprimer ?";b.style.color="var(--bad)";b.style.fontSize="12px";setTimeout(()=>{b.dataset.c="";b.textContent="×";b.style.cssText=""},2500)}return}
